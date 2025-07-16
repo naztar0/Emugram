@@ -32,6 +32,7 @@ namespace Telegram.Views
 
             _settings = new Dictionary<Type, object>
             {
+                { typeof(SettingsEmulationPage), Emulation },
                 { typeof(SettingsProfilePage), Profile },
                 { typeof(SettingsAppearancePage), Appearance },
                 { typeof(SettingsPrivacyAndSecurityPage), Privacy },
@@ -102,6 +103,11 @@ namespace Telegram.Views
             {
                 UpdateSelection();
             }
+        }
+
+        private void Emulation_Click(object sender, RoutedEventArgs e)
+        {
+            Navigate(typeof(SettingsEmulationPage));
         }
 
         private void Profile_Click(object sender, RoutedEventArgs e)

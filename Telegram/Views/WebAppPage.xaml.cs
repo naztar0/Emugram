@@ -665,6 +665,10 @@ namespace Telegram.Views
 
         private void ProcessRequestFullScreen()
         {
+            if (SettingsService.Current.Emulation.PreventFullscreen)
+            {
+                return;
+            }
             ApplicationView.GetForCurrentView().TryEnterFullScreenMode();
         }
 

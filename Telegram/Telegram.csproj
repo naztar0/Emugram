@@ -22,7 +22,8 @@
     <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
-    <PackageCertificateKeyFile>Telegram_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>
+    </PackageCertificateKeyFile>
     <BuildAppxSideloadPackageForUap>False</BuildAppxSideloadPackageForUap>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppInstallerUpdateFrequency>0</AppInstallerUpdateFrequency>
@@ -33,8 +34,7 @@
     <LangVersion>10.0</LangVersion>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <ProjectPriIndexName>Telegram</ProjectPriIndexName>
-    <PackageCertificateThumbprint>
-    </PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>45698A6F1CF15CC081056106A2A8E92B94326D06</PackageCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -136,6 +136,7 @@
     <Compile Include="Assets\Icons\Downloading.cs" />
     <Compile Include="Assets\Icons\EmojiToGif.cs" />
     <Compile Include="Assets\Icons\EmojiToSticker.cs" />
+    <Compile Include="Assets\Icons\Emulation.cs" />
     <Compile Include="Assets\Icons\FAQ.cs" />
     <Compile Include="Assets\Icons\Folders.cs" />
     <Compile Include="Assets\Icons\GifToEmoji.cs" />
@@ -207,6 +208,7 @@
     <Compile Include="Common\BezierPoint.cs" />
     <Compile Include="Common\DebouncedPropertyWithToken.cs" />
     <Compile Include="Common\FeatureTokenGenerator.cs" />
+    <Compile Include="Common\LocalDatabase.cs" />
     <Compile Include="Common\MediaDeviceTracker.cs" />
     <Compile Include="Common\MediaDeviceList.cs" />
     <Compile Include="Common\MediaDevicePermissions.cs" />
@@ -394,7 +396,10 @@
     <Compile Include="Services\Calls\VoipVideoStateChangedEventArgs.cs" />
     <Compile Include="Services\ClientService.FeedbackChatTopics.cs" />
     <Compile Include="Services\ClientService.ForumTopics.cs" />
+    <Compile Include="Services\EmulationService.cs" />
     <Compile Include="Services\FeedbackChatTopicService.cs" />
+    <Compile Include="Services\ProxyService.cs" />
+    <Compile Include="Services\Settings\EmulationSettings.cs" />
     <Compile Include="Td\Api\MessageAlbumLastMessage.cs" />
     <Compile Include="Services\PaidReactionService.cs" />
     <Compile Include="Controls\Messages\ReactionAsPaidButton.cs" />
@@ -1057,6 +1062,8 @@
     <Compile Include="ViewModels\Settings\Privacy\SettingsPrivacyShowBioViewModel.cs" />
     <Compile Include="ViewModels\Settings\Privacy\SettingsPrivacyNewChatViewModel.cs" />
     <Compile Include="ViewModels\Settings\Privacy\SettingsPrivacyAutosaveGiftsViewModel.cs" />
+    <Compile Include="ViewModels\Settings\SettingsEmulationPresetViewModel.cs" />
+    <Compile Include="ViewModels\Settings\SettingsEmulationViewModel.cs" />
     <Compile Include="ViewModels\Settings\SettingsPowerSavingViewModel.cs" />
     <Compile Include="ViewModels\Stars\PayViewModel.cs" />
     <Compile Include="ViewModels\Stars\StarsViewModel.cs" />
@@ -1388,6 +1395,12 @@
     </Compile>
     <Compile Include="Views\Settings\Privacy\SettingsPrivacyShowBirthdatePage.xaml.cs">
       <DependentUpon>SettingsPrivacyShowBirthdatePage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Settings\SettingsEmulationPage.xaml.cs">
+      <DependentUpon>SettingsEmulationPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Settings\SettingsEmulationPresetPage.xaml.cs">
+      <DependentUpon>SettingsEmulationPresetPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Settings\SettingsPasswordPage.xaml.cs">
       <DependentUpon>SettingsPasswordPage.xaml</DependentUpon>
@@ -2386,7 +2399,6 @@
     <Content Include="Assets\Toasts\StarsTopup.tgs" />
     <Content Include="Assets\Toasts\Unpin.tgs" />
     <Content Include="Assets\Toasts\VideoConversion.tgs" />
-    <None Include="Telegram_StoreKey.pfx" />
     <None Include="Telegram_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
@@ -2410,7 +2422,6 @@
     <Content Include="Assets\Logos\StoreLogo.scale-150.png" />
     <Content Include="Assets\Logos\StoreLogo.scale-200.png" />
     <Content Include="Assets\Logos\StoreLogo.scale-400.png" />
-    <None Include="Package.StoreAssociation.xml" />
     <Content Include="Properties\Default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -3412,6 +3423,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\Settings\Privacy\SettingsPrivacyShowBirthdatePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Settings\SettingsEmulationPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Settings\SettingsEmulationPresetPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -1022,7 +1022,7 @@ namespace Telegram.Views
                 SettingsService.Current.Diagnostics.IsLastErrorDiskFull = false;
 
                 // TODO: Missing translation
-                var confirm = await ViewModel.ShowPopupAsync("Unigram has previously failed to launch because the device storage was full.\r\n\r\nMake sure there's enough storage space available and press **OK** to continue.", "Disk storage is full", Strings.OK, Strings.StorageUsage);
+                var confirm = await ViewModel.ShowPopupAsync("Emugram has previously failed to launch because the device storage was full.\r\n\r\nMake sure there's enough storage space available and press **OK** to continue.", "Disk storage is full", Strings.OK, Strings.StorageUsage);
                 if (confirm == ContentDialogResult.Secondary)
                 {
                     MasterDetail.NavigationService.Navigate(typeof(SettingsStoragePage));

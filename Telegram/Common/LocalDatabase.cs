@@ -60,6 +60,19 @@ namespace Telegram.Common
             {
                 result = raw.sqlite3_bind_int64(stmt, index, (long)value);
             }
+            else if (value is DateTime)
+            {
+                var ticks = ((DateTime)value).Ticks;
+                result = raw.sqlite3_bind_int64(stmt, index, ticks);
+            }
+            else if (value is null)
+            {
+                result = raw.sqlite3_bind_null(stmt, index);
+            }
+            else if (value is bool boolean)
+            {
+                result = raw.sqlite3_bind_int(stmt, index, boolean ? 1 : 0);
+            }
             else
             {
                 throw new NotSupportedException($"Type {value.GetType().FullName} not supported.");
@@ -163,7 +176,7 @@ namespace Telegram.Common
             return (int)count;
         }
 
-        public IList<object[]> Select(string tableName, string columnName, object value, string excludeColumnName, object[] excludeValues, int? limit = null, string[] orderList = null)
+        public IList<object[]> Select(string tableName, string columnName, object value, string excludeColumnName = null, object[] excludeValues = null, int? limit = null, string[] orderList = null)
         {
             var whereClause = $"{columnName} = ?";
             var args = new List<object> { value };
@@ -199,6 +212,18 @@ namespace Telegram.Common
         {
             var whereMask = $"{columnName} IN ({BuildBindingMask(values.Length)})";
             ExecuteNonSelectionSqlQuery($"DELETE FROM {tableName} WHERE {whereMask};", values);
+        }
+
+        public void Update(string tableName, Dictionary<string, object> updates, string whereClause, params object[] whereArgs)
+        {
+            if (updates.Count == 0)
+            {
+                return;
+            }
+            var setClause = string.Join(", ", updates.Keys.Select(col => $"{col} = ?"));
+            var query = $"UPDATE {tableName} SET {setClause} WHERE {whereClause};";
+            var parameters = updates.Values.Concat(whereArgs).ToList();
+            ExecuteNonSelectionSqlQuery(query, parameters);
         }
 
         private StorageException ToStorageException(int result, string message)

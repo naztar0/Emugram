@@ -21,6 +21,7 @@ using Telegram.Services;
 using Telegram.Td;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Chats;
+using Telegram.Views;
 using Telegram.Views.Chats;
 using Telegram.Views.Popups;
 using Telegram.Views.Stars.Popups;
@@ -793,8 +794,8 @@ namespace Telegram.ViewModels
                 }
                 else
                 {
-                    input = new FormattedText(animatedEmoji.Emoji, Array.Empty<TextEntity>());
-                }
+                input = new FormattedText(animatedEmoji.Emoji, Array.Empty<TextEntity>());
+            }
             }
 
             if (input != null)
@@ -1515,7 +1516,10 @@ namespace Telegram.ViewModels
                     return;
                 }
 
-                var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, botUser.Id, webApp.Url, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, "unigram", new WebAppOpenModeFullSize())));
+                var emulationService = TypeResolver.Current.Resolve<IEmulationService>(ClientService.SessionId);
+                var emulationPreset = await emulationService.GetPresetAsync(SettingsService.Current.Emulation.PresetId);
+
+                var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, botUser.Id, webApp.Url, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, emulationPreset.ApplicationName, new WebAppOpenModeFullSize())));
                 if (response is WebAppInfo webAppInfo)
                 {
                     NavigationService.NavigateToWebApp(botUser, webAppInfo.Url, webAppInfo.LaunchId, null, sourceChat: chat, buttonText: inline.Text);
@@ -1585,7 +1589,10 @@ namespace Telegram.ViewModels
             {
                 if (ClientService.TryGetUser(message.SenderId, out Td.Api.User botUser))
                 {
-                    var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, botUser.Id, webApp.Url, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, "unigram", new WebAppOpenModeFullSize())));
+                    var emulationService = TypeResolver.Current.Resolve<IEmulationService>(ClientService.SessionId);
+                    var emulationPreset = await emulationService.GetPresetAsync(SettingsService.Current.Emulation.PresetId);
+
+                    var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, botUser.Id, webApp.Url, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, emulationPreset.ApplicationName, new WebAppOpenModeFullSize())));
                     if (response is WebAppInfo webAppInfo)
                     {
                         NavigationService.NavigateToWebApp(botUser, webAppInfo.Url, webAppInfo.LaunchId, null, sourceChat: chat, buttonText: keyboardButton.Text);
@@ -1617,7 +1624,10 @@ namespace Telegram.ViewModels
             }
             else
             {
-                var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, botUser.Id, url, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, "unigram", new WebAppOpenModeFullSize())));
+                var emulationService = TypeResolver.Current.Resolve<IEmulationService>(ClientService.SessionId);
+                var emulationPreset = await emulationService.GetPresetAsync(SettingsService.Current.Emulation.PresetId);
+
+                var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, botUser.Id, url, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, emulationPreset.ApplicationName, new WebAppOpenModeFullSize())));
                 if (response is WebAppInfo webAppInfo)
                 {
                     NavigationService.NavigateToWebApp(botUser, webAppInfo.Url, webAppInfo.LaunchId, null, sourceChat: chat);
@@ -1633,7 +1643,10 @@ namespace Telegram.ViewModels
                 return;
             }
 
-            var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, menuBot.BotUserId, string.Empty, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, "unigram", new WebAppOpenModeFullSize())));
+            var emulationService = TypeResolver.Current.Resolve<IEmulationService>(ClientService.SessionId);
+            var emulationPreset = await emulationService.GetPresetAsync(SettingsService.Current.Emulation.PresetId);
+
+            var response = await ClientService.SendAsync(new OpenWebApp(chat.Id, menuBot.BotUserId, string.Empty, OutgoingThreadId, DirectMessagesChatTopicId, null, new WebAppOpenParameters(Theme.Current.Parameters, emulationPreset.ApplicationName, new WebAppOpenModeFullSize())));
             if (response is WebAppInfo webAppInfo)
             {
                 NavigationService.NavigateToWebApp(botUser, webAppInfo.Url, webAppInfo.LaunchId, menuBot, sourceChat: chat);
@@ -1723,12 +1736,12 @@ namespace Telegram.ViewModels
             }
             else
             {
-                var file = message.GetFile();
-                if (file != null)
-                {
-                    await _storageService.SaveFileAsAsync(file);
-                }
+            var file = message.GetFile();
+            if (file != null)
+            {
+                await _storageService.SaveFileAsAsync(file);
             }
+        }
         }
 
         #endregion

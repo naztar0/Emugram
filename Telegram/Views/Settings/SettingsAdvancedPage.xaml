@@ -43,6 +43,10 @@
                     <CheckBox IsChecked="{x:Bind services:SettingsService.Current.Diagnostics.ShowIds, Mode=TwoWay}"
                               Content="{CustomResource DiagnosticsShowPeerIds}"
                               Style="{StaticResource SettingsCheckBoxStyle}" />
+
+                    <CheckBox IsChecked="{x:Bind services:SettingsService.Current.Diagnostics.EnableWebViewDevTools, Mode=TwoWay}"
+                              Content="Enable WebView DevTools"
+                              Style="{StaticResource SettingsCheckBoxStyle}" />
                 </controls:HeaderedControl>
             </controls:SettingsPanel>
         </ScrollViewer>

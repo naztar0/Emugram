@@ -70,6 +70,7 @@ namespace Telegram
                 ( typeof(IStorageService), typeof(StorageService) ),
                 ( typeof(ITranslateService), typeof(TranslateService) ),
                 ( typeof(IProfilePhotoService), typeof(ProfilePhotoService) ),
+                ( typeof(IEmulationService), typeof(EmulationService) ),
             };
 
             _instances = new List<Type>
@@ -204,7 +205,9 @@ namespace Telegram
                 typeof(BusinessBotsViewModel),
                 typeof(BusinessIntroViewModel),
                 typeof(BusinessChatLinksViewModel),
-                typeof(RevenueViewModel)
+                typeof(RevenueViewModel),
+                typeof(SettingsEmulationViewModel),
+                typeof(SettingsEmulationPresetViewModel)
             };
 
             // Preprocess: find out lazy singletons used by singletons to promote
