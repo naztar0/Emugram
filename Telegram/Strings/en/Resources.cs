@@ -21494,5 +21494,13 @@ namespace Telegram
         /// </summary>
         public static string ZoomOut => Resource.GetString("ZoomOut");
         
+        public static string Emulation => Resource.GetString("Emulation");
+        public static string EmulationPreset => Resource.GetString("EmulationPreset");
+        public static string EmulationPresets => Resource.GetString("EmulationPresets");
+        public static string AddEmulationPreset => Resource.GetString("AddEmulationPreset");
+        public static string EmulationPresetSectionBase => Resource.GetString("EmulationPresetSectionBase");
+        public static string EmulationPresetTitle => Resource.GetString("EmulationPresetTitle");
+        public static string Duplicate => Resource.GetString("Duplicate");
+        public static string PreventFullscreen => Resource.GetString("PreventFullscreen");
     }
 }

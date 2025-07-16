@@ -1,0 +1,146 @@
+﻿<local:HostedPage x:Class="Telegram.Views.Settings.SettingsEmulationPresetPage"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:controls="using:Telegram.Controls"
+                  xmlns:local="using:Telegram.Views"
+                  mc:Ignorable="d">
+
+    <Page.Transitions>
+        <TransitionCollection>
+            <NavigationThemeTransition>
+                <SlideNavigationTransitionInfo Effect="FromRight" />
+            </NavigationThemeTransition>
+        </TransitionCollection>
+    </Page.Transitions>
+    
+    <local:HostedPage.Action>
+        <Button Content="{CustomResource Save}"
+                Command="{x:Bind ViewModel.SaveCommand}"
+                Style="{StaticResource AccentButtonStyle}" />
+    </local:HostedPage.Action>
+    
+    <Grid Background="{ThemeResource SettingsPageBackground}">
+        <ScrollViewer x:Name="ScrollingHost"
+                      VerticalScrollBarVisibility="Auto"
+                      VerticalScrollMode="Auto">
+            <controls:SettingsPanel>
+                <controls:HeaderedControl>
+                    <TextBox Text="{x:Bind ViewModel.Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="{CustomResource EmulationPresetTitle}"
+                             AcceptsReturn="False" 
+                             Padding="12,11,12,12" />
+                </controls:HeaderedControl>
+                
+                <!-- Base Section -->
+                <controls:HeaderedControl Header="{CustomResource EmulationPresetSectionBase}">
+                    <TextBox Text="{x:Bind ViewModel.ApplicationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Application Name"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.UserAgent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="User Agent"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.XRequestedWith, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="X-Requested-With"
+                             Padding="12,8,12,9" />
+                </controls:HeaderedControl>
+
+                <!-- Ch-Ua Section -->
+                <controls:HeaderedControl Header="Sec-Ch-Ua">
+                    <TextBox Text="{x:Bind ViewModel.SecChUa, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-CH-UA"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecChUaPlatform, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-CH-UA-Platform"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecChUaArch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-CH-UA-Arch"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecChUaBitness, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-CH-UA-Bitness"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecChUaFormFactors, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-CH-UA-Form-Factors"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecChUaFullVersionList, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-CH-UA-Full-Version-List"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecChUaModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-CH-UA-Model"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecChUaPlatformVersion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-CH-UA-Platform-Version"
+                             Padding="12,8,12,9" />
+                    <CheckBox Style="{StaticResource SettingsCheckBoxStyle}"
+                              IsChecked="{x:Bind ViewModel.SecChUaMobile, Mode=TwoWay}" 
+                              Content="Sec-CH-UA-Mobile" />
+                    <CheckBox Style="{StaticResource SettingsCheckBoxStyle}" 
+                              IsChecked="{x:Bind ViewModel.SecChUaWoW64, Mode=TwoWay}" 
+                              Content="Sec-CH-UA-WoW64" />
+                </controls:HeaderedControl>
+
+                <!-- Sec-Ch-Prefers Section -->
+                <controls:HeaderedControl Header="Sec-Ch-Prefers">
+                    <TextBox Text="{x:Bind ViewModel.SecChPrefersColorScheme, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-CH-Prefers-Color-Scheme"
+                             Padding="12,8,12,9" />
+                    <CheckBox Style="{StaticResource SettingsCheckBoxStyle}" 
+                              IsChecked="{x:Bind ViewModel.SecChPrefersReducedMotion, Mode=TwoWay}"
+                              Content="Sec-CH-Prefers-Reduced-Motion" />
+                    <CheckBox Style="{StaticResource SettingsCheckBoxStyle}" 
+                              IsChecked="{x:Bind ViewModel.SecChPrefersReducedTransparency, Mode=TwoWay}"
+                              Content="Sec-CH-Prefers-Reduced-Transparency" />
+                </controls:HeaderedControl>
+
+                <!-- Sec-Fetch Section -->
+                <controls:HeaderedControl Header="Sec-Fetch">
+                    <TextBox Text="{x:Bind ViewModel.SecFetchDest, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-Fetch-Dest"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecFetchMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-Fetch-Mode"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecFetchSite, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-Fetch-Site"
+                             Padding="12,8,12,9" />
+                    <CheckBox Style="{StaticResource SettingsCheckBoxStyle}" 
+                              IsChecked="{x:Bind ViewModel.SecFetchUser, Mode=TwoWay}" 
+                              Content="Sec-Fetch-User" />
+                </controls:HeaderedControl>
+
+                <!-- WebSocket Section -->
+                <controls:HeaderedControl Header="Sec-WebSocket">
+                    <TextBox Text="{x:Bind ViewModel.SecWebSocketAccept, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-WebSocket-Accept"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecWebSocketExtensions, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-WebSocket-Extensions"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecWebSocketKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-WebSocket-Key"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecWebSocketProtocol, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-WebSocket-Protocol"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecWebSocketVersion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-WebSocket-Version"
+                             Padding="12,8,12,9" />
+                </controls:HeaderedControl>
+
+                <!-- Other Section -->
+                <controls:HeaderedControl Header="Other">
+                    <TextBox Text="{x:Bind ViewModel.SecSpeculationTags, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Sec-Speculation-Tags"
+                             Padding="12,8,12,9" />
+                    <TextBox Text="{x:Bind ViewModel.SecPurpose, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                             PlaceholderText="Sec-Purpose"
+                             Padding="12,8,12,9" />
+                    <CheckBox Style="{StaticResource SettingsCheckBoxStyle}"
+                              IsChecked="{x:Bind ViewModel.SecGPC, Mode=TwoWay}"
+                              Content="Sec-GPC" />
+                </controls:HeaderedControl>
+            </controls:SettingsPanel>
+        </ScrollViewer>
+    </Grid>
+</local:HostedPage>

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Telegram.Common;
 using Telegram.Native;
 using Telegram.Services;
+using Telegram.Views;
 using Windows.Data.Json;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -392,10 +393,12 @@ namespace Telegram.Controls
     public partial class ChromiumWebPresenter : WebPresenter
     {
         private WebView2 View;
+        private readonly IEmulationService _emulationService;
 
         public ChromiumWebPresenter()
         {
             DefaultStyleKey = typeof(ChromiumWebPresenter);
+            _emulationService = TypeResolver.Current.Resolve<IEmulationService>();
         }
 
         public static bool IsSupported()
@@ -432,6 +435,8 @@ namespace Telegram.Controls
 
             if (View.CoreWebView2 != null)
             {
+                var emulationPreset = await _emulationService.GetPresetAsync(SettingsService.Current.Emulation.PresetId);
+
                 View.CoreWebView2.NewWindowRequested += OnNewWindowRequested;
                 View.CoreWebView2.ScriptDialogOpening += OnScriptDialogOpening;
 
@@ -439,9 +444,9 @@ namespace Telegram.Controls
 window.external={invoke:s=>window.chrome.webview.postMessage(s)};
 window.TelegramWebviewProxy = {
 postEvent: function(eventType, eventData) {
-	if (window.external && window.external.invoke) {
-		window.external.invoke(JSON.stringify([eventType, eventData]));
-	}
+    if (window.external && window.external.invoke) {
+        window.external.invoke(JSON.stringify([eventType, eventData]));
+    }
 }
 }");
 
@@ -449,6 +454,15 @@ postEvent: function(eventType, eventData) {
                 View.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = false;
                 View.CoreWebView2.Settings.AreDefaultContextMenusEnabled = SettingsService.Current.Diagnostics.EnableWebViewDevTools;
                 View.CoreWebView2.Settings.AreDevToolsEnabled = SettingsService.Current.Diagnostics.EnableWebViewDevTools;
+
+                if (!string.IsNullOrEmpty(emulationPreset.UserAgent))
+                {
+                    View.CoreWebView2.Settings.UserAgent = emulationPreset.UserAgent;
+                }
+
+                View.CoreWebView2.WebResourceRequested += WebResourceRequested(emulationPreset);
+
+                View.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
 
                 try
                 {
@@ -467,6 +481,78 @@ postEvent: function(eventType, eventData) {
                 Initialize(false);
             }
         }
+
+        private TypedEventHandler<CoreWebView2, CoreWebView2WebResourceRequestedEventArgs> WebResourceRequested(EmulationPreset emulationPreset) =>
+            (sender, args) =>
+            {
+                var request = args.Request;
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUa))
+                    request.Headers.SetHeader("x-requested-with", emulationPreset.XRequestedWith);
+
+                // Sec-Ch-Ua
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUa))
+                    request.Headers.SetHeader("sec-ch-ua", emulationPreset.SecChUa);
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUaPlatform))
+                    request.Headers.SetHeader("sec-ch-ua-platform", emulationPreset.SecChUaPlatform);
+                if (emulationPreset.SecChUaMobile.HasValue)
+                    request.Headers.SetHeader("sec-ch-ua-mobile", ConvertBool(emulationPreset.SecChUaMobile.Value));
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUaArch))
+                    request.Headers.SetHeader("sec-ch-ua-arch", emulationPreset.SecChUaArch);
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUaBitness))
+                    request.Headers.SetHeader("sec-ch-ua-bitness", emulationPreset.SecChUaBitness);
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUaFormFactors))
+                    request.Headers.SetHeader("sec-ch-ua-form-factors", emulationPreset.SecChUaFormFactors);
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUaFullVersionList))
+                    request.Headers.SetHeader("sec-ch-ua-full-version-list", emulationPreset.SecChUaFullVersionList);
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUaModel))
+                    request.Headers.SetHeader("sec-ch-ua-model", emulationPreset.SecChUaModel);
+                if (!string.IsNullOrEmpty(emulationPreset.SecChUaPlatformVersion))
+                    request.Headers.SetHeader("sec-ch-ua-platform-version", emulationPreset.SecChUaPlatformVersion);
+                if (emulationPreset.SecChUaWoW64.HasValue)
+                    request.Headers.SetHeader("sec-ch-ua-wow64", ConvertBool(emulationPreset.SecChUaWoW64.Value));
+
+                // Sec-Ch-Prefers
+                if (!string.IsNullOrEmpty(emulationPreset.SecChPrefersColorScheme))
+                    request.Headers.SetHeader("sec-ch-prefers-color-scheme", emulationPreset.SecChPrefersColorScheme);
+                if (emulationPreset.SecChPrefersReducedMotion.HasValue)
+                    request.Headers.SetHeader("sec-ch-prefers-reduced-motion",
+                        ConvertBool(emulationPreset.SecChPrefersReducedMotion.Value));
+                if (emulationPreset.SecChPrefersReducedTransparency.HasValue)
+                    request.Headers.SetHeader("sec-ch-prefers-reduced-transparency",
+                        ConvertBool(emulationPreset.SecChPrefersReducedTransparency.Value));
+
+                // Sec-Fetch
+                if (emulationPreset.SecFetchUser.HasValue)
+                    request.Headers.SetHeader("sec-fetch-user", ConvertBool(emulationPreset.SecFetchUser.Value));
+                if (!string.IsNullOrEmpty(emulationPreset.SecFetchDest))
+                    request.Headers.SetHeader("sec-fetch-dest", emulationPreset.SecFetchDest);
+                if (!string.IsNullOrEmpty(emulationPreset.SecFetchMode))
+                    request.Headers.SetHeader("sec-fetch-mode", emulationPreset.SecFetchMode);
+                if (!string.IsNullOrEmpty(emulationPreset.SecFetchSite))
+                    request.Headers.SetHeader("sec-fetch-site", emulationPreset.SecFetchSite);
+
+                // WebSocket
+                if (!string.IsNullOrEmpty(emulationPreset.SecWebSocketAccept))
+                    request.Headers.SetHeader("sec-websocket-accept", emulationPreset.SecWebSocketAccept);
+                if (!string.IsNullOrEmpty(emulationPreset.SecWebSocketExtensions))
+                    request.Headers.SetHeader("sec-websocket-extensions", emulationPreset.SecWebSocketExtensions);
+                if (!string.IsNullOrEmpty(emulationPreset.SecWebSocketKey))
+                    request.Headers.SetHeader("sec-websocket-key", emulationPreset.SecWebSocketKey);
+                if (!string.IsNullOrEmpty(emulationPreset.SecWebSocketProtocol))
+                    request.Headers.SetHeader("sec-websocket-protocol", emulationPreset.SecWebSocketProtocol);
+                if (!string.IsNullOrEmpty(emulationPreset.SecWebSocketVersion))
+                    request.Headers.SetHeader("sec-websocket-version", emulationPreset.SecWebSocketVersion);
+
+                // Other
+                if (!string.IsNullOrEmpty(emulationPreset.SecSpeculationTags))
+                    request.Headers.SetHeader("sec-speculation-tags", emulationPreset.SecSpeculationTags);
+                if (!string.IsNullOrEmpty(emulationPreset.SecPurpose))
+                    request.Headers.SetHeader("sec-purpose", emulationPreset.SecPurpose);
+                if (emulationPreset.SecGPC.HasValue)
+                    request.Headers.SetHeader("sec-gpc", ConvertBool(emulationPreset.SecGPC.Value));
+            };
+
+        private static string ConvertBool(bool value) => value ? "?1" : "?0";
 
         private void OnPointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {

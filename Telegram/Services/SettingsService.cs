@@ -50,6 +50,8 @@ namespace Telegram.Services
 
         DiagnosticsSettings Diagnostics { get; }
 
+        EmulationSettings Emulation { get; }
+
         long UserId { get; set; }
 
         int VerbosityLevel { get; set; }
@@ -306,6 +308,9 @@ namespace Telegram.Services
 
         private static VoIPSettings _voip;
         public VoIPSettings VoIP => _voip ??= new VoIPSettings();
+
+        private static EmulationSettings _emulation;
+        public EmulationSettings Emulation => _emulation ??= new EmulationSettings(_local);
 
         private static int? _verbosityLevel;
         public int VerbosityLevel

@@ -29,6 +29,7 @@ namespace Telegram.Views
         private Telegram.Services.IStorageService _storageService;
         private Telegram.Services.ITranslateService _translateService;
         private Telegram.Services.IProfilePhotoService _profilePhotoService;
+        private Telegram.Services.IEmulationService _emulationService;
 
         public TypeLocator(Telegram.Services.ILifetimeService lifetimeService, Telegram.Services.ILocaleService localeService, Telegram.Services.IPasscodeService passcodeService, Telegram.Services.IPlaybackService playbackService, int session, bool active)
         {
@@ -871,6 +872,18 @@ namespace Telegram.Views
                         _clientService,
                         _settingsService,
                         _eventAggregator);
+                case "Telegram.ViewModels.Settings.SettingsEmulationViewModel":
+                    return (T)(object)new Telegram.ViewModels.Settings.SettingsEmulationViewModel(
+                        _clientService,
+                        _settingsService,
+                        _eventAggregator,
+                        _emulationService ??= new Telegram.Services.EmulationService());
+                case "Telegram.ViewModels.Settings.SettingsEmulationPresetViewModel":
+                    return (T)(object)new Telegram.ViewModels.Settings.SettingsEmulationPresetViewModel(
+                        _clientService,
+                        _settingsService,
+                        _eventAggregator,
+                        _emulationService ??= new Telegram.Services.EmulationService());
                 case "Telegram.Services.IDeviceInfoService":
                     return (T)_deviceInfoService;
                 case "Telegram.Services.ISettingsService":
@@ -921,6 +934,8 @@ namespace Telegram.Views
                         _eventAggregator));
                 case "Telegram.Services.IProfilePhotoService":
                     return (T)(_profilePhotoService ??= new Telegram.Services.ProfilePhotoService(_clientService));
+                case "Telegram.Services.IEmulationService":
+                    return (T)(_emulationService ??= new Telegram.Services.EmulationService());
                 default:
                     return default;
 

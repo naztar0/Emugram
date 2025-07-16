@@ -7,7 +7,7 @@ root = true
 file_header_template = \nCopyright (c) Fela Ameghino 2015-2025\n\nDistributed under the GNU General Public License v3.0. (See accompanying\nfile LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)\n
 
 # IDE0005: Using directive is unnecessary.
-dotnet_diagnostic.IDE0005.severity = error
+dotnet_diagnostic.IDE0005.severity = none
 
 # IDE0058: Expression value is never used
 dotnet_diagnostic.IDE0058.severity = none
@@ -127,7 +127,7 @@ dotnet_naming_style.pascal_case.capitalization = pascal_case
 dotnet_style_operator_placement_when_wrapping = beginning_of_line
 tab_width = 4
 indent_size = 4
-end_of_line = crlf
+end_of_line = lf
 dotnet_style_coalesce_expression = true:suggestion
 dotnet_style_null_propagation = true:suggestion
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion

@@ -150,6 +150,14 @@
                             </Setter>
                         </Style>
                     </controls:TopNavView.ItemContainerStyle>
+                    <controls:BadgeButton x:Name="Emulation"
+                                          Content="{CustomResource Emulation}"
+                                          Style="{StaticResource IconBadgeButtonStyle}"
+                                          Click="Emulation_Click">
+                        <controls:BadgeButton.IconSource>
+                            <icons:Emulation />
+                        </controls:BadgeButton.IconSource>
+                    </controls:BadgeButton>
                     <controls:BadgeButton x:Name="Profile"
                                           Content="{CustomResource EditProfile}"
                                           Style="{StaticResource IconBadgeButtonStyle}"

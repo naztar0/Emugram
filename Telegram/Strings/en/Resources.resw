@@ -1209,7 +1209,7 @@ Your prize is **{0} Stars**.</value>
     <value>{0} answers</value>
   </data>
   <data name="AppDisplayName" xml:space="preserve">
-    <value>Unigram</value>
+    <value>Emugram</value>
   </data>
   <data name="Appearance" xml:space="preserve">
     <value>Appearance</value>
@@ -1707,12 +1707,12 @@ Sunrise: {1}</value>
     <value>Videos</value>
   </data>
   <data name="AutoStart" xml:space="preserve">
-    <value>Launch Unigram When System Starts</value>
+    <value>Launch Emugram When System Starts</value>
   </data>
   <data name="AutoStartDisabledInfo" xml:space="preserve">
     <value>Starting with the system was disabled in Windows Settings.
 
-Please enable Unigram in the Startup Apps Settings.</value>
+Please enable Emugram in the Startup Apps Settings.</value>
   </data>
   <data name="AutoStartMinized" xml:space="preserve">
     <value>Launch minimized</value>
@@ -4359,7 +4359,7 @@ Minimum length is 5 characters.</value>
     <value>Close Topic</value>
   </data>
   <data name="CloudUpdateInstallingText" xml:space="preserve">
-    <value>A new version of Unigram is being installed...</value>
+    <value>A new version of Emugram is being installed...</value>
   </data>
   <data name="CloudUpdateInstallingTitle" xml:space="preserve">
     <value>Please Wait...</value>
@@ -7693,7 +7693,7 @@ You can change your language back at any time in Settings.</value>
     <value>Change language?</value>
   </data>
   <data name="LanguageUnknownCustomAlert" xml:space="preserve">
-    <value>Unfortunately, this custom language pack (**{0}**) doesn&apos;t contain data for Unigram.</value>
+    <value>Unfortunately, this custom language pack (**{0}**) doesn&apos;t contain data for Emugram.</value>
   </data>
   <data name="LanguageUnknownTitle" xml:space="preserve">
     <value>Insufficient data</value>
@@ -8960,7 +8960,7 @@ Please make sure you entered the right Server URL and Stream Key in your app.</v
     <value>{0} invited you to play {1}</value>
   </data>
   <data name="NotificationPreviewAttribution" xml:space="preserve">
-    <value>via Unigram</value>
+    <value>via Emugram</value>
   </data>
   <data name="NotificationPreviewLine1" xml:space="preserve">
     <value>Dino Rex</value>
@@ -9046,10 +9046,10 @@ Stories</value>
     <value>Notifications unmuted.</value>
   </data>
   <data name="NotifyIconExit" xml:space="preserve">
-    <value>Quit Unigram</value>
+    <value>Quit Emugram</value>
   </data>
   <data name="NotifyIconOpen" xml:space="preserve">
-    <value>Open Unigram</value>
+    <value>Open Emugram</value>
   </data>
   <data name="NotifyMoreOptions" xml:space="preserve">
     <value>More Options</value>
@@ -9523,13 +9523,13 @@ Payments will go directly to the developer of {0}. Telegram cannot provide any g
     <value>Telegram needs microphone access so that you can send voice messages.</value>
   </data>
   <data name="PermissionNoAudioCalls" xml:space="preserve">
-    <value>Unigram needs microphone access so that you can have calls. Please enable it in Settings.</value>
+    <value>Emugram needs microphone access so that you can have calls. Please enable it in Settings.</value>
   </data>
   <data name="PermissionNoAudioVideo" xml:space="preserve">
     <value>Telegram needs access to your microphone so that you can record videos.</value>
   </data>
   <data name="PermissionNoAudioVideoCalls" xml:space="preserve">
-    <value>Unigram needs microphone and camera access so that you can have video calls. Please enable it in Settings.</value>
+    <value>Emugram needs microphone and camera access so that you can have video calls. Please enable it in Settings.</value>
   </data>
   <data name="PermissionNoCamera" xml:space="preserve">
     <value>Telegram needs camera access so that you can take photos and videos. Please enable it in Settings.</value>
@@ -9538,7 +9538,7 @@ Payments will go directly to the developer of {0}. Telegram cannot provide any g
     <value>Telegram needs access to your location.</value>
   </data>
   <data name="PermissionNoVideoCalls" xml:space="preserve">
-    <value>Unigram needs camera access so that you can have video calls. Please enable it in Settings.</value>
+    <value>Emugram needs camera access so that you can have video calls. Please enable it in Settings.</value>
   </data>
   <data name="PermissionOpenSettings" xml:space="preserve">
     <value>Settings</value>
@@ -14470,5 +14470,29 @@ If you forget your password, you will lose access to your Telegram account. Ther
   </data>
   <data name="ZoomOut" xml:space="preserve">
     <value>Zoom out</value>
+  </data>
+  <data name="AddEmulationPreset" xml:space="preserve">
+    <value>Add Preset</value>
+  </data>
+  <data name="Emulation" xml:space="preserve">
+    <value>Emulation</value>
+  </data>
+  <data name="EmulationPreset" xml:space="preserve">
+    <value>Emulation Preset</value>
+  </data>
+  <data name="EmulationPresetSectionBase" xml:space="preserve">
+    <value>Base parameters</value>
+  </data>
+  <data name="EmulationPresetTitle" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="EmulationPresets" xml:space="preserve">
+    <value>Presets</value>
+  </data>
+  <data name="Duplicate" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="PreventFullscreen" xml:space="preserve">
+    <value>Prevent Fullscreen Mode</value>
   </data>
 </root>

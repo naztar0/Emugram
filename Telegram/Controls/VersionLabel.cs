@@ -16,7 +16,7 @@ namespace Telegram.Controls
         {
             DefaultStyleKey = typeof(VersionLabel);
 
-            Content = "Unigram " + GetVersion();
+            Content = "Emugram " + GetVersion();
 
             Click += OnClick;
             ContextRequested += OnContextRequested;
