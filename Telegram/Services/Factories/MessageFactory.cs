@@ -92,9 +92,15 @@ namespace Telegram.Services.Factories
 
         public static async Task<InputMessageContent> CreateVideoNoteAsync(StorageVideo video, VideoGeneration generation)
         {
-            var duration = video.TotalSeconds;
-            var videoWidth = video.Width;
-            var videoHeight = video.Height;
+            generation.TrimStartTime ??= TimeSpan.FromSeconds(0);
+            generation.TrimStopTime ??= TimeSpan.FromSeconds(60);
+
+            if (generation.TrimStopTime.Value.TotalSeconds - generation.TrimStartTime.Value.TotalSeconds > 60)
+            {
+                generation.TrimStopTime = TimeSpan.FromSeconds(generation.TrimStartTime.Value.TotalSeconds + 60);
+            }
+
+            var duration = (int)(generation.TrimStopTime.Value.TotalSeconds - generation.TrimStartTime.Value.TotalSeconds);
 
             var serialized = JsonConvert.SerializeObject(generation);
             var generated = await video.File.ToGeneratedAsync(ConversionType.Transcode, serialized);

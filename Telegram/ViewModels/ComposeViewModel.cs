@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Common;
+using Telegram.Controls.Chats;
 using Telegram.Converters;
 using Telegram.Entities;
 using Telegram.Navigation;
@@ -55,6 +56,9 @@ namespace Telegram.ViewModels
         public abstract long ThreadId { get; }
 
         public virtual long OutgoingThreadId { get; }
+
+        private bool _isMediaNote;
+        private ChatRecordMode _chatRecordMode;
 
         #region Stickers
 
@@ -329,17 +333,16 @@ namespace Telegram.ViewModels
             catch { }
         }
 
-        public async void SendFileExecute(IReadOnlyList<StorageFile> files, FormattedText caption = null, bool media = true)
+        public async Task SendFileExecute(IReadOnlyList<StorageFile> files, FormattedText caption = null, bool media = true)
         {
             var items = await StorageMedia.CreateAsync(files);
             if (items.Count > 0)
             {
-                SendFileExecute(items, caption, media);
+                await SendFileExecute(items, caption, media);
             }
         }
 
-
-        public async void SendFileExecute(IList<StorageMedia> items, FormattedText caption = null, bool media = true)
+        public async Task SendFileExecute(IList<StorageMedia> items, FormattedText caption = null, bool media = true)
         {
             if (Chat is not Chat chat || items.Empty())
             {
@@ -353,6 +356,16 @@ namespace Telegram.ViewModels
                 if (item is StoragePhoto && !permissions.CanSendPhotos)
                 {
                     await ShowPopupAsync(restricted ? Strings.ErrorSendRestrictedPhoto : Strings.ErrorSendRestrictedPhotoAll, Strings.AppName, Strings.OK);
+                    return;
+                }
+                else if (item is StorageVideo && _isMediaNote && !permissions.CanSendVideoNotes)
+                {
+                    await ShowPopupAsync(restricted ? Strings.ErrorSendRestrictedVideo : Strings.ErrorSendRestrictedVideoAll, Strings.AppName, Strings.OK);
+                    return;
+                }
+                else if (item is StorageAudio && _isMediaNote && !permissions.CanSendVoiceNotes)
+                {
+                    await ShowPopupAsync(restricted ? Strings.ErrorSendRestrictedMusic : Strings.ErrorSendRestrictedMusicAll, Strings.AppName, Strings.OK);
                     return;
                 }
                 else if (item is StorageVideo && !permissions.CanSendVideos)
@@ -515,9 +528,16 @@ namespace Telegram.ViewModels
 
         private async Task SendStorageMediaAsync(StorageMedia storage, InputMessageReplyTo reply, FormattedText caption, MessageSendOptions options, bool asFile, bool captionAboveMedia, bool spoiler, bool highQuality, long starCount = 0)
         {
-            if (storage is StorageDocument or StorageAudio || asFile)
+            if (!_isMediaNote && storage is StorageDocument or StorageAudio || asFile)
             {
                 await SendDocumentAsync(storage, reply, caption, options);
+            }
+            else if (_isMediaNote && storage is StorageAudio or StorageVideo)
+            {
+                var recorder = new ChatRecordButton.Recorder();
+                var totalSeconds = storage is StorageAudio audio ? audio.TotalSeconds : ((StorageVideo)storage).TotalSeconds;
+                var generation = storage is StorageVideo video ? video.GetGeneration() : null;
+                recorder.SendMediaNote(this, _chatRecordMode, Chat, storage.File, false, totalSeconds, generation, caption);
             }
             else if (storage is StoragePhoto photo)
             {
@@ -581,7 +601,7 @@ namespace Telegram.ViewModels
             }
         }
 
-        public async Task SendVoiceNoteAsync(StorageFile file, int duration, FormattedText caption)
+        public async Task SendVoiceNoteAsync(StorageFile file, int duration, FormattedText caption, byte[] waveform = null)
         {
             var options = await PickMessageSendOptionsAsync();
             if (options == null)
@@ -591,7 +611,7 @@ namespace Telegram.ViewModels
 
             // TODO: 172 selfDestructType
             var reply = GetReply(true);
-            var input = new InputMessageVoiceNote(await file.ToGeneratedAsync(ConversionType.Opus), duration, Array.Empty<byte>(), caption, null);
+            var input = new InputMessageVoiceNote(await file.ToGeneratedAsync(ConversionType.Opus), duration, waveform ?? Array.Empty<byte>(), caption, null);
 
             await SendMessageAsync(reply, input, options);
         }
@@ -612,22 +632,57 @@ namespace Telegram.ViewModels
             }
         }
 
+        public void SendVoiceNoteFromFile()
+        {
+            _isMediaNote = true;
+            _chatRecordMode = ChatRecordMode.Voice;
+            SendMedia();
+        }
+
+        public void SendVideoNoteFromFile()
+        {
+            _isMediaNote = true;
+            _chatRecordMode = ChatRecordMode.Video;
+            SendMedia();
+        }
+
         public async void SendMedia()
         {
             try
             {
                 var picker = new FileOpenPicker();
                 picker.ViewMode = PickerViewMode.Thumbnail;
-                picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
-                picker.FileTypeFilter.AddRange(Constants.MediaTypes);
 
-                var files = await picker.PickMultipleFilesAsync();
-                if (files != null && files.Count > 0)
+                if (_isMediaNote)
                 {
-                    SendFileExecute(files);
+                    picker.SuggestedStartLocation = _chatRecordMode == ChatRecordMode.Voice
+                        ? PickerLocationId.MusicLibrary
+                        : PickerLocationId.VideosLibrary;
+                    picker.FileTypeFilter.AddRange(_chatRecordMode == ChatRecordMode.Voice
+                        ? Constants.AudioTypes
+                        : Constants.VideoTypes);
+                    var file = await picker.PickSingleFileAsync();
+                    if (file != null)
+                    {
+                        await SendFileExecute(new[] { file });
+                    }
+                }
+                else
+                {
+                    picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+                    picker.FileTypeFilter.AddRange(Constants.MediaTypes);
+
+                    var files = await picker.PickMultipleFilesAsync();
+                    if (files != null && files.Count > 0)
+                    {
+                        SendFileExecute(files);
+                    }
                 }
             }
-            catch { }
+            finally
+            {
+                _isMediaNote = false;
+            }
         }
 
         public async void SendContact()

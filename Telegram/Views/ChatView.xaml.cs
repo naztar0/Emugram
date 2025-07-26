@@ -1794,6 +1794,8 @@ namespace Telegram.Views
 
                 if (photoRights || videoRights)
                 {
+                    flyout.CreateFlyoutItem(ViewModel.SendVoiceNoteFromFile, Strings.VoiceNoteFromFile, Icons.VoiceNote);
+                    flyout.CreateFlyoutItem(ViewModel.SendVideoNoteFromFile, Strings.VideoNoteFromFile, Icons.VideoNote);
                     flyout.CreateFlyoutItem(ViewModel.SendMedia, Strings.PhotoOrVideo, Icons.Image);
                     flyout.CreateFlyoutItem(ViewModel.SendCamera, Strings.ChatCamera, Icons.Camera);
                 }
