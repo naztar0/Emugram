@@ -21,7 +21,7 @@
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
     <AppxBundle>Always</AppxBundle>
-    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <AppxBundlePlatforms>arm64</AppxBundlePlatforms>
     <PackageCertificateKeyFile>
     </PackageCertificateKeyFile>
     <BuildAppxSideloadPackageForUap>False</BuildAppxSideloadPackageForUap>
@@ -566,52 +566,6 @@
     <Compile Include="Td\Api\UpdatePaymentCompleted.cs" />
     <Compile Include="TypeContainerGenerator.cs" />
     <Compile Include="TypeCrosserGenerator.cs" />
-    <Compile Include="Videolan\Platforms\Windows\InitializedEventArgs.cs" />
-    <Compile Include="Videolan\Platforms\Windows\VideoView.cs" />
-    <Compile Include="Videolan\Platforms\Windows\VideoViewBase.cs" />
-    <Compile Include="Videolan\Platforms\Windows\VideoViewOfTInitializedEventArgs.cs" />
-    <Compile Include="Videolan\Shared\Core\Constants.cs" />
-    <Compile Include="Videolan\Shared\Core\Core.cs" />
-    <Compile Include="Videolan\Shared\Core\Core.UWP.cs" />
-    <Compile Include="Videolan\Shared\Dialog.cs" />
-    <Compile Include="Videolan\Shared\Equalizer.cs" />
-    <Compile Include="Videolan\Shared\Events\EventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaDiscovererEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaListEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaPlayerChangedEventArgs.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaPlayerChangingEventArgs.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaPlayerEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\RendererDiscovererEventManager.cs" />
-    <Compile Include="Videolan\Shared\Helpers\MarshalExtensions.cs" />
-    <Compile Include="Videolan\Shared\Helpers\MarshalUtils.cs" />
-    <Compile Include="Videolan\Shared\Helpers\PlatformHelper.cs" />
-    <Compile Include="Videolan\Shared\Internal.cs" />
-    <Compile Include="Videolan\Shared\IVideoControl.cs" />
-    <Compile Include="Videolan\Shared\IVideoView.cs" />
-    <Compile Include="Videolan\Shared\LibVLC.cs" />
-    <Compile Include="Videolan\Shared\LibVLCEvents.cs" />
-    <Compile Include="Videolan\Shared\Media.cs" />
-    <Compile Include="Videolan\Shared\MediaConfiguration.cs" />
-    <Compile Include="Videolan\Shared\MediaDiscoverer.cs" />
-    <Compile Include="Videolan\Shared\MediaInput.cs" />
-    <Compile Include="Videolan\Shared\MediaList.cs" />
-    <Compile Include="Videolan\Shared\MediaPlayer.cs" />
-    <Compile Include="Videolan\Shared\RendererDiscoverer.cs" />
-    <Compile Include="Videolan\Shared\StreamMediaInput.cs" />
-    <Compile Include="Videolan\Shared\Structures\AudioOutputDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\AudioOutputDevice.cs" />
-    <Compile Include="Videolan\Shared\Structures\ChapterDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaDiscovererDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaSlave.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaStats.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaTrack.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaTrackData.cs" />
-    <Compile Include="Videolan\Shared\Structures\ModuleDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\RendererDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\TrackDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\VideoViewpoint.cs" />
-    <Compile Include="Videolan\Shared\VLCException.cs" />
     <Compile Include="ViewModels\Business\BusinessFeatureViewModelBase.cs" />
     <Compile Include="ViewModels\Business\BusinessLocationViewModel.cs" />
     <Compile Include="ViewModels\Business\BusinessChatLinksViewModel.cs" />
@@ -4076,6 +4030,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="LibVLCSharp">
+      <Version>4.0.0-alpha-20250725-9054</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Bcl.HashCode">
       <Version>6.0.0</Version>
     </PackageReference>
@@ -4112,7 +4069,7 @@
       <Version>1.8.51</Version>
     </PackageReference>
     <PackageReference Include="VideoLAN.LibVLC.UWP">
-      <Version>3.0.21</Version>
+      <Version>4.0.0</Version>
     </PackageReference>
     <PackageReference Include="Win2D.uwp">
       <Version>1.28.2</Version>

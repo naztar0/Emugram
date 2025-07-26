@@ -4,7 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
-using LibVLCSharp.Shared;
+using LibVLCSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -404,7 +404,7 @@ namespace Telegram.Services
                 player.Rate = (float)_playbackSpeed;
             }
 
-            if (player.State == VLCState.Ended)
+            if (player.State == VLCState.Stopping)
             {
                 player.Stop();
             }

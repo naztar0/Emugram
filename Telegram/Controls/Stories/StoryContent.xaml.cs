@@ -4,7 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
-using LibVLCSharp.Shared;
+using LibVLCSharp;
 using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -196,7 +196,7 @@ namespace Telegram.Controls.Stories
                     SegmentsInactive.UpdateActiveStories(activeStories.Item, 48, true);
                 }
 
-                Video?.Clear();
+                Video.MediaPlayer = null;
             }
 
             var story = activeStories.SelectedItem;
@@ -750,7 +750,7 @@ namespace Telegram.Controls.Stories
                 }
                 else if (Video != null)
                 {
-                    if (Video.IsConnected)
+                    if (Video.IsConnected())
                     {
                         _mediaStream = stream;
                         Video_Initialized(Video, new LibVLCSharp.Platforms.Windows.InitializedEventArgs(Video.SwapChainOptions));
@@ -910,7 +910,7 @@ namespace Telegram.Controls.Stories
 
             if (_type == StoryType.Photo)
             {
-                Video?.Clear();
+                Video.MediaPlayer = null;
             }
 
             if (file.Local.IsDownloadingCompleted)
@@ -991,12 +991,12 @@ namespace Telegram.Controls.Stories
             {
                 if (_type == StoryType.Photo && Video != null)
                 {
-                    Video.Clear();
+                    Video.MediaPlayer = null;
                 }
             }
             else
             {
-                Video?.Clear();
+                Video.MediaPlayer = null;
             }
 
             story.ClientService.DownloadFile(file.Id, 32, 0, video.PreloadPrefixSize);
@@ -1089,7 +1089,7 @@ namespace Telegram.Controls.Stories
             _loading = false;
             ElementCompositionPreview.SetElementChildVisual(ActiveRoot, BootStrapper.Current.Compositor.CreateSpriteVisual());
 
-            Video?.Clear();
+            Video.MediaPlayer = null;
 
             if (_open)
             {
@@ -1277,11 +1277,11 @@ namespace Telegram.Controls.Stories
 
         private void OnESSelected(AsyncMediaPlayer sender, MediaPlayerESSelectedEventArgs e)
         {
-            if (e.Type == TrackType.Video && e.Id != -1)
+            if (e.Type == TrackType.Video && e.Id != string.Empty)
             {
                 //UpdateStretch();
             }
-            else if (e.Type == TrackType.Audio && e.Id != -1)
+            else if (e.Type == TrackType.Audio && e.Id != string.Empty)
             {
                 _player.Mute = _viewModel.Settings.VolumeMuted;
             }
@@ -1316,34 +1316,34 @@ namespace Telegram.Controls.Stories
             //}
         }
 
-        private VideoTrack? GetVideoTrack(MediaPlayer mediaPlayer)
-        {
-            if (mediaPlayer == null)
-            {
-                return null;
-            }
-            var selectedVideoTrack = mediaPlayer.VideoTrack;
-            if (selectedVideoTrack == -1)
-            {
-                return null;
-            }
+        //private VideoTrack? GetVideoTrack(MediaPlayer mediaPlayer)
+        //{
+        //    if (mediaPlayer == null)
+        //    {
+        //        return null;
+        //    }
+        //    var selectedVideoTrack = mediaPlayer.VideoTrack;
+        //    if (selectedVideoTrack == -1)
+        //    {
+        //        return null;
+        //    }
 
-            try
-            {
-                var media = mediaPlayer.Media;
-                MediaTrack? videoTrack = null;
-                if (media != null)
-                {
-                    videoTrack = media.Tracks?.FirstOrDefault(t => t.Id == selectedVideoTrack);
-                    media.Dispose();
-                }
-                return videoTrack == null ? (VideoTrack?)null : ((MediaTrack)videoTrack).Data.Video;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        //    try
+        //    {
+        //        var media = mediaPlayer.Media;
+        //        MediaTrack? videoTrack = null;
+        //        if (media != null)
+        //        {
+        //            videoTrack = media.Tracks?.FirstOrDefault(t => t.Id == selectedVideoTrack);
+        //            media.Dispose();
+        //        }
+        //        return videoTrack == null ? (VideoTrack?)null : ((MediaTrack)videoTrack).Data.Video;
+        //    }
+        //    catch (Exception)
+        //    {
+        //        return null;
+        //    }
+        //}
 
         private void OnEndReached(AsyncMediaPlayer sender, EventArgs e)
         {

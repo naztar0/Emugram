@@ -1,5 +1,5 @@
 ﻿using LibVLCSharp.Platforms.Windows;
-using LibVLCSharp.Shared;
+using LibVLCSharp;
 using System;
 using Telegram.Common;
 using Telegram.Streams;
@@ -26,8 +26,8 @@ namespace Telegram.Controls
         private bool _isUnloadedExpected;
         public override bool IsUnloadedExpected
         {
-            get => Video.IsUnloadedExpected;
-            set => Video.IsUnloadedExpected = value;
+            get => _isUnloadedExpected;
+            set => _isUnloadedExpected = value;
         }
 
         private void OnConnected(object sender, RoutedEventArgs e)
@@ -96,7 +96,7 @@ namespace Telegram.Controls
             //_player?.Play();
             switch (_core.State)
             {
-                case VLCState.Ended:
+                case VLCState.Stopping:
                     _core.Stop();
                     goto case VLCState.Stopped;
                 case VLCState.Paused:
@@ -121,7 +121,7 @@ namespace Telegram.Controls
 
             switch (_core.State)
             {
-                case VLCState.Ended:
+                case VLCState.Stopping:
                     _core.Stop();
                     goto case VLCState.Stopped;
                 case VLCState.Paused:
@@ -142,7 +142,7 @@ namespace Telegram.Controls
 
         public override void Clear()
         {
-            Video.Clear();
+                Video.MediaPlayer = null;
         }
 
         public override void AddTime(double value)
@@ -301,7 +301,7 @@ namespace Telegram.Controls
 
         private void OnEESelected(AsyncMediaPlayer sender, MediaPlayerESSelectedEventArgs args)
         {
-            if (args.Type == TrackType.Video && args.Id != -1)
+            if (args.Type == TrackType.Video && args.Id != string.Empty)
             {
                 var track = sender.Track;
                 if (track != null)

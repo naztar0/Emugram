@@ -4,7 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
-using LibVLCSharp.Shared;
+using LibVLCSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -59,7 +59,8 @@ namespace Telegram.Common
             _enableDebugLogs = SettingsService.Current.VerbosityLevel >= 4;
 
             // Generating plugins cache requires a breakpoint in bank.c#504
-            _library = new LibVLC(_enableDebugLogs, options); //"--quiet", "--reset-plugins-cache");
+            _library = new LibVLC(_enableDebugLogs); //"--quiet", "--reset-plugins-cache");
+            // --winrt-d3dcontext and --winrt-swapchain flags from options don't work in v4
 
             if (_enableDebugLogs)
             {
@@ -72,7 +73,7 @@ namespace Telegram.Common
             _player.ESSelected += OnESSelected;
             _player.Vout += OnVout;
             _player.Buffering += OnBuffering;
-            _player.EndReached += OnEndReached;
+            _player.Stopping += OnEndReached;
 
             // Gallery
             _player.TimeChanged += OnTimeChanged;
@@ -109,7 +110,7 @@ namespace Telegram.Common
         {
             if (play)
             {
-                var media = new Media(_library, input);
+                var media = new Media(input);
 
                 _player.Play(media);
 
@@ -163,12 +164,12 @@ namespace Telegram.Common
         public long Time
         {
             get => Read(() => _player.Time);
-            set => Write(() => _player.Time = value);
+            set => Write(() => _player.SetTime(value));
         }
 
         public void AddTime(long value)
         {
-            Write(() => _player.Time += value);
+            Write(() => _player.SetTime(_player.Time + value));
         }
 
         public float Scale
@@ -180,13 +181,13 @@ namespace Telegram.Common
         public float Rate
         {
             get => Read(() => _player.Rate);
-            set => Write(() => _player.Rate = value);
+            set => Write(() => _player.SetRate(value));
         }
 
         public int Volume
         {
             get => Read(() => _player.Volume);
-            set => Write(() => _player.Volume = value);
+            set => Write(() => _player.SetVolume(value));
         }
 
         public AsyncMediaTrack Track
@@ -205,7 +206,7 @@ namespace Telegram.Common
             _player.ESSelected -= OnESSelected;
             _player.Vout -= OnVout;
             _player.Buffering -= OnBuffering;
-            _player.EndReached -= OnEndReached;
+            _player.Stopping -= OnEndReached;
             _player.TimeChanged -= OnTimeChanged;
             _player.LengthChanged -= OnLengthChanged;
             _player.Playing -= OnPlaying;
@@ -244,12 +245,12 @@ namespace Telegram.Common
 
         private AsyncMediaTrack GetTrack()
         {
-            var videoTrack = GetVideoTrack(_player.VideoTrack);
-            if (videoTrack is not VideoTrack track)
+            var videoTrack = _player.SelectedTrack(TrackType.Video);
+            if (videoTrack == null)
             {
                 return new AsyncMediaTrack(0, 0);
             }
-
+            var track = videoTrack.Data.Video;
             if (track.Orientation is VideoOrientation.RightTop or VideoOrientation.LeftTop)
             {
                 return new AsyncMediaTrack((int)track.Height, (int)track.Width);
@@ -258,29 +259,29 @@ namespace Telegram.Common
             return new AsyncMediaTrack((int)track.Width, (int)track.Height);
         }
 
-        private VideoTrack? GetVideoTrack(int selectedVideoTrack)
-        {
-            if (selectedVideoTrack == -1)
-            {
-                return null;
-            }
+        //private VideoTrack? GetVideoTrack(int selectedVideoTrack)
+        //{
+        //    if (selectedVideoTrack == -1)
+        //    {
+        //        return null;
+        //    }
 
-            try
-            {
-                var media = _player.Media;
-                MediaTrack? videoTrack = null;
-                if (media != null)
-                {
-                    videoTrack = media.Tracks?.FirstOrDefault(t => t.Id == selectedVideoTrack);
-                    media.Dispose();
-                }
-                return videoTrack == null ? (VideoTrack?)null : ((MediaTrack)videoTrack).Data.Video;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        //    try
+        //    {
+        //        var media = _player.Media;
+        //        MediaTrack? videoTrack = null;
+        //        if (media != null)
+        //        {
+        //            videoTrack = media.Tracks?.FirstOrDefault(t => t.Id == selectedVideoTrack);
+        //            media.Dispose();
+        //        }
+        //        return videoTrack == null ? (VideoTrack?)null : ((MediaTrack)videoTrack).Data.Video;
+        //    }
+        //    catch (Exception)
+        //    {
+        //        return null;
+        //    }
+        //}
 
         #region Events
 
