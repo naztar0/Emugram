@@ -194,6 +194,17 @@ namespace Telegram.Controls
                 case MessageSticker stickerMessage:
                     constraint = stickerMessage.Sticker;
                     break;
+                case MessageAnimatedEmoji animatedEmojiMessage:
+                    if (animatedEmojiMessage.AnimatedEmoji.Sticker != null)
+                    {
+                        constraint = animatedEmojiMessage.AnimatedEmoji.Sticker;
+                    }
+                    else
+                    {
+                        width = animatedEmojiMessage.AnimatedEmoji.StickerWidth;
+                        height = animatedEmojiMessage.AnimatedEmoji.StickerHeight;
+                    }
+                    break;
                 case MessageText textMessage:
                     switch (textMessage?.LinkPreview?.Type)
                     {

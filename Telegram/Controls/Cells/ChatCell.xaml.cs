@@ -1672,7 +1672,7 @@ namespace Telegram.Controls.Cells
                     }
                     else if (message.ImportInfo != null)
                     {
-                        return string.Format(format, message.ImportInfo);
+                        return string.Format(format, message.ImportInfo.SenderName);
                     }
                 }
 

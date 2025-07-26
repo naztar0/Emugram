@@ -67,6 +67,15 @@
                                VerticalAlignment="Top"
                                Grid.Row="1"
                                Grid.Column="1" />
+
+                    <controls:GlyphButton Content="&#xEACA;"
+                                          Click="{x:Bind ViewModel.ShareUsername}"
+                                          Foreground="{ThemeResource SystemColorControlAccentBrush}"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,0,0"
+                                          CornerRadius="20"
+                                          Grid.RowSpan="2"
+                                          Grid.Column="2" />
                 </Grid>
 
                 <Rectangle Fill="{ThemeResource NavigationViewItemSeparatorForeground}"
@@ -141,8 +150,8 @@
                                                            Height="16"
                                                            Fill="{ThemeResource NavigationViewSelectionIndicatorForeground}"
                                                            Opacity="0"
-                                                           RadiusX="3"
-                                                           RadiusY="3" />
+                                                           RadiusX="1.5"
+                                                           RadiusY="1.5" />
                                             </Grid>
                                         </Grid>
                                     </ControlTemplate>

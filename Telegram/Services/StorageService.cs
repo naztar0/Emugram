@@ -314,6 +314,10 @@ namespace Telegram.Services
                 {
                     Future.Remove(Future.DownloadFolder);
                 }
+                else if (Extensions.IsRelativePath(ApplicationData.Current.LocalFolder.Path, folder.Path, out _))
+                {
+                    Future.Remove(Future.DownloadFolder);
+                }
                 else
                 {
                     Future.AddOrReplace(Future.DownloadFolder, folder);

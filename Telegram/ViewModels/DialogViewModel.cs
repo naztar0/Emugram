@@ -1947,10 +1947,6 @@ namespace Telegram.ViewModels
                     message.GeneratedContent = null;
                 }
             }
-            else if (message.Content is MessageAnimatedEmoji animatedEmoji && animatedEmoji.AnimatedEmoji.Sticker != null)
-            {
-                message.GeneratedContent = new MessageSticker(animatedEmoji.AnimatedEmoji.Sticker, false);
-            }
             else
             {
                 message.GeneratedContent = null;
@@ -2149,6 +2145,11 @@ namespace Telegram.ViewModels
                     {
                         return;
                     }
+
+                    if (ClientService.TryGetChat(SavedMessagesTopic.Type, out Chat savedMessagesChat))
+                    {
+                        ClientService.LoadFullInfo(savedMessagesChat);
+                    }
                 }
                 else if (chatMessageTopic.MessageTopic is MessageTopicForum forum)
                 {
@@ -2196,6 +2197,15 @@ namespace Telegram.ViewModels
                     {
                         DirectMessagesChatTopic = await ClientService.SendAsync(new GetDirectMessagesChatTopic(chatMessageTopic.ChatId, directMessagesChat.DirectMessagesChatTopicId)) as DirectMessagesChatTopic;
                         Topic = new MessageTopicDirectMessages(DirectMessagesChatTopic.Id);
+                    }
+
+                    if (ClientService.TryGetChat(DirectMessagesChatTopic.SenderId, out Chat directMessagesChatChat))
+                    {
+                        ClientService.LoadFullInfo(directMessagesChatChat);
+                    }
+                    else if (ClientService.TryGetUser(DirectMessagesChatTopic.SenderId, out User directMessagesChatUser))
+                    {
+                        ClientService.Send(new GetUserFullInfo(directMessagesChatUser.Id));
                     }
                 }
             }

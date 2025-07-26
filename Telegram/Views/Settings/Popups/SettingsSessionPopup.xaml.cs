@@ -45,7 +45,7 @@ namespace Telegram.Views.Settings.Popups
                 ? Strings.Online
                 : Formatter.DateAt(session.LastActiveDate);
 
-            Application.Badge = string.Format("{0} {1}", session.ApplicationName, session.ApplicationVersion);
+            Application.Content = string.Format("{0} {1}", session.ApplicationName, session.ApplicationVersion);
 
             static void Update(BadgeButton button, string value)
             {
@@ -55,7 +55,7 @@ namespace Telegram.Views.Settings.Popups
                 }
                 else
                 {
-                    button.Badge = value;
+                    button.Content = value;
                 }
             }
 

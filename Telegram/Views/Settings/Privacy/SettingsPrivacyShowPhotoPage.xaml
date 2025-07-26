@@ -16,9 +16,10 @@
     </Page.Transitions>
 
     <local:HostedPage.Action>
-        <Button Content="{CustomResource Save}"
-                Click="{x:Bind ViewModel.Save}"
-                Style="{StaticResource AccentButtonStyle}" />
+        <Button Content="{CustomResource Done}"
+                Click="{x:Bind ViewModel.Continue}"
+                Style="{StaticResource AccentButtonStyle}"
+                Visibility="{x:Bind ViewModel.HasChanged, Mode=OneWay}" />
     </local:HostedPage.Action>
 
     <Grid Background="{ThemeResource SettingsPageBackground}">

@@ -9,7 +9,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 //
 //*********************************************************
-
 // The objects defined here demonstrate how to make sure each of the views created remains alive as long as 
 // the app needs them, but only when they're being used by the app or the user. Many of the scenarios contained in this
 // sample use these functions to keep track of the views available and ensure that the view is not closed while
@@ -25,7 +24,6 @@
 // Each view lives on its own thread, so concurrency control is necessary. Also, as you'll see in the sample,
 // certain objects may be bound to UI on given threads. Properties of those objects should only be updated
 // on that UI thread.
-
 using System;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;

@@ -4,6 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using Telegram.Common;
 
 namespace Telegram.Services.Settings
 {
@@ -140,13 +141,6 @@ namespace Telegram.Services.Settings
             set => AddOrUpdateValue(ref _disablePackageManager, "DisablePackageManager", value);
         }
 
-        private bool? _sendLargePhotos;
-        public bool SendLargePhotos
-        {
-            get => _sendLargePhotos ??= GetValueOrDefault("SendLargePhotos", false);
-            set => AddOrUpdateValue(ref _sendLargePhotos, "SendLargePhotos", value);
-        }
-
         private bool? _useSpeexResampler;
         public bool UseSpeexResampler
         {
@@ -192,7 +186,7 @@ namespace Telegram.Services.Settings
         private bool? _savedMessagesDebug;
         public bool SavedMessagesDebug
         {
-            get => _savedMessagesDebug ??= GetValueOrDefault("SavedMessagesDebug", Constants.DEBUG);
+            get => _savedMessagesDebug ??= GetValueOrDefault("SavedMessagesDebug", ApiInfo.IsPackagedRelease);
             set => AddOrUpdateValue(ref _savedMessagesDebug, "SavedMessagesDebug", value);
         }
 
@@ -201,6 +195,27 @@ namespace Telegram.Services.Settings
         {
             get => _deleteFilesDebug ??= GetValueOrDefault("DeleteFilesDebug", Constants.DEBUG);
             set => AddOrUpdateValue(ref _deleteFilesDebug, "DeleteFilesDebug", value);
+        }
+
+        private bool? _mediaServerDebug;
+        public bool MediaServerDebug
+        {
+            get => _mediaServerDebug ??= GetValueOrDefault("MediaServerDebug", ApiInfo.IsPackagedRelease);
+            set => AddOrUpdateValue(ref _mediaServerDebug, "MediaServerDebug", value);
+        }
+
+        private bool? _albumPreloadDebug;
+        public bool AlbumPreloadDebug
+        {
+            get => _albumPreloadDebug ??= GetValueOrDefault("AlbumPreloadDebug", ApiInfo.IsPackagedRelease);
+            set => AddOrUpdateValue(ref _albumPreloadDebug, "AlbumPreloadDebug", value);
+        }
+
+        private bool? _videoPreloadDebug;
+        public bool VideoPreloadDebug
+        {
+            get => _videoPreloadDebug ??= GetValueOrDefault("VideoPreloadDebug", ApiInfo.IsPackagedRelease);
+            set => AddOrUpdateValue(ref _videoPreloadDebug, "VideoPreloadDebug", value);
         }
 
         public bool IsLastErrorDiskFull { get; set; }

@@ -286,12 +286,13 @@
                                              Foreground="{ThemeResource MessageHeaderForegroundBrush}"
                                              HorizontalAlignment="Stretch"
                                              HorizontalContentAlignment="Stretch"
+                                             BorderThickness="0"
                                              Padding="0"
                                              Grid.Column="1"
                                              Grid.Row="2">
                                 <Grid BorderBrush="{ThemeResource TelegramSeparatorMediumBrush}"
                                       BorderThickness="0,1,0,0"
-                                      Padding="10,4,10,4">
+                                      Padding="10,4,10,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition />

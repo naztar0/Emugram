@@ -1345,7 +1345,7 @@ namespace Telegram.Common
             var first = query.Split('?');
             if (first.Length > 1)
             {
-                query = first.Last();
+                query = first[^1];
             }
 
             var queryDict = new Dictionary<string, string>();
@@ -1623,6 +1623,8 @@ namespace Telegram.Common
 
             return new BitmapImage(ToLocal(path))
             {
+                // TODO: experiment
+                //CreateOptions = BitmapCreateOptions.IgnoreImageCache,
                 DecodePixelWidth = width,
                 DecodePixelHeight = height,
                 DecodePixelType = width > 0 || height > 0

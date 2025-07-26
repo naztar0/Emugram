@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Telegram.Common;
 using Telegram.Controls;
@@ -28,16 +29,40 @@ namespace Telegram.ViewModels.Settings
     {
         private readonly UserPrivacySetting _inputKey;
 
+        private UserPrivacySettingRules _cached;
+
         public SettingsPrivacyViewModelBase(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, UserPrivacySetting inputKey)
             : base(clientService, settingsService, aggregator)
         {
             _inputKey = inputKey;
         }
 
-        protected override Task OnNavigatedToAsync(object parameter, NavigationMode mode, NavigationState state)
+        protected override async Task OnNavigatedToAsync(object parameter, NavigationMode mode, NavigationState state)
         {
-            UpdatePrivacy();
-            return Task.CompletedTask;
+            var response = await ClientService.SendAsync(new GetUserPrivacySettingRules(_inputKey));
+            if (response is UserPrivacySettingRules rules)
+            {
+                UpdatePrivacyImpl(rules);
+            }
+        }
+
+        public override async void NavigatingFrom(NavigatingEventArgs args)
+        {
+            if (!_completed && HasChanged)
+            {
+                args.Cancel = true;
+
+                var confirm = await ShowPopupAsync(Strings.PrivacySettingsChangedAlert, Strings.UnsavedChanges, Strings.ApplyTheme, Strings.PassportDiscard);
+                if (confirm == ContentDialogResult.Primary)
+                {
+                    Continue();
+                }
+                else if (confirm == ContentDialogResult.Secondary)
+                {
+                    _completed = true;
+                    NavigationService.GoBack();
+                }
+            }
         }
 
         public override void Subscribe()
@@ -51,17 +76,6 @@ namespace Telegram.ViewModels.Settings
             {
                 UpdatePrivacyImpl(update.Rules);
             }
-        }
-
-        private void UpdatePrivacy()
-        {
-            ClientService.Send(new GetUserPrivacySettingRules(_inputKey), result =>
-            {
-                if (result is UserPrivacySettingRules rules)
-                {
-                    UpdatePrivacyImpl(rules);
-                }
-            });
         }
 
         private void UpdatePrivacyImpl(UserPrivacySettingRules rules)
@@ -208,6 +222,8 @@ namespace Telegram.ViewModels.Settings
                 badge = string.Format("{0} ({1})", badge, string.Join(", ", list));
             }
 
+            _cached = rules;
+
             _restrictedUsers = restrictedUsers ?? new UserPrivacySettingRuleRestrictUsers(Array.Empty<long>());
             _restrictedChatMembers = restrictedChatMembers ?? new UserPrivacySettingRuleRestrictChatMembers(Array.Empty<long>());
 
@@ -261,14 +277,14 @@ namespace Telegram.ViewModels.Settings
         public PrivacyValue SelectedItem
         {
             get => _selectedItem;
-            set => Set(ref _selectedItem, value);
+            set => Invalidate(ref _selectedItem, value);
         }
 
         private string _allowedBadge;
         public string AllowedBadge
         {
             get => _allowedBadge;
-            set => Set(ref _allowedBadge, value);
+            set => Invalidate(ref _allowedBadge, value);
         }
 
         private bool _allowedPremium;
@@ -283,13 +299,29 @@ namespace Telegram.ViewModels.Settings
         public string RestrictedBadge
         {
             get => _restrictedBadge;
-            set => Set(ref _restrictedBadge, value);
+            set => Invalidate(ref _restrictedBadge, value);
         }
 
         private bool _restrictedBots;
 
         private UserPrivacySettingRuleRestrictUsers _restrictedUsers;
         private UserPrivacySettingRuleRestrictChatMembers _restrictedChatMembers;
+
+
+
+        protected bool _completed;
+        public virtual bool HasChanged => _cached != null && !_cached.AreTheSame(GetSettings());
+
+        protected bool Invalidate<T>(ref T storage, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (Set(ref storage, value, propertyName))
+            {
+                RaisePropertyChanged(nameof(HasChanged));
+                return true;
+            }
+
+            return false;
+        }
 
         public async void Always()
         {
@@ -334,7 +366,8 @@ namespace Telegram.ViewModels.Settings
                     Title = Strings.PrivacyPremium,
                     SelectionStroke = BootStrapper.Current.Resources["ContentDialogBackground"] as SolidColorBrush,
                     Stroke = BootStrapper.Current.Resources["ChatLastMessageStateBrush"] as SolidColorBrush,
-                    Padding = new Thickness(12, 6, 12, 6)
+                    Padding = new Thickness(12, 6, 12, 6),
+                    CornerRadius = new CornerRadius(4)
                 };
 
                 allowedPremium = _allowedPremium;
@@ -345,8 +378,9 @@ namespace Telegram.ViewModels.Settings
                     Style = BootStrapper.Current.Resources["ListEmptyButtonStyle"] as Style,
                     HorizontalContentAlignment = HorizontalAlignment.Stretch,
                     HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Padding = new Thickness(0),
                     Margin = new Thickness(12, 0, 12, 0),
+                    Padding = new Thickness(0),
+                    CornerRadius = new CornerRadius(4),
                     Background = new SolidColorBrush(Colors.Transparent),
                     Content = cell
                 };
@@ -368,7 +402,8 @@ namespace Telegram.ViewModels.Settings
                     Title = Strings.PrivacyMiniapps,
                     SelectionStroke = BootStrapper.Current.Resources["ContentDialogBackground"] as SolidColorBrush,
                     Stroke = BootStrapper.Current.Resources["ChatLastMessageStateBrush"] as SolidColorBrush,
-                    Padding = new Thickness(12, 6, 12, 6)
+                    Padding = new Thickness(12, 6, 12, 6),
+                    CornerRadius = new CornerRadius(4)
                 };
 
                 allowedBots = _allowedBots;
@@ -379,8 +414,9 @@ namespace Telegram.ViewModels.Settings
                     Style = BootStrapper.Current.Resources["ListEmptyButtonStyle"] as Style,
                     HorizontalContentAlignment = HorizontalAlignment.Stretch,
                     HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Padding = new Thickness(0),
                     Margin = new Thickness(12, 0, 12, 0),
+                    Padding = new Thickness(0),
+                    CornerRadius = new CornerRadius(4),
                     Background = new SolidColorBrush(Colors.Transparent),
                     Content = cell
                 };
@@ -483,7 +519,8 @@ namespace Telegram.ViewModels.Settings
                     Title = Strings.PrivacyMiniapps,
                     SelectionStroke = BootStrapper.Current.Resources["ContentDialogBackground"] as SolidColorBrush,
                     Stroke = BootStrapper.Current.Resources["ChatLastMessageStateBrush"] as SolidColorBrush,
-                    Padding = new Thickness(12, 6, 12, 6)
+                    Padding = new Thickness(12, 6, 12, 6),
+                    CornerRadius = new CornerRadius(4)
                 };
 
                 restrictedBots = _restrictedBots;
@@ -494,8 +531,9 @@ namespace Telegram.ViewModels.Settings
                     Style = BootStrapper.Current.Resources["ListEmptyButtonStyle"] as Style,
                     HorizontalContentAlignment = HorizontalAlignment.Stretch,
                     HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Padding = new Thickness(0),
                     Margin = new Thickness(12, 0, 12, 0),
+                    Padding = new Thickness(0),
+                    CornerRadius = new CornerRadius(4),
                     Background = new SolidColorBrush(Colors.Transparent),
                     Content = cell
                 };
@@ -552,8 +590,10 @@ namespace Telegram.ViewModels.Settings
             RestrictedBadge = GetBadge(_restrictedUsers.UserIds, _restrictedChatMembers.ChatIds, false, _restrictedBots);
         }
 
-        public virtual async void Save()
+        public virtual async void Continue()
         {
+            _completed = true;
+
             var response = await SendAsync();
             if (response is Ok)
             {
@@ -566,6 +606,11 @@ namespace Telegram.ViewModels.Settings
         }
 
         public Task<Object> SendAsync()
+        {
+            return ClientService.SendAsync(new SetUserPrivacySettingRules(_inputKey, GetSettings()));
+        }
+
+        private UserPrivacySettingRules GetSettings()
         {
             var rules = new List<UserPrivacySettingRule>();
 
@@ -609,11 +654,14 @@ namespace Telegram.ViewModels.Settings
                     rules.Add(new UserPrivacySettingRuleAllowContacts());
                     break;
                 case PrivacyValue.DisallowAll:
-                    rules.Add(new UserPrivacySettingRuleRestrictAll());
+                    if (rules.Empty())
+                    {
+                        rules.Add(new UserPrivacySettingRuleRestrictAll());
+                    }
                     break;
             }
 
-            return ClientService.SendAsync(new SetUserPrivacySettingRules(_inputKey, new UserPrivacySettingRules(rules)));
+            return new UserPrivacySettingRules(rules);
         }
 
         private string GetBadge(IList<long> userIds, IList<long> chatIds, bool allowedPremium, bool allowedBots)

@@ -72,7 +72,7 @@ namespace Telegram.Views.Chats
             }
             else
             {
-                flyout.CreateFlyoutItem(ViewModel.CopyLink, inviteLink, Strings.CopyLink, Icons.DocumentCopy);
+                flyout.CreateFlyoutItem(ViewModel.CopyLink, inviteLink, Strings.CopyLink, Icons.Copy);
                 flyout.CreateFlyoutItem(ViewModel.ShareLink, inviteLink, Strings.ShareLink, Icons.Share);
                 flyout.CreateFlyoutItem(ViewModel.EditLink, inviteLink, Strings.EditLink, Icons.Edit);
                 flyout.CreateFlyoutItem(ViewModel.RevokeLink, inviteLink, Strings.RevokeLink, Icons.Delete, destructive: true);

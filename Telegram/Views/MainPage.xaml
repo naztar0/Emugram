@@ -91,6 +91,16 @@
                               Fill="#FFFFFF" />
                     </Border>
 
+                    <controls:AnimatedImage x:Name="LogoEmojiParticles"
+                                            IsViewportAware="True"
+                                            FrameSize="24,24"
+                                            DecodeFrameType="Logical"
+                                            Stretch="UniformToFill"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Width="24"
+                                            Height="24" />
+
                     <controls:CustomEmojiIcon x:Name="LogoEmoji"
                                               HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
@@ -236,8 +246,8 @@
                                                        Height="24"
                                                        Fill="{ThemeResource NavigationViewSelectionIndicatorForeground}"
                                                        Opacity="0"
-                                                       RadiusX="3"
-                                                       RadiusY="3" />
+                                                       RadiusX="1.5"
+                                                       RadiusY="1.5" />
                                         </Grid>
                                     </Grid>
                                 </ControlTemplate>

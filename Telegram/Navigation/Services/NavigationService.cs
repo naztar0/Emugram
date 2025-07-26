@@ -76,7 +76,7 @@ namespace Telegram.Navigation.Services
         ToastPopup ShowToast(FormattedText text, ElementTheme requestedTheme = ElementTheme.Dark, TimeSpan? dismissAfter = null);
         ToastPopup ShowToast(FormattedText text, ToastPopupIcon icon, ElementTheme requestedTheme = ElementTheme.Dark, TimeSpan? dismissAfter = null);
 
-        void ShowGallery(GalleryViewModelBase parameter, FrameworkElement closing = null, long timestamp = 0);
+        void ShowGallery(GalleryViewModelBase parameter, FrameworkElement closing = null, double timestamp = 0);
 
         object CurrentPageParam { get; }
         Type CurrentPageType { get; }
@@ -578,7 +578,7 @@ namespace Telegram.Navigation.Services
             return ToastPopup.Show(XamlRoot, text, icon, requestedTheme, dismissAfter);
         }
 
-        public void ShowGallery(GalleryViewModelBase parameter, FrameworkElement closing = null, long timestamp = 0)
+        public void ShowGallery(GalleryViewModelBase parameter, FrameworkElement closing = null, double timestamp = 0)
         {
             parameter.NavigationService = this;
             _ = GalleryWindow.ShowAsync(XamlRoot, parameter, closing, timestamp);

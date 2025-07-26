@@ -4,7 +4,10 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using Microsoft.Graphics.Canvas.Geometry;
 using System;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Text;
 using Telegram.Common;
 using Telegram.Converters;
@@ -17,9 +20,11 @@ using Telegram.ViewModels.Stories;
 using Telegram.Views;
 using Windows.Foundation;
 using Windows.UI;
+using Windows.UI.Composition;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Documents;
+using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Media;
 
 namespace Telegram.Controls.Cells
@@ -1201,5 +1206,96 @@ namespace Telegram.Controls.Cells
 
             SetRowSpan(TitlePanel, 2);
         }
+
+
+
+        private bool _skeletonCollapsed = true;
+
+        public void ShowHideSkeleton(bool show)
+        {
+            if (_skeletonCollapsed && show)
+            {
+                _skeletonCollapsed = false;
+                ShowSkeleton();
+            }
+            else if (_skeletonCollapsed is false && !show)
+            {
+                _skeletonCollapsed = true;
+
+                var visual = ElementCompositionPreview.GetElementChildVisual(this);
+                var animation = visual.Compositor.CreateScalarKeyFrameAnimation();
+                animation.InsertKeyFrame(0, 1);
+                animation.InsertKeyFrame(1, 0);
+
+                visual.StartAnimation("Opacity", animation);
+            }
+        }
+
+        private void ShowSkeleton()
+        {
+            var size = ActualSize;
+            var itemHeight = 6 + 36 + 6;
+
+            var rows = Math.Min(10, Math.Ceiling(size.Y / itemHeight));
+            var shapes = new List<CanvasGeometry>();
+
+            var maxWidth = (int)Math.Clamp(size.X - 32 - 12 - 12 - 48 - 12, 80, 280);
+            var random = new Random();
+
+            shapes.Add(CanvasGeometry.CreateEllipse(null, 12 + 18, 6 + 18, 18, 18));
+            shapes.Add(CanvasGeometry.CreateRoundedRectangle(null, 12 + 36 + 8, 6, random.Next(80, maxWidth), 18, 4, 4));
+            shapes.Add(CanvasGeometry.CreateRoundedRectangle(null, 12 + 36 + 8, 6 + 18 + 4, random.Next(80, maxWidth), 14, 4, 4));
+
+            var compositor = BootStrapper.Current.Compositor;
+
+            var geometries = shapes.ToArray();
+            var path = compositor.CreatePathGeometry(new CompositionPath(CanvasGeometry.CreateGroup(null, geometries, CanvasFilledRegionDetermination.Winding)));
+
+            var transparent = Color.FromArgb(0x00, 0xFF, 0xFF, 0xFF);
+            var foregroundColor = Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF);
+            var backgroundColor = Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF);
+
+            var lookup = ThemeService.GetLookup(ActualTheme);
+            if (lookup.TryGet("MenuFlyoutItemBackgroundPointerOver", out Color color))
+            {
+                foregroundColor = color;
+                backgroundColor = color;
+            }
+
+            var gradient = compositor.CreateLinearGradientBrush();
+            gradient.StartPoint = new Vector2(0, 0);
+            gradient.EndPoint = new Vector2(1, 0);
+            gradient.ColorStops.Add(compositor.CreateColorGradientStop(0.0f, transparent));
+            gradient.ColorStops.Add(compositor.CreateColorGradientStop(0.5f, foregroundColor));
+            gradient.ColorStops.Add(compositor.CreateColorGradientStop(1.0f, transparent));
+
+            var background = compositor.CreateRectangleGeometry();
+            background.Size = size;
+            var backgroundShape = compositor.CreateSpriteShape(background);
+            backgroundShape.FillBrush = compositor.CreateColorBrush(backgroundColor);
+
+            var foreground = compositor.CreateRectangleGeometry();
+            foreground.Size = size;
+            var foregroundShape = compositor.CreateSpriteShape(foreground);
+            foregroundShape.FillBrush = gradient;
+
+            var clip = compositor.CreateGeometricClip(path);
+            var visual = compositor.CreateShapeVisual();
+            visual.Clip = clip;
+            visual.Shapes.Add(backgroundShape);
+            visual.Shapes.Add(foregroundShape);
+            visual.RelativeSizeAdjustment = Vector2.One;
+
+            var animation = compositor.CreateVector2KeyFrameAnimation();
+            animation.InsertKeyFrame(0, new Vector2(-size.X, 0));
+            animation.InsertKeyFrame(1, new Vector2(size.X, 0));
+            animation.IterationBehavior = AnimationIterationBehavior.Forever;
+            animation.Duration = TimeSpan.FromSeconds(1);
+
+            foregroundShape.StartAnimation("Offset", animation);
+
+            ElementCompositionPreview.SetElementChildVisual(this, visual);
+        }
+
     }
 }

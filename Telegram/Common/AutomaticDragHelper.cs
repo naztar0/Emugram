@@ -1,6 +1,13 @@
-﻿using System;
+//
+// Copyright Fela Ameghino 2015-2025
+//
+// Distributed under the GNU General Public License v3.0. (See accompanying
+// file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
+//
+using System;
 using System.Runtime.InteropServices;
 using Windows.Devices.Input;
+using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Input;
 
@@ -33,11 +40,16 @@ namespace Telegram.Common
         private Point m_lastMouseLeftButtonDownPosition;
 
         private bool m_isLeftButtonPressed;
+        private bool m_isHoldingCompleted;
+
+        private PointerPoint m_spPointerPoint;
+        private Pointer m_spPointer;
 
         private PointerEventHandler m_dragDropPointerPressedToken;
         private PointerEventHandler m_dragDropPointerMovedToken;
         private PointerEventHandler m_dragDropPointerReleasedToken;
         private PointerEventHandler m_dragDropPointerCaptureLostToken;
+        private HoldingEventHandler m_dragDropHoldingToken;
 
         public AutomaticDragHelper(UIElement pUIElement, bool shouldAddInputHandlers)
         {
@@ -136,6 +148,10 @@ namespace Telegram.Common
 
         private void HandlePointerPressedEventArgs(object sender, PointerRoutedEventArgs args)
         {
+            m_spPointerPoint = null;
+            m_spPointer = null;
+            m_isHoldingCompleted = false;
+
             var spPointer = args.Pointer;
             var pointerDeviceType = spPointer.PointerDeviceType;
 
@@ -157,6 +173,20 @@ namespace Telegram.Common
 
                     RegisterDragPointerEvents();
                 }
+            }
+            else
+            {
+                m_spPointerPoint = spPointerPoint;
+                m_spPointer = spPointer;
+
+                if (m_shouldAddInputHandlers && m_dragDropHoldingToken == null)
+                {
+                    // Touch input occurs, subscribe to holding
+                    m_dragDropHoldingToken = new HoldingEventHandler(HandleHoldingEventArgs);
+                    m_pOwnerNoRef.AddHandler(UIElement.HoldingEvent, m_dragDropHoldingToken, true);
+                }
+
+                RegisterDragPointerEvents();
             }
         }
 
@@ -210,7 +240,6 @@ namespace Telegram.Common
             }
         }
 
-
         private void HandlePointerCaptureLostEventArgs(object sender, PointerRoutedEventArgs args)
         {
             var spPointer = args.Pointer;
@@ -245,6 +274,44 @@ namespace Telegram.Common
                 m_pOwnerNoRef.RemoveHandler(UIElement.PointerCaptureLostEvent, m_dragDropPointerCaptureLostToken);
                 m_dragDropPointerCaptureLostToken = null;
             }
+
+            if (m_dragDropHoldingToken != null)
+            {
+                m_pOwnerNoRef.RemoveHandler(UIElement.HoldingEvent, m_dragDropHoldingToken);
+                m_dragDropHoldingToken = null;
+            }
+        }
+
+        void HandleHoldingEventArgs(object sender, HoldingRoutedEventArgs pArgs)
+        {
+            PointerDeviceType pointerDeviceType = pArgs.PointerDeviceType;
+
+            if (pointerDeviceType == PointerDeviceType.Touch)
+            {
+                HoldingState holdingState = pArgs.HoldingState;
+
+                if (holdingState == HoldingState.Started)
+                {
+                    m_isHoldingCompleted = true;
+                }
+            }
+        }
+
+        void HandleDirectManipulationDraggingStarted()
+        {
+            //ASSERT(m_spPointerPoint && m_spPointer);
+
+            //// Release cross-slide viewport now
+            //IFC_RETURN(m_pOwnerNoRef->DirectManipulationCrossSlideContainerCompleted());
+            //if (m_isHoldingCompleted)
+            //{
+            //    IFC_RETURN(m_pOwnerNoRef->OnTouchDragStarted(m_spPointerPoint.Get(), m_spPointer.Get()));
+            //}
+
+            //m_spPointerPoint = nullptr;
+            //m_spPointer = nullptr;
+
+            //return S_OK;
         }
     }
 }

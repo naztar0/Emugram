@@ -118,7 +118,7 @@ namespace Telegram.Views.Profile
                 flyout.CreateFlyoutItem(MessageSelect_Loaded, ViewModel.SelectMessage, message, Strings.Select, Icons.CheckmarkCircle);
                 flyout.CreateFlyoutItem(MessageSaveMedia_Loaded, ViewModel.CopyMessagePath, message, Strings.CopyAsPath, Icons.CopyAsPath);
                 flyout.CreateFlyoutItem(MessageSaveMedia_Loaded, ViewModel.SaveMessageMedia, message, Strings.SaveAs, Icons.SaveAs);
-                flyout.CreateFlyoutItem(MessageOpenMedia_Loaded, ViewModel.OpenMessageWith, message, Strings.OpenWith, Icons.OpenIn);
+                flyout.CreateFlyoutItem(MessageOpenMedia_Loaded, ViewModel.OpenMessageWith, message, Strings.OpenWith, Icons.OpenWith);
                 flyout.CreateFlyoutItem(MessageOpenFolder_Loaded, ViewModel.OpenMessageFolder, message, Strings.ShowInFolder, Icons.FolderOpen);
             }
 
@@ -211,11 +211,11 @@ namespace Telegram.Views.Profile
             {
                 if (sender is ListView)
                 {
-                    args.ItemContainer = new TableAccessibleChatListViewItem(ViewModel?.ClientService);
+                    args.ItemContainer = new TableAccessibleChatListViewItem(sender);
                 }
                 else
                 {
-                    args.ItemContainer = new ChatGridViewItem(ViewModel?.ClientService);
+                    args.ItemContainer = new ChatGridViewItem(sender);
                 }
 
                 args.ItemContainer.Style = sender.ItemContainerStyle;

@@ -21,7 +21,6 @@
 // <credits>This class was developed by Josh Smith (http://joshsmithonwpf.wordpress.com) and
 // slightly modified with his permission.</credits>
 // ****************************************************************************
-
 using System;
 using System.Diagnostics;
 using System.Windows.Input;

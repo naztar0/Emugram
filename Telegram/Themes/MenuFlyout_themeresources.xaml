@@ -1798,7 +1798,7 @@
                                                      Maximum="{TemplateBinding Maximum}"
                                                      LargeChange="{TemplateBinding LargeChange}"
                                                      StepFrequency="{TemplateBinding StepFrequency}"
-                                                     Width="164">
+                                                     MinWidth="164">
                         <VisualStateManager.CustomVisualStateManager>
                             <local:MenuFlyoutSliderStateManager />
                         </VisualStateManager.CustomVisualStateManager>

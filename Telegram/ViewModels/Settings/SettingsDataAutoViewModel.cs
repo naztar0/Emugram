@@ -110,7 +110,16 @@ namespace Telegram.ViewModels.Settings
             set => Set(ref _limit, value);
         }
 
+        private bool _preload;
+        public bool Preload
+        {
+            get => _preload;
+            set => Set(ref _preload, value);
+        }
+
         public bool IsLimitSupported => _type != AutoDownloadType.Photos;
+
+        public bool IsPreloadSupported => _type == AutoDownloadType.Videos && SettingsService.Current.Diagnostics.VideoPreloadDebug;
 
         public void Save()
         {
@@ -140,7 +149,7 @@ namespace Telegram.ViewModels.Settings
             }
             else if (_type == AutoDownloadType.Videos)
             {
-                preferences = preferences.UpdateVideosMode(mode, _limit);
+                preferences = preferences.UpdateVideosMode(mode, _limit, _preload);
             }
             else if (_type == AutoDownloadType.Documents)
             {

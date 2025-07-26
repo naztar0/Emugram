@@ -1622,6 +1622,12 @@ All new messages in this chat will be automatically deleted {0} after they were 
   <data name="AutoDownloadPm" xml:space="preserve">
     <value>PM</value>
   </data>
+  <data name="AutoDownloadPreloadVideo" xml:space="preserve">
+    <value>Preload larger videos</value>
+  </data>
+  <data name="AutoDownloadPreloadVideoInfo" xml:space="preserve">
+    <value>Preload the first few seconds (1-2 MB) of videos larger than {0} for instant playback.</value>
+  </data>
   <data name="AutodownloadPrivateChats" xml:space="preserve">
     <value>Private Chats</value>
   </data>
@@ -4531,11 +4537,23 @@ Minimum length is 5 characters.</value>
   <data name="CopyEmojiPreview" xml:space="preserve">
     <value>Copy Emoji</value>
   </data>
+  <data name="CopyHashtag" xml:space="preserve">
+    <value>Copy Hashtag</value>
+  </data>
   <data name="CopyImage" xml:space="preserve">
     <value>Copy Image</value>
   </data>
   <data name="CopyLink" xml:space="preserve">
     <value>Copy Link</value>
+  </data>
+  <data name="CopyMail" xml:space="preserve">
+    <value>Copy E-Mail</value>
+  </data>
+  <data name="CopyNumber" xml:space="preserve">
+    <value>Copy Number</value>
+  </data>
+  <data name="CopySelected" xml:space="preserve">
+    <value>Copy Selected</value>
   </data>
   <data name="CopySelectedMessages" xml:space="preserve">
     <value>Copy Selected as Text</value>
@@ -7445,6 +7463,9 @@ This setting does not affect group chats.</value>
   <data name="HideSenderNames" xml:space="preserve">
     <value>Hide Sender Names</value>
   </data>
+  <data name="HideSendersName" xml:space="preserve">
+    <value>Hide sender’s name</value>
+  </data>
   <data name="HistoryCleared" xml:space="preserve">
     <value>History was cleared</value>
   </data>
@@ -7474,6 +7495,9 @@ This setting does not affect group chats.</value>
   </data>
   <data name="IfInactiveFor" xml:space="preserve">
     <value>If inactive for</value>
+  </data>
+  <data name="ImageCopied" xml:space="preserve">
+    <value>Image copied to clipboard.</value>
   </data>
   <data name="Import" xml:space="preserve">
     <value>Import</value>
@@ -7869,6 +7893,9 @@ Upgrade to **Telegram Premium** to create up to **{1}**.</value>
   </data>
   <data name="LimitReachedPinDialogsPremium" xml:space="preserve">
     <value>Sorry, you can't pin more than {0} chats to the top. Unpin some that are currently pinned.</value>
+  </data>
+  <data name="LimitReachedPinnedTopics" xml:space="preserve">
+    <value>Sorry, you can&apos;t pin more than {0} topics to the top.</value>
   </data>
   <data name="LimitReachedPublicLinks" xml:space="preserve">
     <value>You have reserved too many public links. Try revoking the link from an older group or channel, or subscribe to **Telegram Premium** to double the limit to **{1}** public links.</value>
@@ -9065,6 +9092,9 @@ Stories</value>
   </data>
   <data name="NoWordsRecognized" xml:space="preserve">
     <value>No words recognized.</value>
+  </data>
+  <data name="NumberNotOnTelegram" xml:space="preserve">
+    <value>This number is not on Telegram</value>
   </data>
   <data name="October" xml:space="preserve">
     <value>October</value>
@@ -10321,6 +10351,9 @@ seamlessly and efficiently.</value>
   <data name="PrivacySettings" xml:space="preserve">
     <value>Privacy and Security</value>
   </data>
+  <data name="PrivacySettingsChangedAlert" xml:space="preserve">
+    <value>You have changed some privacy settings. Apply changes?</value>
+  </data>
   <data name="PrivacyTitle" xml:space="preserve">
     <value>Privacy</value>
   </data>
@@ -10385,6 +10418,9 @@ seamlessly and efficiently.</value>
   </data>
   <data name="PrivateStory" xml:space="preserve">
     <value>Private story</value>
+  </data>
+  <data name="ProcessingVideo" xml:space="preserve">
+    <value>Processing...</value>
   </data>
   <data name="ProfileBirthday" xml:space="preserve">
     <value>Date of Birth</value>
@@ -11165,6 +11201,12 @@ The group "**{1}**" will become private.</value>
 
 The channel "**{1}**" will become private.</value>
   </data>
+  <data name="RevokeStreamKey" xml:space="preserve">
+    <value>Revoke Stream Key</value>
+  </data>
+  <data name="RevokeStreamKeyAlert" xml:space="preserve">
+    <value>Are you sure you want to revoke your Stream Key?</value>
+  </data>
   <data name="Saturation" xml:space="preserve">
     <value>Saturation</value>
   </data>
@@ -11650,6 +11692,9 @@ The channel "**{1}**" will become private.</value>
   </data>
   <data name="SharePhoneNumberWith" xml:space="preserve">
     <value>Share my phone number with {0}</value>
+  </data>
+  <data name="ShareQrCode" xml:space="preserve">
+    <value>Share QR Code</value>
   </data>
   <data name="Shares_one" xml:space="preserve">
     <value>{0} share</value>
@@ -13886,6 +13931,9 @@ Anonymously</value>
   <data name="ViewPhotoAction" xml:space="preserve">
     <value>View Photo</value>
   </data>
+  <data name="ViewProfile" xml:space="preserve">
+    <value>View Profile &gt;</value>
+  </data>
   <data name="ViewReplies_one" xml:space="preserve">
     <value>View {0} Reply</value>
   </data>
@@ -13915,6 +13963,15 @@ Anonymously</value>
   </data>
   <data name="ViewWallpaperAction" xml:space="preserve">
     <value>View Wallpaper</value>
+  </data>
+  <data name="VirtualKeyModifiersControl" xml:space="preserve">
+    <value>Ctrl</value>
+  </data>
+  <data name="VirtualKeyModifiersMenu" xml:space="preserve">
+    <value>Alt</value>
+  </data>
+  <data name="VirtualKeyModifiersShift" xml:space="preserve">
+    <value>Shift</value>
   </data>
   <data name="Voice_one" xml:space="preserve">
     <value>{0} voice message</value>

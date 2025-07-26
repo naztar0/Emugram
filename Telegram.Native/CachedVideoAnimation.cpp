@@ -175,14 +175,14 @@ namespace winrt::Telegram::Native::implementation
         m_frameIndex = 0;
     }
 
-    void CachedVideoAnimation::RenderSync(IBuffer bitmap, int32_t& seconds, bool& completed)
+    void CachedVideoAnimation::RenderSync(IBuffer bitmap, double& seconds, bool& completed)
     {
         uint8_t* pixels = bitmap.data();
         bool rendered;
         RenderSync(pixels, seconds, completed, &rendered);
     }
 
-    void CachedVideoAnimation::RenderSync(uint8_t* pixels, int32_t& seconds, bool& completed, bool* rendered)
+    void CachedVideoAnimation::RenderSync(uint8_t* pixels, double& seconds, bool& completed, bool* rendered)
     {
         bool loadedFromCache = false;
         if (rendered)
@@ -337,7 +337,7 @@ namespace winrt::Telegram::Native::implementation
                         pixels = new uint8_t[w * h * 4];
                     }
 
-                    int32_t seconds = 0;
+                    double seconds = 0;
                     bool completed = false;
                     std::vector<uint32_t> offsets;
 

@@ -51,5 +51,17 @@
                    TextAlignment="Center"
                    Margin="0,0,0,8"
                    Grid.Row="2" />
+
+        <controls:AnimatedImage x:Name="Animated"
+                                Width="48"
+                                Height="48"
+                                FrameSize="48,48"
+                                DecodeFrameType="Logical"
+                                AutoPlay="False"
+                                LoopCount="1"
+                                LoopCompleted="Animated_LoopCompleted"
+                                Margin="0,-24,0,8"
+                                Visibility="Visible"
+                                Grid.Row="2" />
     </Grid>
 </UserControl>

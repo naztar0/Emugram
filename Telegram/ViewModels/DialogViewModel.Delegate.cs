@@ -381,7 +381,7 @@ namespace Telegram.ViewModels
             _messageDelegate.OpenUrl(url, untrust, source);
         }
 
-        public async void OpenMedia(MessageViewModel message, FrameworkElement target, int timestamp = 0)
+        public async void OpenMedia(MessageViewModel message, FrameworkElement target, double timestamp = 0)
         {
             if (message.Content is MessageAudio or MessageVoiceNote)
             {
@@ -487,7 +487,7 @@ namespace Telegram.ViewModels
             }
         }
 
-        public void OpenPaidMedia(MessageViewModel message, PaidMedia media, FrameworkElement target, int timestamp = 0)
+        public void OpenPaidMedia(MessageViewModel message, PaidMedia media, FrameworkElement target, double timestamp = 0)
         {
             if (message.Content is MessagePaidAlbum album)
             {

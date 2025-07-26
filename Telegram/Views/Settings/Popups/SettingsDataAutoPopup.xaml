@@ -13,7 +13,8 @@
         <ScrollViewer x:Name="ScrollingHost"
                       VerticalScrollBarVisibility="Auto"
                       VerticalScrollMode="Auto">
-            <StackPanel Spacing="8">
+            <StackPanel Spacing="8"
+                        Padding="0,0,0,8">
                 <TextBlock Text="{x:Bind ViewModel.Header, Mode=OneWay}"
                            Style="{StaticResource BaseTextBlockStyle}" />
 
@@ -32,7 +33,7 @@
                 <StackPanel Visibility="{x:Bind ViewModel.IsLimitSupported, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <TextBlock Text="{CustomResource AutoDownloadMaxFileSize}"
                                Style="{StaticResource BaseTextBlockStyle}"
-                               Margin="0,16,0,0" />
+                               Margin="0,8,0,0" />
 
                     <Slider Value="{x:Bind ConvertLimit(ViewModel.Limit), Mode=TwoWay, BindBack=ConvertLimitBack}"
                             Minimum="0"
@@ -46,8 +47,17 @@
                             Margin="0,8,0,8" />
 
                     <TextBlock Text="{x:Bind ConvertUpTo(ViewModel.Limit), Mode=OneWay}"
+                               Style="{StaticResource InfoCaptionTextBlockStyle}" />
+                </StackPanel>
+
+                <StackPanel Visibility="{x:Bind ViewModel.IsPreloadSupported, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <CheckBox IsChecked="{x:Bind ViewModel.Preload, Mode=TwoWay}"
+                              Content="{CustomResource AutoDownloadPreloadVideo}"
+                              Margin="0,8,0,0" />
+
+                    <TextBlock Text="{x:Bind ConvertPreload(ViewModel.Limit), Mode=OneWay}"
                                Style="{StaticResource InfoCaptionTextBlockStyle}"
-                               Margin="0,0,0,8" />
+                               Margin="0,4,0,0" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

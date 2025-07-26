@@ -11,6 +11,7 @@ using Telegram.Navigation.Services;
 using Telegram.Services;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Delegates;
+using Telegram.Views;
 using Telegram.Views.Popups;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Streams;
@@ -28,7 +29,7 @@ namespace Telegram.ViewModels.Gallery
         public IGalleryDelegate Delegate { get; set; }
 
         public GalleryViewModelBase(IClientService clientService, IStorageService storageService, IEventAggregator aggregator)
-            : base(clientService, null, aggregator)
+            : base(clientService, TypeResolver.Current.Resolve<ISettingsService>(clientService.SessionId), aggregator)
         {
             _storageService = storageService;
             //Aggregator.Subscribe(this);
@@ -233,7 +234,7 @@ namespace Telegram.ViewModels.Gallery
                 var response = await ClientService.SendAsync(new GetMessageProperties(message.ChatId, message.Id));
                 if (response is MessageProperties properties && properties.CanBeForwarded)
                 {
-                    ShowPopup(new ChooseChatsPopup(), new ChooseChatsConfigurationShareMessages(new MessageToShare(message.Message, properties, message.ChatId != ClientService.Options.MyId || message.ForwardInfo != null)), ElementTheme.Dark);
+                    ShowPopup(new ChooseChatsPopup(), new ChooseChatsConfigurationShareMessages(new MessageToShare(message.Message, properties)), ElementTheme.Dark);
                 }
             }
             else

@@ -807,6 +807,17 @@ namespace Telegram.ViewModels
             }
         }
 
+        public void ShareUsername()
+        {
+            var chat = _chat;
+            if (chat == null)
+            {
+                return;
+            }
+
+            ShowPopup(new QrCodePopup(ClientService, NavigationService, Settings, chat));
+        }
+
         public void GiftPremium()
         {
             var chat = _chat;

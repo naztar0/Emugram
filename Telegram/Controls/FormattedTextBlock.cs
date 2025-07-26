@@ -54,18 +54,7 @@ namespace Telegram.Controls
         public object Data { get; }
     }
 
-    public partial class FormattedParagraph
-    {
-        public Paragraph Paragraph { get; }
-
-        public TextParagraphType Type { get; }
-
-        public FormattedParagraph(Paragraph paragraph, TextParagraphType type)
-        {
-            Paragraph = paragraph;
-            Type = type;
-        }
-    }
+    public record FormattedParagraph(Paragraph Paragraph, StyledParagraph Styled);
 
     [ContentProperty(Name = "Blocks")]
     public partial class FormattedTextBlock : Control
@@ -574,7 +563,7 @@ namespace Telegram.Controls
                     temp.FontSize = Theme.Current.CaptionFontSize;
                     partFontSize = Theme.Current.CaptionFontSize;
 
-                    _codeBlocks.Add(new FormattedParagraph(temp, part.Type));
+                    _codeBlocks.Add(new FormattedParagraph(temp, part));
                 }
 
                 for (int j = 0; j < runs.Count; j++)
@@ -635,12 +624,12 @@ namespace Telegram.Controls
 
                                 if (entity.Type is TextEntityTypePreCode preCode && preCode.Language.Length > 0)
                                 {
-                                    _codeBlocks.Add(new FormattedParagraph(temp, part.Type));
+                                    _codeBlocks.Add(new FormattedParagraph(temp, part));
                                     ProcessCodeBlock(direct, inlines, data, preCode.Language);
                                 }
                                 else
                                 {
-                                    _codeBlocks.Add(new FormattedParagraph(temp, part.Type));
+                                    _codeBlocks.Add(new FormattedParagraph(temp, part));
                                 }
                             }
                         }
@@ -986,21 +975,37 @@ namespace Telegram.Controls
         {
             Below.Children.ClearIfNotEmpty();
 
-            foreach (var paragraph in _codeBlocks)
-            {
-                var block = paragraph.Paragraph;
-                var start = block.ContentStart.GetCharacterRect(block.ContentStart.LogicalDirection);
-                var end = block.ContentEnd.GetCharacterRect(block.ContentEnd.LogicalDirection);
+            var fontSize = (AutoFontSize ? Theme.Current.MessageFontSize : TextBlock.FontSize) * BootStrapper.Current.TextScaleFactor;
+            var quoteSize = (AutoFontSize ? Theme.Current.CaptionFontSize : TextBlock.FontSize) * BootStrapper.Current.TextScaleFactor;
 
-                var startY = Math.Round(start.Y);
+            var width = Math.Ceiling(ActualWidth + 1);
+
+            foreach (var block in _codeBlocks)
+            {
+                var paragraph = block.Paragraph;
+                var styled = block.Styled;
+
+                var partial = _text.Text.Substring(styled.Offset, styled.Length);
+                var entities = styled.Entities ?? Array.Empty<TextEntity>();
+
+                var size = styled.Type is TextParagraphTypeQuote
+                    ? quoteSize
+                    : fontSize;
+
+                var rectangles = PlaceholderImageHelper.Foreground.LayoutMetrics(partial, 0, partial.Length, entities, size, width - paragraph.Margin.Left - paragraph.Margin.Right, styled.Direction == TextDirectionality.RightToLeft);
+                var relative = paragraph.ContentStart.GetCharacterRect(paragraph.ContentStart.LogicalDirection);
+                var end = paragraph.ContentEnd.GetCharacterRect(paragraph.ContentEnd.LogicalDirection);
+
+                var startY = Math.Round(relative.Y);
                 var endBottom = Math.Round(end.Bottom);
 
-                if (paragraph.Type is TextParagraphTypeMonospace monospace && monospace.Language.Length > 0)
+                if (styled.Type is TextParagraphTypeMonospace monospace && monospace.Language.Length > 0)
                 {
                     var rect = new BlockCode();
-                    rect.Width = TextBlock.ActualWidth;
+                    rect.Width = rectangles.Width + paragraph.Margin.Left + paragraph.Margin.Right;
                     rect.Height = Math.Max(endBottom - startY + 6 + 22, 0);
                     rect.LanguageName = monospace.Language;
+                    Canvas.SetLeft(rect, rectangles.X);
                     Canvas.SetTop(rect, startY - 2 - 22);
 
                     Below.Children.Add(rect);
@@ -1008,9 +1013,10 @@ namespace Telegram.Controls
                 else
                 {
                     var rect = new BlockQuote();
-                    rect.Width = TextBlock.ActualWidth;
+                    rect.Width = rectangles.Width + paragraph.Margin.Left + paragraph.Margin.Right;
                     rect.Height = Math.Max(endBottom - startY + 6, 0);
-                    rect.Glyph = block.FontSize == Theme.Current.MessageFontSize ? Icons.CodeFilled16 : Icons.QuoteBlockFilled16;
+                    rect.Glyph = paragraph.FontSize == Theme.Current.MessageFontSize ? Icons.CodeFilled16 : Icons.QuoteBlockFilled16;
+                    Canvas.SetLeft(rect, rectangles.X);
                     Canvas.SetTop(rect, startY - 2);
 
                     Below.Children.Add(rect);

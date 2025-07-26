@@ -6,10 +6,12 @@
 //
 using Telegram.Common;
 using Telegram.Controls;
+using Telegram.Controls.Media;
 using Telegram.Services;
 using Telegram.Td.Api;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 
 namespace Telegram.Views.Calls.Popups
 {
@@ -25,8 +27,6 @@ namespace Telegram.Views.Calls.Popups
             _clientService = clientService;
             _chatId = chatId;
 
-            Title = Strings.Streaming;
-
             if (start)
             {
                 PrimaryButtonText = Strings.VoipChannelStartStreaming;
@@ -34,7 +34,8 @@ namespace Telegram.Views.Calls.Popups
             }
             else
             {
-                PrimaryButtonText = Strings.OK;
+                IsDismissButtonVisible = true;
+                Description.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -72,6 +73,31 @@ namespace Telegram.Views.Calls.Popups
         private void CopyKey_Click(object sender, RoutedEventArgs e)
         {
             MessageHelper.CopyText(XamlRoot, StreamKeyField.Text);
+        }
+
+        private void More_ContextRequested(object sender, RoutedEventArgs e)
+        {
+            var flyout = new MenuFlyout();
+
+            flyout.CreateFlyoutItem(Revoke, Strings.RevokeStreamKey, Icons.DismissCircle);
+            flyout.ShowAt(sender as DependencyObject, FlyoutPlacementMode.BottomEdgeAlignedRight);
+
+        }
+
+        private async void Revoke()
+        {
+            var confirm = await MessagePopup.ShowAsync(XamlRoot, target: null, Strings.RevokeStreamKeyAlert, Strings.RevokeStreamKey, Strings.RevokeButton, Strings.Cancel, destructive: true, requestedTheme: ElementTheme.Dark);
+            if (confirm == ContentDialogResult.Primary)
+            {
+                StreamKeyField.Text = string.Empty;
+
+                var response = await _clientService.SendAsync(new ReplaceVideoChatRtmpUrl(_chatId));
+                if (response is RtmpUrl rtmp)
+                {
+                    ServerField.Text = rtmp.Url;
+                    StreamKeyField.Text = rtmp.StreamKey;
+                }
+            }
         }
     }
 }
