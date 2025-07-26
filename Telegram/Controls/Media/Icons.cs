@@ -459,6 +459,9 @@ namespace Telegram.Controls.Media
 
         public const string ReactionFilled24 = "\uE9F1";
 
+        public const string VoiceNote = "\uE9E4";
+        public const string VideoNote = "\uE9E0";
+
         public static readonly ChatFolderIcon2[] Folders = new ChatFolderIcon2[]
         {
             ChatFolderIcon2.Cat,

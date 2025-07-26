@@ -7,6 +7,7 @@
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Common;
@@ -22,6 +23,7 @@ using Windows.Media.Capture;
 using Windows.Media.Capture.Frames;
 using Windows.Media.Devices;
 using Windows.Media.MediaProperties;
+using Windows.Media.Transcoding;
 using Windows.Storage;
 using Windows.System;
 using Windows.System.Display;
@@ -1111,13 +1113,25 @@ namespace Telegram.Controls.Chats
                 });
             }
 
-            private async void Send(ComposeViewModel viewModel, ChatRecordMode mode, Chat chat, StorageFile file, bool mirroring, int duration)
+            public void SendMediaNote(ComposeViewModel viewModel, ChatRecordMode mode, Chat chat,
+                StorageFile file, bool mirroring, int duration, VideoGeneration generation, FormattedText caption = null) =>
+                Send(viewModel, mode, chat, file, mirroring, duration, generation, caption);
+
+            private async void Send(ComposeViewModel viewModel, ChatRecordMode mode, Chat chat, StorageFile file, bool mirroring, int duration, VideoGeneration generation = null, FormattedText caption = null)
             {
                 if (mode == ChatRecordMode.Video)
                 {
                     var props = await file.Properties.GetVideoPropertiesAsync();
-                    var width = props.GetWidth();
-                    var height = props.GetHeight();
+
+                    var width = (int)props.GetWidth();
+                    var height = (int)props.GetHeight();
+
+                    if (generation is { Transform: true, CropRectangle.IsEmpty: false })
+                    {
+                        width = (int)generation.CropRectangle.Width;
+                        height = (int)generation.CropRectangle.Height;
+                    }
+
                     var x = 0d;
                     var y = 0d;
 
@@ -1132,23 +1146,28 @@ namespace Telegram.Controls.Chats
                         height = width;
                     }
 
+                    if (generation is { Transform: true, CropRectangle.IsEmpty: false })
+                    {
+                        x += generation.CropRectangle.X;
+                        y += generation.CropRectangle.Y;
+                    }
+
                     var length = viewModel.ClientService.Options.SuggestedVideoNoteLength;
                     var videoBitrate = viewModel.ClientService.Options.SuggestedVideoNoteVideoBitrate;
                     var audioBitrate = viewModel.ClientService.Options.SuggestedVideoNoteAudioBitrate;
 
                     var video = await StorageMedia.CreateAsync(file);
-                    var generation = new VideoGeneration
-                    {
-                        Transcode = true,
-                        Transform = true,
-                        CropRectangle = new Rect(x, y, width, height),
-                        OutputSize = new Size(length, length),
-                        Flip = mirroring ? ImageFlip.Horizontal : ImageFlip.None,
-                        Width = (uint)length,
-                        Height = (uint)length,
-                        VideoBitrate = (uint)videoBitrate * 1000,
-                        AudioBitrate = (uint)audioBitrate * 1000
-                    };
+                    generation ??= new VideoGeneration();
+
+                    generation.Transcode = true;
+                    generation.Transform = true;
+                    generation.CropRectangle = new Rect(x, y, width, height);
+                    generation.OutputSize = new Size(length, length);
+                    generation.Flip = mirroring ? ImageFlip.Horizontal : ImageFlip.None;
+                    generation.Width = (uint)length;
+                    generation.Height = (uint)length;
+                    generation.VideoBitrate = (uint)videoBitrate * 1000;
+                    generation.AudioBitrate = (uint)audioBitrate * 1000;
 
                     try
                     {
@@ -1158,12 +1177,95 @@ namespace Telegram.Controls.Chats
                 }
                 else
                 {
+                    var fileName = string.Format("voice_{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}-{0:ss}.oga", DateTime.Now);
+                    var outFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(fileName);
+
                     try
                     {
-                        _dispatcherQueue.TryEnqueue(() => _ = viewModel.SendVoiceNoteAsync(file, duration, null));
+                        await ConvertToWavAsync(file, outFile);
+
+                        // Telegram won't generate a waveform by itself if the file exceeds 140 seconds
+                        var waveform = duration < 140 ? null : await GetWaveform(outFile, 100);
+
+                        _dispatcherQueue.TryEnqueue(() => _ = viewModel.SendVoiceNoteAsync(outFile, duration, caption, waveform));
                     }
                     catch { }
                 }
+            }
+
+            private async Task ConvertToWavAsync(StorageFile inputFile, StorageFile destinationFile)
+            {
+                var profile = MediaEncodingProfile.CreateWav(AudioEncodingQuality.Auto);
+                profile.Audio = AudioEncodingProperties.CreatePcm(48000, 1, 16);
+
+                var transcoder = new MediaTranscoder();
+                var prepare = await transcoder.PrepareFileTranscodeAsync(inputFile, destinationFile, profile);
+                if (!prepare.CanTranscode)
+                {
+                    throw new Exception("Cannot transcode to WAV");
+                }
+                await prepare.TranscodeAsync();
+            }
+
+            private async Task<byte[]> GetWaveform(StorageFile file, int outputLength)
+            {
+                using var stream = await file.OpenStreamForReadAsync();
+
+                // skip the 44-byte WAV header
+                stream.Seek(44, SeekOrigin.Begin); 
+
+                var audioData = new byte[stream.Length - 44];
+                _ = await stream.ReadAsync(audioData, 0, audioData.Length);
+
+                // each 16-bit sample is 2 bytes
+                var totalSamples = audioData.Length / 2;
+                var samplesPerChunk = totalSamples / outputLength;
+                if (samplesPerChunk == 0) samplesPerChunk = 1;
+
+                var waveform = new byte[outputLength];
+
+                for (var i = 0; i < outputLength; i++)
+                {
+                    var startSample = i * samplesPerChunk;
+                    var endSample = Math.Min(startSample + samplesPerChunk, totalSamples);
+
+                    // subsample to process approx 100 samples per chunk for efficiency
+                    var K = samplesPerChunk / 100;
+                    if (K == 0) K = 1; // minimum step size
+
+                    long sumAbs = 0;
+                    var count = 0;
+
+                    for (var j = startSample; j < endSample; j += K)
+                    {
+                        var byteIndex = 2 * j;
+                        if (byteIndex + 1 < audioData.Length)
+                        {
+                            var low = audioData[byteIndex];
+                            var high = audioData[byteIndex + 1];
+                            
+                            // combine bytes into a 16-bit sample (little-endian)
+                            var sample = (short)(low | (high << 8));
+                            sumAbs += Math.Abs((int)sample);
+                            count++;
+                        }
+                    }
+
+                    if (count > 0)
+                    {
+                        var avg = (double)sumAbs / count;
+                        
+                        // scale to 0-31 (5-bit range)
+                        var value = (byte)(avg * 31 / 32768); 
+                        waveform[i] = value;
+                    }
+                    else
+                    {
+                        waveform[i] = 0;
+                    }
+                }
+
+                return waveform;
             }
 
             public MediaCapture MediaSource => _recorder.m_mediaCapture;
