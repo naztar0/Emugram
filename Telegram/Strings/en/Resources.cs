@@ -21502,5 +21502,7 @@ namespace Telegram
         public static string EmulationPresetTitle => Resource.GetString("EmulationPresetTitle");
         public static string Duplicate => Resource.GetString("Duplicate");
         public static string PreventFullscreen => Resource.GetString("PreventFullscreen");
+        public static string VoiceNoteFromFile => Resource.GetString("VoiceNoteFromFile");
+        public static string VideoNoteFromFile => Resource.GetString("VideoNoteFromFile");
     }
 }
