@@ -423,7 +423,7 @@ namespace Telegram.ViewModels
                 {
                     if (selectedItems.TryGetValue(property.Key, out var message))
                     {
-                        messagesToShare.Add(new MessageToShare(message, property.Value, message.ChatId != ClientService.Options.MyId || message.ForwardInfo != null));
+                        messagesToShare.Add(new MessageToShare(message, property.Value));
                     }
                 }
 
@@ -842,6 +842,8 @@ namespace Telegram.ViewModels
                 var dataPackage = new DataPackage();
                 dataPackage.SetBitmap(RandomAccessStreamReference.CreateFromFile(cached));
                 ClipboardEx.TrySetContent(dataPackage);
+
+                ToastPopup.Show(XamlRoot, Strings.ImageCopied, ToastPopupIcon.Copied);
             }
         }
 

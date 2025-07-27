@@ -1036,6 +1036,13 @@ namespace Telegram.Services.Calls
             }
         }
 
+        private double _volumeLevel = 1;
+        public double VolumeLevel
+        {
+            get => _volumeLevel;
+            set => _manager?.SetVolume(1, _volumeLevel = value);
+        }
+
         public bool IsClosed => _isClosed;
 
         public void Update(GroupCall call, out bool closed)

@@ -15,7 +15,6 @@ using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.ViewModels.Chats;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Automation;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Hosting;
@@ -48,57 +47,64 @@ namespace Telegram.Views.Profile
 
         private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.InRecycleQueue || ViewModel == null)
+            try
             {
-                return;
-            }
-            else if (args.ItemContainer.ContentTemplateRoot is Grid content)
-            {
-                var photo = content.Children[0] as ImageView;
-
-                var particles = content.Children[1] as AnimatedImage;
-                var overlay = content.Children[2] as Border;
-                var duration = overlay.Child as TextBlock;
-
-                if (args.Item is MessageWithOwner message)
+                if (args.InRecycleQueue)
                 {
-                    if (message.Content is MessagePhoto photoMessage)
-                    {
-                        var small = photoMessage.Photo.GetSmall();
+                    return;
+                }
+                else if (args.ItemContainer.ContentTemplateRoot is Grid content)
+                {
+                    var photo = content.Children[0] as ImageView;
 
-                        photo.SetSource(ViewModel.ClientService, small.Photo, photoMessage.Photo.Minithumbnail, blurRadius: photoMessage.HasSpoiler ? 15 : 0);
+                    var particles = content.Children[1] as AnimatedImage;
+                    var overlay = content.Children[2] as Border;
+                    var duration = overlay.Child as TextBlock;
+
+                    if (args.Item is MessageWithOwner message)
+                    {
+                        if (message.Content is MessagePhoto photoMessage)
+                        {
+                            var small = photoMessage.Photo.GetSmall();
+
+                            photo.SetSource(message.ClientService, small.Photo, photoMessage.Photo.Minithumbnail, blurRadius: photoMessage.HasSpoiler ? 15 : 0);
+                            overlay.Visibility = Visibility.Collapsed;
+
+                            particles.Source = photoMessage.HasSpoiler
+                                ? new ParticlesImageSource()
+                                : null;
+                        }
+                        else if (message.Content is MessageVideo videoMessage)
+                        {
+                            var thumbnail = videoMessage.Cover?.GetThumbnail();
+                            thumbnail ??= videoMessage.Video.Thumbnail;
+
+                            var minithumbnail = videoMessage.Cover?.Minithumbnail;
+                            minithumbnail ??= videoMessage.Video.Minithumbnail;
+
+                            photo.SetSource(message.ClientService, thumbnail?.File, minithumbnail, blurRadius: videoMessage.HasSpoiler ? 15 : 0);
+                            overlay.Visibility = Visibility.Visible;
+
+                            duration.Text = videoMessage.Video.GetDuration();
+
+                            particles.Source = videoMessage.HasSpoiler
+                                ? new ParticlesImageSource()
+                                : null;
+                        }
+                    }
+                    else
+                    {
+                        photo.Clear();
+                        particles.Source = null;
                         overlay.Visibility = Visibility.Collapsed;
-
-                        particles.Source = photoMessage.HasSpoiler
-                            ? new ParticlesImageSource()
-                            : null;
                     }
-                    else if (message.Content is MessageVideo videoMessage)
-                    {
-                        var thumbnail = videoMessage.Cover?.GetThumbnail();
-                        thumbnail ??= videoMessage.Video.Thumbnail;
 
-                        var minithumbnail = videoMessage.Cover?.Minithumbnail;
-                        minithumbnail ??= videoMessage.Video.Minithumbnail;
-
-                        photo.SetSource(ViewModel.ClientService, thumbnail?.File, minithumbnail, blurRadius: videoMessage.HasSpoiler ? 15 : 0);
-                        overlay.Visibility = Visibility.Visible;
-
-                        duration.Text = videoMessage.Video.GetDuration();
-
-                        particles.Source = videoMessage.HasSpoiler
-                            ? new ParticlesImageSource()
-                            : null;
-                    }
+                    args.Handled = true;
                 }
-                else
-                {
-                    photo.Clear();
-                    particles.Source = null;
-                    overlay.Visibility = Visibility.Collapsed;
-                }
-
-                args.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex);
             }
         }
 

@@ -6,6 +6,7 @@
 //
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Telegram.Collections;
 using Telegram.Common;
@@ -382,13 +383,14 @@ namespace Telegram.ViewModels.Settings
         public async void DeleteSelected()
         {
             var selected = SelectedItems.ToList();
-            SelectedItems.Clear();
 
             var confirm = await ShowPopupAsync2(Strings.DeleteProxyMultiConfirm, Strings.DeleteProxyTitle, Strings.OK, Strings.Cancel);
             if (confirm != ContentDialogResult.Primary)
             {
                 return;
             }
+
+            SelectedItems.Clear();
 
             foreach (var proxy in selected)
             {
@@ -427,6 +429,25 @@ namespace Telegram.ViewModels.Settings
             {
                 MessageHelper.CopyLink(XamlRoot, httpUrl.Url);
             }
+        }
+
+        public async void CopySelected()
+        {
+            var selected = SelectedItems.ToList();
+            SelectedItems.Clear();
+
+            var builder = new StringBuilder();
+
+            foreach (var proxy in selected)
+            {
+                var response = await ClientService.SendAsync(new GetProxyLink(proxy.Id));
+                if (response is HttpUrl httpUrl)
+                {
+                    builder.AppendLine(httpUrl.Url);
+                }
+            }
+
+            MessageHelper.CopyLink(XamlRoot, builder.ToString());
         }
 
         public async Task<ContentDialogResult> ShowPopupAsync2(string message, string title = null, string primary = null, string secondary = null, bool destructive = false)

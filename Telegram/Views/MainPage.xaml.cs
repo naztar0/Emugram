@@ -964,12 +964,22 @@ namespace Telegram.Views
                 LogoBasic.Visibility = Visibility.Collapsed;
                 LogoEmoji.Visibility = Visibility.Visible;
                 LogoEmoji.Source = new CustomEmojiFileSource(_clientService, user.EmojiStatus.Type);
+
+                if (user.EmojiStatus.Type is EmojiStatusTypeUpgradedGift upgradedGift)
+                {
+                    LogoEmojiParticles.Source = new ParticlesImageSource(upgradedGift.BackdropColors);
+                }
+                else
+                {
+                    LogoEmojiParticles.Source = null;
+                }
             }
             else
             {
                 LogoBasic.Visibility = Visibility.Visible;
                 LogoEmoji.Visibility = Visibility.Collapsed;
                 LogoEmoji.Source = null;
+                LogoEmojiParticles.Source = null;
             }
         }
 

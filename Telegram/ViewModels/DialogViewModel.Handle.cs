@@ -568,7 +568,7 @@ namespace Telegram.ViewModels
         {
             if (update.ChatId == _chat?.Id && update.LastMessage == null)
             {
-                IsNewestSliceLoaded = null;
+                this.BeginOnUIThread(() => IsNewestSliceLoaded = null);
             }
 
             if (update.ChatId == _chat?.Id && _chat.Type is ChatTypePrivate privata)

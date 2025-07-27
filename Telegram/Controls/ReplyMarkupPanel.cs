@@ -7,11 +7,12 @@
 using System;
 using Telegram.Common;
 using Telegram.Controls.Media;
-using Telegram.Navigation;
+using Telegram.Controls.Messages;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Automation.Peers;
 using Windows.UI.Xaml.Controls;
 
 namespace Telegram.Controls
@@ -212,6 +213,11 @@ namespace Telegram.Controls
             Button = button;
         }
 
+        protected override AutomationPeer OnCreateAutomationPeer()
+        {
+            return new ReplyMarkupButtonAutomationPeer(this);
+        }
+
         public KeyboardButton Button { get; }
 
         #region Text
@@ -228,12 +234,37 @@ namespace Telegram.Controls
         #endregion
     }
 
+    public class ReplyMarkupButtonAutomationPeer : ButtonAutomationPeer
+    {
+        private readonly ReplyMarkupButton _owner;
+
+        public ReplyMarkupButtonAutomationPeer(ReplyMarkupButton owner)
+            : base(owner)
+        {
+            _owner = owner;
+        }
+
+        protected override string GetNameCore()
+        {
+            return _owner.Text;
+        }
+    }
+
     public class ReplyMarkupInlineButton : GlyphButton
     {
-        public ReplyMarkupInlineButton(InlineKeyboardButton button)
+        public readonly ReplyMarkupInlinePanel _owner;
+
+        public ReplyMarkupInlineButton(ReplyMarkupInlinePanel owner, InlineKeyboardButton button)
         {
+            _owner = owner;
+
             DefaultStyleKey = typeof(ReplyMarkupInlineButton);
             Button = button;
+        }
+
+        protected override AutomationPeer OnCreateAutomationPeer()
+        {
+            return new ReplyMarkupInlineButtonAutomationPeer(this);
         }
 
         public InlineKeyboardButton Button { get; }
@@ -250,5 +281,41 @@ namespace Telegram.Controls
             DependencyProperty.Register("Text", typeof(string), typeof(ReplyMarkupInlineButton), new PropertyMetadata(string.Empty));
 
         #endregion
+    }
+
+    public class ReplyMarkupInlineButtonAutomationPeer : ButtonAutomationPeer
+    {
+        private readonly ReplyMarkupInlineButton _owner;
+
+        public ReplyMarkupInlineButtonAutomationPeer(ReplyMarkupInlineButton owner)
+            : base(owner)
+        {
+            _owner = owner;
+        }
+
+        protected override string GetNameCore()
+        {
+            return _owner.Text;
+        }
+
+        protected override int GetPositionInSetCore()
+        {
+            if (_owner._owner != null)
+            {
+                return 1 + _owner._owner.Children.IndexOf(_owner);
+            }
+
+            return base.GetPositionInSetCore();
+        }
+
+        protected override int GetSizeOfSetCore()
+        {
+            if (_owner._owner != null)
+            {
+                return _owner._owner.Children.Count;
+            }
+
+            return base.GetSizeOfSetCore();
+        }
     }
 }

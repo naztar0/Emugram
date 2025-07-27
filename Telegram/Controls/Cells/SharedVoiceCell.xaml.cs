@@ -216,7 +216,7 @@ namespace Telegram.Controls.Cells
             var file = voiceNote.Voice;
             if (file.Local.IsDownloadingActive)
             {
-                _message.ClientService.Send(new CancelDownloadFile(file.Id, false));
+                _message.ClientService.CancelDownloadFile(file, false);
             }
             else if (file.Remote.IsUploadingActive || _message.SendingState is MessageSendingStateFailed)
             {

@@ -170,6 +170,41 @@ namespace Telegram.Common
             }
         }
 
+        public static async Task WaitForViewChangedAsync(this ScrollViewer scrollViewer, bool updateLayout)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+
+            void layoutUpdated(object s1, object e1)
+            {
+                tcs.TrySetResult(true);
+            }
+
+            void viewChanged(object s, ScrollViewerViewChangedEventArgs e)
+            {
+                if (e.IsIntermediate)
+                {
+                    return;
+                }
+
+                scrollViewer.LayoutUpdated += layoutUpdated;
+
+                if (updateLayout)
+                {
+                    scrollViewer.UpdateLayout();
+                }
+            }
+            try
+            {
+                scrollViewer.ViewChanged += viewChanged;
+                await tcs.Task;
+            }
+            finally
+            {
+                scrollViewer.ViewChanged -= viewChanged;
+                scrollViewer.LayoutUpdated -= layoutUpdated;
+            }
+        }
+
         public static ScrollViewer GetScrollViewer(this ListViewBase listViewBase)
         {
             //if (listViewBase is ChatsListView bubble)

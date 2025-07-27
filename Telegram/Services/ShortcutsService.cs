@@ -543,6 +543,46 @@ namespace Telegram.Services
 
             return null;
         }
+
+        public static string GetStringRepresentation(VirtualKey key, VirtualKeyModifiers modifiers = VirtualKeyModifiers.None)
+        {
+            var builder = new StringBuilder();
+
+            static void ConcatVirtualKey(VirtualKey key, StringBuilder builder)
+            {
+                if (builder.Length > 0)
+                {
+                    builder.Append("+");
+                }
+
+                builder.Append(key switch
+                {
+                    VirtualKey.Control => Strings.VirtualKeyModifiersControl,
+                    VirtualKey.Menu => Strings.VirtualKeyModifiersMenu,
+                    VirtualKey.Shift => Strings.VirtualKeyModifiersShift,
+                    (VirtualKey)190 => '.',
+                    _ => key.ToString()
+                });
+            }
+
+            if ((modifiers & VirtualKeyModifiers.Control) != 0)
+            {
+                ConcatVirtualKey(VirtualKey.Control, builder);
+            }
+
+            if ((modifiers & VirtualKeyModifiers.Menu) != 0)
+            {
+                ConcatVirtualKey(VirtualKey.Menu, builder);
+            }
+
+            if ((modifiers & VirtualKeyModifiers.Shift) != 0)
+            {
+                ConcatVirtualKey(VirtualKey.Shift, builder);
+            }
+
+            ConcatVirtualKey(key, builder);
+            return builder.ToString();
+        }
     }
 
     public sealed partial class ShortcutList : KeyedList<string, ShortcutInfo>

@@ -114,6 +114,7 @@ namespace winrt::Telegram::Native::implementation
         CompositionPath GetOutline(IVector<ClosedVectorPath> contours);
         CompositionPath GetEllipticalClip(float width, float height, float radius, float x, float y);
         CompositionPath GetReplyMarkupClip(IVector<IVector<Windows::Foundation::Rect>> rows, float bottomRightRadius, float bottomLeftRadius);
+        CompositionPath GetVoiceNoteClip(IVector<byte> waveform, double waveformWidth);
 
         HRESULT Encode(IBuffer source, IRandomAccessStream destination, int32_t width, int32_t height, int32_t rotation);
 
@@ -132,6 +133,7 @@ namespace winrt::Telegram::Native::implementation
         float2 ContentEnd(hstring text, IVector<TextEntity> entities, double fontSize, double width);
         IVector<Windows::Foundation::Rect> LineMetrics(hstring text, IVector<TextEntity> entities, double fontSize, double width, bool rtl);
         IVector<Windows::Foundation::Rect> RangeMetrics(hstring text, int32_t offset, int32_t length, IVector<TextEntity> entities, double fontSize, double width, bool rtl, bool wrap);
+        Windows::Foundation::Rect LayoutMetrics(hstring text, int32_t offset, int32_t length, IVector<TextEntity> entities, double fontSize, double width, bool rtl);
         //IVector<Windows::Foundation::Rect> EntityMetrics(hstring text, IVector<TextEntity> entities, double fontSize, double width, bool rtl);
 
     private:

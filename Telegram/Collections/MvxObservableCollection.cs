@@ -6,7 +6,7 @@
 //
 // MvxObservableCollection.cs
 // https://github.com/MvvmCross/MvvmCross/blob/develop/MvvmCross/Core/Core/ViewModels/MvxObservableCollection.cs
-
+//
 // MvvmCross is licensed using Microsoft Public License (Ms-PL)
 // Contributions and inspirations noted in readme.md and license.txt
 //

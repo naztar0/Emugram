@@ -40,16 +40,19 @@ namespace Telegram.Services
         Task<StorageFile> GetFileAsync(File file, bool completed = true);
         Task<StorageFile> GetPermanentFileAsync(File file);
 
-        void DownloadFile(int fileId, int priority, int offset = 0, int limit = 0, bool synchronous = false);
-        Task<File> DownloadFileAsync(File file, int priority, int offset = 0, int limit = 0);
+        void DownloadFile(int fileId, int priority, long offset = 0, long limit = 0, bool synchronous = false);
+        Task<File> DownloadFileAsync(File file, int priority, long offset = 0, long limit = 0);
 
         void AddFileToDownloads(File file, long chatId, long messageId, int priority = 30);
         void CancelDownloadFile(File file, bool onlyIfPending = false);
         bool IsDownloadFileCanceled(int fileId);
+        bool IsDownloadFilePartial(int fileId);
 
         Task<bool> HasPrivacySettingsRuleAsync<T>(UserPrivacySetting setting) where T : UserPrivacySettingRule;
 
         Task<Chats> GetChatListAsync(ChatList chatList, int offset, int limit);
+
+        void LoadFullInfo(Chat chat);
 
         void ViewMessages(long chatId, long messageThreadId, IList<long> messageIds, MessageSource source, bool forceRead);
 
@@ -971,12 +974,21 @@ namespace Telegram.Services
 
 
 
-        public void DownloadFile(int fileId, int priority, int offset = 0, int limit = 0, bool synchronous = false)
+        public void DownloadFile(int fileId, int priority, long offset = 0, long limit = 0, bool synchronous = false)
         {
+            if (limit != 0)
+            {
+                _partialDownloads.Add(fileId);
+            }
+            else
+            {
+                _partialDownloads.Remove(fileId);
+            }
+
             Send(new DownloadFile(fileId, priority, offset, limit, synchronous));
         }
 
-        public async Task<File> DownloadFileAsync(File file, int priority, int offset = 0, int limit = 0)
+        public async Task<File> DownloadFileAsync(File file, int priority, long offset = 0, long limit = 0)
         {
             var response = await SendAsync(new DownloadFile(file.Id, priority, offset, limit, true));
             if (response is File updated)
@@ -1306,6 +1318,22 @@ namespace Telegram.Services
 
             channel = false;
             return new ChatMemberStatusMember();
+        }
+
+        public void LoadFullInfo(Chat chat)
+        {
+            if (TryGetUser(chat, out User user))
+            {
+                Send(new GetUserFullInfo(user.Id));
+            }
+            else if (TryGetSupergroup(chat, out Supergroup supergroup))
+            {
+                Send(new GetSupergroupFullInfo(supergroup.Id));
+            }
+            else if (TryGetBasicGroup(chat, out BasicGroup basicGroup))
+            {
+                Send(new GetBasicGroupFullInfo(basicGroup.Id));
+            }
         }
 
         public string GetTitle(long chatId, bool tiny = false)
@@ -2460,7 +2488,7 @@ namespace Telegram.Services
         {
             chat.LastMessage = lastMessage;
 
-            if (lastMessage == null || lastMessage.MediaAlbumId == 0 || lastMessage.Content is not MessagePhoto and not MessageVideo)
+            if (lastMessage == null || lastMessage.MediaAlbumId == 0 || lastMessage.Content is not MessagePhoto and not MessageVideo || !SettingsService.Current.Diagnostics.AlbumPreloadDebug)
             {
                 _lastMessageAlbums.TryRemove(chat.Id, out _);
                 return;

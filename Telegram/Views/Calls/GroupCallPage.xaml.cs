@@ -1570,7 +1570,7 @@ namespace Telegram.Views.Calls
 
         private async void ShareInviteLink()
         {
-            await this.ShowPopupAsync(_call.ClientService.SessionId, new ChooseChatsPopup(), new ChooseChatsConfigurationGroupCall(_call.Id));
+            await this.ShowPopupAsync(_call.ClientService.SessionId, new ChooseChatsPopup(), new ChooseChatsConfigurationGroupCall(_call.Id, false));
         }
 
         private void OnChoosingItemContainer(ListViewBase sender, ChoosingItemContainerEventArgs args)

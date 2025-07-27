@@ -37,7 +37,7 @@ namespace Telegram.Controls
 {
     public partial class AnimatedImagePositionChangedEventArgs : EventArgs
     {
-        public int Position { get; set; }
+        public double Position { get; set; }
     }
 
     public partial class AnimatedImageLoopCompletedEventArgs : CancelEventArgs
@@ -904,7 +904,7 @@ namespace Telegram.Controls
         private readonly object _lock = new();
 
         private AnimatedImagePositionChangedEventArgs _prevPosition;
-        private int _nextPosition;
+        private double _nextPosition;
 
         private AnimatedImageLoopCompletedEventArgs _prevCompleted;
 
@@ -1574,7 +1574,7 @@ namespace Telegram.Controls
 
         private int _index;
 
-        public override AnimatedImageTaskState NextFrame(IBuffer frame, out int position)
+        public override AnimatedImageTaskState NextFrame(IBuffer frame, out double position)
         {
             position = 0;
 
@@ -1644,7 +1644,7 @@ namespace Telegram.Controls
 
         private int _index;
 
-        public override AnimatedImageTaskState NextFrame(IBuffer frame, out int position)
+        public override AnimatedImageTaskState NextFrame(IBuffer frame, out double position)
         {
             position = 0;
 
@@ -1658,7 +1658,7 @@ namespace Telegram.Controls
                 return AnimatedImageTaskState.Skip;
             }
 
-            _animation.RenderSync(frame, out int seconds, out bool completed);
+            _animation.RenderSync(frame, out double seconds, out bool completed);
             _index++;
 
             if (_animation.TotalFrame == 1 || _shouldStop || (completed && _index == 1))
@@ -1692,7 +1692,7 @@ namespace Telegram.Controls
             Interval = TimeSpan.FromMilliseconds(1000d / 30);
         }
 
-        public override AnimatedImageTaskState NextFrame(IBuffer frame, out int position)
+        public override AnimatedImageTaskState NextFrame(IBuffer frame, out double position)
         {
             position = 0;
 
@@ -1716,7 +1716,7 @@ namespace Telegram.Controls
             Interval = TimeSpan.FromMilliseconds(Math.Floor(1000d / 30));
         }
 
-        public override AnimatedImageTaskState NextFrame(IBuffer frame, out int position)
+        public override AnimatedImageTaskState NextFrame(IBuffer frame, out double position)
         {
             _animation.RenderSync(frame);
 
@@ -1741,7 +1741,7 @@ namespace Telegram.Controls
 
         public TimeSpan Interval { get; init; }
 
-        public abstract AnimatedImageTaskState NextFrame(IBuffer frame, out int position);
+        public abstract AnimatedImageTaskState NextFrame(IBuffer frame, out double position);
 
         public virtual void Seek(string marker)
         {

@@ -1318,6 +1318,7 @@
     <string name="DeleteForAll">Delete for all members</string>
     <string name="TextCopied">Text copied to clipboard.</string>
     <string name="PathCopied">Path copied to clipboard.</string>
+    <string name="ImageCopied">Image copied to clipboard.</string>
 
 
 
@@ -12486,5 +12487,25 @@
     <string name="UnlockPremiumEmojiHint">Subscribe to **Telegram Premium** to unlock this emoji.</string>
     <string name="UnlockPremiumEmojiReaction">Subscribe to **Telegram Premium** to unlock this reaction.</string>
     <string name="Gift2ActionSelfTitle">Saved Gift</string>
+    <string name="HideSendersName">Hide sender’s name</string>
+    <string name="VirtualKeyModifiersControl">Ctrl</string>
+    <string name="VirtualKeyModifiersShift">Shift</string>
+    <string name="VirtualKeyModifiersMenu">Alt</string>
+    <string name="CopySelected">Copy Selected</string>
+    <string name="ProcessingVideo">Processing...</string>
+    <string name="ShareQrCode">Share QR Code</string>
+    <string name="QrCode">QR Code</string>
+    <string name="LimitReachedPinnedTopics">Sorry, you can\'t pin more than {0} topics to the top.</string>
+    <string name="PrivacySettingsChangedAlert">You have changed some privacy settings. Apply changes?</string>
+    <string name="RevokeStreamKey">Revoke Stream Key</string>
+    <string name="RevokeStreamKeyAlert">Are you sure you want to revoke your Stream Key?</string>
+    <string name="CopyHashtag">Copy Hashtag</string>
+    <string name="CopyLink">Copy Link</string>
+    <string name="CopyMail">Copy E-Mail</string>
+    <string name="CopyNumber">Copy Number</string>
+    <string name="ViewProfile">View Profile &gt;</string>
+    <string name="NumberNotOnTelegram">This number is not on Telegram</string>
+    <string name="AutoDownloadPreloadVideo">Preload larger videos</string>
+    <string name="AutoDownloadPreloadVideoInfo">Preload the first few seconds (1-2 MB) of videos larger than {0} for instant playback.</string>
 
 </resources>

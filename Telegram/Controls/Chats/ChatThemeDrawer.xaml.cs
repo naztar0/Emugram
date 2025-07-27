@@ -87,13 +87,19 @@ namespace Telegram.Controls.Chats
 
         private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.InRecycleQueue)
+            if (args.ItemContainer.ContentTemplateRoot is not ChatThemeCell content)
             {
                 return;
             }
-            else if (args.ItemContainer.ContentTemplateRoot is ChatThemeCell content && args.Item is ChatThemeViewModel theme)
+
+            if (args.InRecycleQueue)
             {
-                content.Update(theme);
+                content.Recycle();
+                return;
+            }
+            else if (args.Item is ChatThemeViewModel theme)
+            {
+                content.Update(args.ItemContainer, theme);
                 args.Handled = true;
             }
         }

@@ -117,6 +117,19 @@ namespace Telegram.Controls
 
         #endregion
 
+        #region Description
+
+        public object Description
+        {
+            get { return (object)GetValue(DescriptionProperty); }
+            set { SetValue(DescriptionProperty, value); }
+        }
+
+        public static readonly DependencyProperty DescriptionProperty =
+            DependencyProperty.Register("Description", typeof(object), typeof(BadgeButton), new PropertyMetadata(null));
+
+        #endregion
+
         #region IconSource
 
         public IAnimatedVisualSource2 IconSource

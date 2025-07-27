@@ -167,23 +167,34 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void UpdateThumbnail(MessageViewModel message, PhotoSize photoSize, Minithumbnail minithumbnail)
+        private void UpdateThumbnail(MessageViewModel message, PhotoSize photoSize, Minithumbnail minithumbnail, bool hasSpoiler = false)
         {
             if (photoSize != null && photoSize.Photo.Local.IsDownloadingCompleted)
             {
-                double ratioX = (double)36 / photoSize.Width;
-                double ratioY = (double)36 / photoSize.Height;
-                double ratio = Math.Max(ratioX, ratioY);
+                BitmapImage source;
+                if (hasSpoiler)
+                {
+                    source = new BitmapImage();
+                    PlaceholderHelper.GetBlurred(source, photoSize.Photo.Local.Path, 15);
+                }
+                else
+                {
+                    double ratioX = (double)36 / photoSize.Width;
+                    double ratioY = (double)36 / photoSize.Height;
+                    double ratio = Math.Max(ratioX, ratioY);
 
-                var width = (int)(photoSize.Width * ratio);
-                var height = (int)(photoSize.Height * ratio);
+                    var width = (int)(photoSize.Width * ratio);
+                    var height = (int)(photoSize.Height * ratio);
+
+                    source = UriEx.ToBitmap(photoSize.Photo.Local.Path, width, height);
+                }
 
                 ShowThumbnail();
-                SetThumbnail(UriEx.ToBitmap(photoSize.Photo.Local.Path, width, height));
+                SetThumbnail(source);
             }
             else
             {
-                UpdateThumbnail(minithumbnail);
+                UpdateThumbnail(minithumbnail, hasSpoiler);
 
                 if (photoSize != null && photoSize.Photo.Local.CanBeDownloaded && !photoSize.Photo.Local.IsDownloadingActive)
                 {
@@ -192,23 +203,34 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void UpdateThumbnail(MessageViewModel message, Thumbnail thumbnail, Minithumbnail minithumbnail, CornerRadius radius = default)
+        private void UpdateThumbnail(MessageViewModel message, Thumbnail thumbnail, Minithumbnail minithumbnail, bool hasSpoiler = false, CornerRadius radius = default)
         {
             if (thumbnail != null && thumbnail.File.Local.IsDownloadingCompleted && thumbnail.Format is ThumbnailFormatJpeg)
             {
-                double ratioX = (double)36 / thumbnail.Width;
-                double ratioY = (double)36 / thumbnail.Height;
-                double ratio = Math.Max(ratioX, ratioY);
+                BitmapImage source;
+                if (hasSpoiler)
+                {
+                    source = new BitmapImage();
+                    PlaceholderHelper.GetBlurred(source, thumbnail.File.Local.Path, 15);
+                }
+                else
+                {
+                    double ratioX = (double)36 / thumbnail.Width;
+                    double ratioY = (double)36 / thumbnail.Height;
+                    double ratio = Math.Max(ratioX, ratioY);
 
-                var width = (int)(thumbnail.Width * ratio);
-                var height = (int)(thumbnail.Height * ratio);
+                    var width = (int)(thumbnail.Width * ratio);
+                    var height = (int)(thumbnail.Height * ratio);
+
+                    source = UriEx.ToBitmap(thumbnail.File.Local.Path, width, height);
+                }
 
                 ShowThumbnail(radius);
-                SetThumbnail(UriEx.ToBitmap(thumbnail.File.Local.Path, width, height));
+                SetThumbnail(source);
             }
             else
             {
-                UpdateThumbnail(minithumbnail);
+                UpdateThumbnail(minithumbnail, hasSpoiler, radius);
 
                 if (thumbnail != null && thumbnail.File.Local.CanBeDownloaded && !thumbnail.File.Local.IsDownloadingActive)
                 {
@@ -217,35 +239,44 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void UpdateThumbnail(Minithumbnail thumbnail, CornerRadius radius = default)
+        private void UpdateThumbnail(Minithumbnail thumbnail, bool hasSpoiler, CornerRadius radius = default)
         {
             if (thumbnail != null)
             {
-                double ratioX = (double)36 / thumbnail.Width;
-                double ratioY = (double)36 / thumbnail.Height;
-                double ratio = Math.Max(ratioX, ratioY);
-
-                var width = (int)(thumbnail.Width * ratio);
-                var height = (int)(thumbnail.Height * ratio);
-
-                var bitmap = new BitmapImage { DecodePixelWidth = width, DecodePixelHeight = height, DecodePixelType = DecodePixelType.Logical };
-
-                using (var stream = new InMemoryRandomAccessStream())
+                BitmapImage source;
+                if (hasSpoiler)
                 {
-                    try
+                    source = new BitmapImage();
+                    PlaceholderHelper.GetBlurred(source, thumbnail.Data, 15);
+                }
+                else
+                {
+                    double ratioX = (double)36 / thumbnail.Width;
+                    double ratioY = (double)36 / thumbnail.Height;
+                    double ratio = Math.Max(ratioX, ratioY);
+
+                    var width = (int)(thumbnail.Width * ratio);
+                    var height = (int)(thumbnail.Height * ratio);
+
+                    source = new BitmapImage { DecodePixelWidth = width, DecodePixelHeight = height, DecodePixelType = DecodePixelType.Logical };
+
+                    using (var stream = new InMemoryRandomAccessStream())
                     {
-                        PlaceholderImageHelper.WriteBytes(thumbnail.Data, stream);
-                        bitmap.SetSource(stream);
-                    }
-                    catch
-                    {
-                        // Throws when the data is not a valid encoded image,
-                        // not so frequent, but if it happens during ContainerContentChanging it crashes the app.
+                        try
+                        {
+                            PlaceholderImageHelper.WriteBytes(thumbnail.Data, stream);
+                            source.SetSource(stream);
+                        }
+                        catch
+                        {
+                            // Throws when the data is not a valid encoded image,
+                            // not so frequent, but if it happens during ContainerContentChanging it crashes the app.
+                        }
                     }
                 }
 
                 ShowThumbnail(radius);
-                SetThumbnail(bitmap);
+                SetThumbnail(source);
             }
             else
             {
@@ -515,7 +546,7 @@ namespace Telegram.Controls.Messages
 
             if (thumbnail)
             {
-                UpdateThumbnail(message, photo.Photo.GetSmall(), photo.Photo.Minithumbnail);
+                UpdateThumbnail(message, photo.Photo.GetSmall(), photo.Photo.Minithumbnail, photo.HasSpoiler);
             }
             else
             {
@@ -824,11 +855,11 @@ namespace Telegram.Controls.Messages
             {
                 if (video.Cover != null)
                 {
-                    UpdateThumbnail(message, video.Cover.GetSmall(), video.Cover.Minithumbnail);
+                    UpdateThumbnail(message, video.Cover.GetSmall(), video.Cover.Minithumbnail, video.HasSpoiler);
                 }
                 else
                 {
-                    UpdateThumbnail(message, video.Video.Thumbnail, video.Video.Minithumbnail);
+                    UpdateThumbnail(message, video.Video.Thumbnail, video.Video.Minithumbnail, video.HasSpoiler);
                 }
             }
             else
@@ -848,7 +879,7 @@ namespace Telegram.Controls.Messages
                 false,
                 white);
 
-            UpdateThumbnail(message, videoNote.VideoNote.Thumbnail, videoNote.VideoNote.Minithumbnail, new CornerRadius(18));
+            UpdateThumbnail(message, videoNote.VideoNote.Thumbnail, videoNote.VideoNote.Minithumbnail, radius: new CornerRadius(18));
         }
 
         private void SetAnimatedEmojiTemplate(MessageViewModel message, MessageSender sender, MessageAnimatedEmoji animatedEmoji, string title, bool outgoing, bool white)
@@ -876,7 +907,7 @@ namespace Telegram.Controls.Messages
                 manual,
                 white);
 
-            UpdateThumbnail(message, animation.Animation.Thumbnail, animation.Animation.Minithumbnail);
+            UpdateThumbnail(message, animation.Animation.Thumbnail, animation.Animation.Minithumbnail, animation.HasSpoiler);
         }
 
         private void SetStickerTemplate(MessageViewModel message, MessageSender sender, MessageSticker sticker, string title, bool outgoing, bool white)

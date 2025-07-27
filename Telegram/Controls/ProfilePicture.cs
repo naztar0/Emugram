@@ -479,18 +479,24 @@ namespace Telegram.Controls
                     _parameters = new ChatParameters(clientService, chat, side);
                     UpdateManager.Subscribe(this, clientService, file, ref _fileToken, UpdateFile, true);
                 }
-            }
-            else if (clientService.TryGetUser(chat, out User user) && user.Type is UserTypeDeleted)
-            {
-                return PlaceholderImage.GetGlyph(Icons.GhostFilled, long.MinValue);
+
+                var minithumbnail = chat.Photo?.Minithumbnail;
+                if (minithumbnail != null)
+                {
+                    var bitmap = new BitmapImage();
+                    PlaceholderHelper.GetBlurred(bitmap, minithumbnail.Data);
+                    return bitmap;
+                }
             }
 
-            var minithumbnail = chat.Photo?.Minithumbnail;
-            if (minithumbnail != null)
+            if (clientService.TryGetUser(chat, out User user))
             {
-                var bitmap = new BitmapImage();
-                PlaceholderHelper.GetBlurred(bitmap, minithumbnail.Data);
-                return bitmap;
+                if (user.Type is UserTypeDeleted)
+                {
+                    return PlaceholderImage.GetGlyph(Icons.GhostFilled, long.MinValue);
+                }
+
+                return PlaceholderImage.GetUser(clientService, user);
             }
 
             return PlaceholderImage.GetChat(clientService, chat);
@@ -553,18 +559,19 @@ namespace Telegram.Controls
                     _parameters = new UserParameters(clientService, user, side);
                     UpdateManager.Subscribe(this, clientService, file, ref _fileToken, UpdateFile, true);
                 }
-            }
-            else if (user.Type is UserTypeDeleted)
-            {
-                return PlaceholderImage.GetGlyph(Icons.GhostFilled, long.MinValue);
+
+                var minithumbnail = user.ProfilePhoto?.Minithumbnail;
+                if (minithumbnail != null)
+                {
+                    var bitmap = new BitmapImage();
+                    PlaceholderHelper.GetBlurred(bitmap, minithumbnail.Data);
+                    return bitmap;
+                }
             }
 
-            var minithumbnail = user.ProfilePhoto?.Minithumbnail;
-            if (minithumbnail != null)
+            if (user.Type is UserTypeDeleted)
             {
-                var bitmap = new BitmapImage();
-                PlaceholderHelper.GetBlurred(bitmap, minithumbnail.Data);
-                return bitmap;
+                return PlaceholderImage.GetGlyph(Icons.GhostFilled, long.MinValue);
             }
 
             return PlaceholderImage.GetUser(clientService, user);
@@ -838,7 +845,7 @@ namespace Telegram.Controls
 
         public static PlaceholderImage GetChat(IClientService clientService, Chat chat)
         {
-            return new PlaceholderImage(InitialNameStringConverter.Convert(chat), false, clientService.GetAccentColor(chat.AccentColorId));
+            return new PlaceholderImage(InitialNameStringConverter.Convert(chat.Title), false, clientService.GetAccentColor(chat.AccentColorId));
         }
 
         public static PlaceholderImage GetChat(IClientService clientService, ChatInviteLinkInfo chat)
@@ -848,7 +855,7 @@ namespace Telegram.Controls
 
         public static PlaceholderImage GetUser(IClientService clientService, User user)
         {
-            return new PlaceholderImage(InitialNameStringConverter.Convert(user), false, clientService.GetAccentColor(user.AccentColorId));
+            return new PlaceholderImage(InitialNameStringConverter.Convert(user.FirstName, user.LastName), false, clientService.GetAccentColor(user.AccentColorId));
         }
 
         public static PlaceholderImage GetNameForUser(string firstName, string lastName, long id = 5)
@@ -858,7 +865,7 @@ namespace Telegram.Controls
 
         public static PlaceholderImage GetNameForUser(string name, long id = 5)
         {
-            return new PlaceholderImage(InitialNameStringConverter.Convert((object)name), false, id);
+            return new PlaceholderImage(InitialNameStringConverter.Convert(name), false, id);
         }
 
         public static PlaceholderImage GetNameForChat(string title, long id = 5)

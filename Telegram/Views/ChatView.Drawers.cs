@@ -135,7 +135,7 @@ namespace Telegram.Views
                 flyout.CreateFlyoutItem(Send, (Sticker)sticker, Strings.SendEmojiPreview, Icons.Send);
             }
 
-            flyout.CreateFlyoutItem(Copy, (Sticker)sticker, Strings.CopyEmojiPreview, Icons.DocumentCopy);
+            flyout.CreateFlyoutItem(Copy, (Sticker)sticker, Strings.CopyEmojiPreview, Icons.Copy);
 
             if (ViewModel.Type is DialogType.History or DialogType.Thread && ViewModel.IsPremium)
             {

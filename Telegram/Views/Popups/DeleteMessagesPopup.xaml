@@ -165,11 +165,6 @@
                     </StackPanel>
                 </controls:SettingsExpander>
 
-                <Button x:Name="PermissionsToggle"
-                        Click="PermissionsToggle_Click"
-                        Style="{StaticResource AccentTextButtonStyle}"
-                        Margin="-12,0,0,0" />
-
                 <StackPanel x:Name="PermissionsPanel"
                             Visibility="Collapsed">
                     <controls:AnimatedTextBlock x:Name="PermissionsHeader"
@@ -245,6 +240,11 @@
                               IsChecked="{x:Bind ViewModel.CanChangeInfo, Mode=TwoWay}"
                               Content="{CustomResource UserRestrictionsChangeInfo}" />
                 </StackPanel>
+
+                <Button x:Name="PermissionsToggle"
+                        Click="PermissionsToggle_Click"
+                        Style="{StaticResource AccentTextButtonStyle}"
+                        Margin="-12,8,0,-8" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

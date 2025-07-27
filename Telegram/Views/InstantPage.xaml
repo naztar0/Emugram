@@ -306,7 +306,7 @@
                                 <MenuFlyoutItem Click="Copy_Click"
                                                 Text="{CustomResource CopyLink}">
                                     <MenuFlyoutItem.Icon>
-                                        <FontIcon Glyph="&#xE8C8;"
+                                        <FontIcon Glyph="&#xEAC9;"
                                                   Style="{StaticResource DefaultFontIconStyle}" />
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>

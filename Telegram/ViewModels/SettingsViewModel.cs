@@ -240,5 +240,13 @@ namespace Telegram.ViewModels
                 action.Action();
             }
         }
+
+        public void ShareUsername()
+        {
+            if (ClientService.TryGetUser(ClientService.Options.MyId, out User user))
+            {
+                ShowPopup(new QrCodePopup(ClientService, NavigationService, Settings, user));
+            }
+        }
     }
 }

@@ -551,8 +551,6 @@
                                     <VisualState.Setters>
                                         <Setter Target="DetailHeaderPresenter2.CornerRadius"
                                                 Value="0" />
-                                        <Setter Target="BackgroundPart.CornerRadius"
-                                                Value="0" />
                                         <Setter Target="BackgroundPart.BorderThickness"
                                                 Value="0,1,0,0" />
                                         <Setter Target="BorderPart.CornerRadius"
@@ -577,7 +575,6 @@
 
                             <chats:ChatBackgroundControl x:Name="BackgroundPart"
                                                          Margin="{TemplateBinding BackgroundMargin}"
-                                                         CornerRadius="9,0,0,0"
                                                          BorderThickness="1,1,0,0"
                                                          Grid.RowSpan="3" />
 
@@ -2010,7 +2007,8 @@
                 <ControlTemplate TargetType="chats:ChatBackgroundPresenter">
                     <Grid BackgroundSizing="OuterBorderEdge"
                           Background="{TemplateBinding Background}"
-                          BorderThickness="{TemplateBinding BorderThickness}">
+                          BorderThickness="{TemplateBinding BorderThickness}"
+                          CornerRadius="{TemplateBinding CornerRadius}">
                         <Border x:Name="Canvas"
                                 Background="{TemplateBinding Foreground}"
                                 CornerRadius="{TemplateBinding CornerRadius}">
@@ -2859,8 +2857,8 @@
                                        Height="3"
                                        Fill="{ThemeResource NavigationViewSelectionIndicatorForeground}"
                                        Opacity="0"
-                                       RadiusX="3"
-                                       RadiusY="3" />
+                                       RadiusX="1.5"
+                                       RadiusY="1.5" />
                         </Grid>
                     </Grid>
                 </ControlTemplate>
@@ -4789,7 +4787,7 @@
                                    VerticalAlignment="Center"
                                    Margin="0,1,0,2"
                                    Foreground="#FFFFFF"
-                                   FontFamily="{StaticResource EmojiThemeFontFamilyWithSymbols}" />
+                                   FontFamily="{StaticResource EmojiThemeFontFamilyWithRounded}" />
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -7013,8 +7011,8 @@
                                        Height="36"
                                        Fill="{ThemeResource NavigationViewSelectionIndicatorForeground}"
                                        Opacity="0"
-                                       RadiusX="3"
-                                       RadiusY="3" />
+                                       RadiusX="1.5"
+                                       RadiusY="1.5" />
                         </Grid>
                         <Border x:Name="MultiSelectSquare"
                                 BorderBrush="{ThemeResource SystemControlForegroundBaseMediumHighBrush}"
@@ -7592,8 +7590,8 @@
                                        Height="36"
                                        Fill="{ThemeResource NavigationViewSelectionIndicatorForeground}"
                                        Opacity="0"
-                                       RadiusX="3"
-                                       RadiusY="3" />
+                                       RadiusX="1.5"
+                                       RadiusY="1.5" />
                         </Grid>
                         <Border x:Name="MultiSelectSquare"
                                 BorderBrush="{ThemeResource SystemControlForegroundBaseMediumHighBrush}"

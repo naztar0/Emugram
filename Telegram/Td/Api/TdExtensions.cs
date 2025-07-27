@@ -1138,6 +1138,8 @@ namespace Telegram.Td.Api
                     break;
                 case MessageSticker sticker:
                     return (sticker.Sticker.StickerValue, null, null);
+                case MessageAnimatedEmoji animatedEmoji:
+                    return (animatedEmoji.AnimatedEmoji.Sticker?.StickerValue, null, null);
                 case MessageText text:
                     return text.LinkPreview?.Type switch
                     {
@@ -1318,6 +1320,8 @@ namespace Telegram.Td.Api
                     return photo.Photo.GetBig()?.Photo;
                 case MessageSticker sticker:
                     return sticker.Sticker.StickerValue;
+                case MessageAnimatedEmoji animatedEmoji:
+                    return animatedEmoji.AnimatedEmoji.Sticker?.StickerValue;
                 case MessageText text:
                     return text.LinkPreview?.Type switch
                     {
@@ -1375,6 +1379,8 @@ namespace Telegram.Td.Api
                     return animation.Animation.AnimationValue.Local.IsDownloadingCompleted;
                 case MessageSticker sticker:
                     return sticker.Sticker.Format is StickerFormatTgs or StickerFormatWebm && sticker.Sticker.StickerValue.Local.IsDownloadingCompleted;
+                case MessageAnimatedEmoji animatedEmoji:
+                    return animatedEmoji.AnimatedEmoji.Sticker?.Format is StickerFormatTgs or StickerFormatWebm && animatedEmoji.AnimatedEmoji.Sticker.StickerValue.Local.IsDownloadingCompleted;
                 case MessageVideoNote videoNote:
                     return videoNote.VideoNote.Video.Local.IsDownloadingCompleted;
                 case MessageGame game:
@@ -1493,6 +1499,8 @@ namespace Telegram.Td.Api
                     return game.Game.Animation?.Thumbnail;
                 case MessageSticker sticker:
                     return sticker.Sticker.Thumbnail;
+                case MessageAnimatedEmoji animatedEmoji:
+                    return animatedEmoji.AnimatedEmoji.Sticker?.Thumbnail;
                 case MessageText text:
                     return text.LinkPreview?.GetThumbnail();
                 case MessageVideo video:
@@ -2003,6 +2011,74 @@ namespace Telegram.Td.Api
             return null;
         }
 
+        public static bool AreTheSame(this NewChatPrivacySettings x, NewChatPrivacySettings y)
+        {
+            if (x == null || y == null)
+            {
+                return x == y;
+            }
+
+            return x.AllowNewChatsFromUnknownUsers == y.AllowNewChatsFromUnknownUsers
+                && x.IncomingPaidMessageStarCount == y.IncomingPaidMessageStarCount;
+        }
+
+        public static bool AreTheSame(this UserPrivacySettingRules x, UserPrivacySettingRules y)
+        {
+            return (x, y) switch
+            {
+                (null, null) => true,
+                (null, _) or (_, null) => false,
+                _ when IsEmptyOrSingleDisallowAll(x) && IsEmptyOrSingleDisallowAll(y) => true,
+                _ => x.Rules.Count == y.Rules.Count &&
+                     CompareOrderedRules(x.Rules, y.Rules)
+            };
+        }
+
+        private static bool IsEmptyOrSingleDisallowAll(UserPrivacySettingRules rules)
+        {
+            return rules.Rules.Count == 0 ||
+                   (rules.Rules.Count == 1 && rules.Rules[0] is UserPrivacySettingRuleRestrictAll);
+        }
+
+        private static bool CompareOrderedRules(IList<UserPrivacySettingRule> xRules, IList<UserPrivacySettingRule> yRules)
+        {
+            var xSorted = xRules.OrderBy(r => r.GetType()).ToArray();
+            var ySorted = yRules.OrderBy(r => r.GetType()).ToArray();
+
+            for (int i = 0; i < xSorted.Length; i++)
+            {
+                if (!xSorted[i].AreTheSame(ySorted[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        public static bool AreTheSame(this UserPrivacySettingRule x, UserPrivacySettingRule y)
+        {
+            return (x, y) switch
+            {
+                (UserPrivacySettingRuleAllowAll, UserPrivacySettingRuleAllowAll) => true,
+                (UserPrivacySettingRuleAllowBots, UserPrivacySettingRuleAllowBots) => true,
+                (UserPrivacySettingRuleAllowContacts, UserPrivacySettingRuleAllowContacts) => true,
+                (UserPrivacySettingRuleAllowPremiumUsers, UserPrivacySettingRuleAllowPremiumUsers) => true,
+                (UserPrivacySettingRuleRestrictAll, UserPrivacySettingRuleRestrictAll) => true,
+                (UserPrivacySettingRuleRestrictBots, UserPrivacySettingRuleRestrictBots) => true,
+                (UserPrivacySettingRuleRestrictContacts, UserPrivacySettingRuleRestrictContacts) => true,
+
+                (UserPrivacySettingRuleAllowChatMembers xAllow, UserPrivacySettingRuleAllowChatMembers yAllow)
+                    => xAllow.ChatIds.OrderBy(x => x).SequenceEqual(yAllow.ChatIds.OrderBy(x => x)),
+                (UserPrivacySettingRuleRestrictChatMembers xRestrict, UserPrivacySettingRuleRestrictChatMembers yRestrict)
+                    => xRestrict.ChatIds.OrderBy(x => x).SequenceEqual(yRestrict.ChatIds.OrderBy(x => x)),
+
+                (UserPrivacySettingRuleAllowUsers xAllow, UserPrivacySettingRuleAllowUsers yAllow)
+                    => xAllow.UserIds.OrderBy(x => x).SequenceEqual(yAllow.UserIds.OrderBy(x => x)),
+                (UserPrivacySettingRuleRestrictUsers xRestrict, UserPrivacySettingRuleRestrictUsers yRestrict)
+                    => xRestrict.UserIds.OrderBy(x => x).SequenceEqual(yRestrict.UserIds.OrderBy(x => x)),
+
+                _ => false
+            };
+        }
+
         public static bool AreTheSame(this EmojiStatus x, EmojiStatus y)
         {
             if (x == null || y == null)
@@ -2194,6 +2270,11 @@ namespace Telegram.Td.Api
 
         public static bool AreTheSame(this GiftSettings x, GiftSettings y)
         {
+            if (x == null || y == null)
+            {
+                return x == y;
+            }
+
             return x.AcceptedGiftTypes.LimitedGifts == y.AcceptedGiftTypes.LimitedGifts
                 && x.AcceptedGiftTypes.PremiumSubscription == y.AcceptedGiftTypes.PremiumSubscription
                 && x.AcceptedGiftTypes.UnlimitedGifts == y.AcceptedGiftTypes.UnlimitedGifts

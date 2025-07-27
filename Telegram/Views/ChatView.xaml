@@ -955,6 +955,12 @@
             <RowDefinition Height="Auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
+        <Border x:Name="HeaderBackground"
+                Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
+                Visibility="Collapsed"
+                Grid.ColumnSpan="2"
+                Canvas.ZIndex="2" />
+
         <Grid x:Name="Header"
               Height="{StaticResource NavigationViewTopPaneHeight}"
               Grid.ColumnSpan="2"
@@ -1849,6 +1855,8 @@
                                 </Grid>
 
                                 <Grid x:Name="EditMessageButton"
+                                      VerticalAlignment="Bottom"
+                                      Height="48"
                                       Visibility="Collapsed"
                                       Grid.Column="2">
 
@@ -1857,7 +1865,6 @@
                                              Height="16" />
 
                                     <controls:GlyphButton x:Name="btnEdit"
-                                                          VerticalAlignment="Bottom"
                                                           Click="btnSendMessage_Click"
                                                           Glyph="&#xE9F4;"
                                                           AllowFocusOnInteraction="False"
@@ -1904,7 +1911,8 @@
                                           ToolTipService.ToolTip="{CustomResource SendDirectMessage}"
                                           Foreground="{ThemeResource TelegramForegroundAccentBrush}"
                                           HorizontalAlignment="Left"
-                                          Glyph="&#xEABA;"
+                                          Glyph="&#xE954;"
+                                          FontSize="24"
                                           Visibility="Collapsed" />
                     <controls:GlyphButton x:Name="ButtonGift"
                                           Click="ButtonGift_Click"
@@ -1913,6 +1921,7 @@
                                           Foreground="{ThemeResource TelegramForegroundAccentBrush}"
                                           HorizontalAlignment="Right"
                                           Glyph="&#xEABB;"
+                                          FontSize="24"
                                           Visibility="Collapsed" />
                 </Grid>
 

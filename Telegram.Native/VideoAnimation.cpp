@@ -472,7 +472,7 @@ namespace winrt::Telegram::Native::implementation
         return nullptr;
     }
 
-    int VideoAnimation::RenderSync(IBuffer bitmap, int32_t w, int32_t h, bool preview, int32_t& seconds)
+    int VideoAnimation::RenderSync(IBuffer bitmap, int32_t w, int32_t h, bool preview, double& seconds)
     {
         uint8_t* pixels = bitmap.data();
         bool completed;
@@ -481,7 +481,7 @@ namespace winrt::Telegram::Native::implementation
         return result;
     }
 
-    int VideoAnimation::RenderSync(uint8_t* pixels, int32_t width, int32_t height, bool preview, int32_t& seconds, bool& completed)
+    int VideoAnimation::RenderSync(uint8_t* pixels, int32_t width, int32_t height, bool preview, double& seconds, bool& completed)
     {
         slim_lock_guard const guard(m_lock);
 
@@ -526,7 +526,7 @@ namespace winrt::Telegram::Native::implementation
 
                     //if (nextFrame >= prevFrame + 1.0 / 30 || framerate < 60)
                     {
-                        seconds = static_cast<int32_t>(nextFrame);
+                        seconds = nextFrame;
                         prevFrame = nextFrame;
 
                         decode_frame(pixels, width, height);

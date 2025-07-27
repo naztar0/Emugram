@@ -141,11 +141,10 @@ namespace Telegram.ViewModels
             //{
             //    return;
             //}
-            var response = await ClientService.SendAsync(new ToggleForumTopicIsPinned(topic.Info.ChatId, topic.Info.MessageThreadId, !topic.IsPinned));
+            var response = await ClientService.SendAsync(new ToggleForumTopicIsPinned(topic.Info.ChatId, topic.Info.ForumTopicId, !topic.IsPinned));
             if (response is Error error && error.Code == 400)
             {
-                // This is not the right way
-                NavigationService.ShowLimitReached(new PremiumLimitTypePinnedChatCount());
+                ShowPopup(string.Format(Strings.LimitReachedPinnedTopics, ClientService.Options.PinnedForumTopicCountMax), Strings.LimitReached, Strings.OK);
             }
         }
 

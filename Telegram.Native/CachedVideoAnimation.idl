@@ -7,7 +7,7 @@ namespace Telegram.Native
     {
 		static CachedVideoAnimation LoadFromFile(IVideoAnimationSource file, Int32 width, Int32 height, Boolean precache);
 
-        void RenderSync(Windows.Storage.Streams.IBuffer bitmap, out Int32 seconds, out Boolean completed);
+        void RenderSync(Windows.Storage.Streams.IBuffer bitmap, out Double seconds, out Boolean completed);
         void Stop();
         void Cache();
 

@@ -4,12 +4,11 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
-using Telegram.Common;
+using System;
 using Telegram.Controls.Cells;
 using Telegram.Navigation;
 using Telegram.ViewModels;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Automation;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
@@ -46,28 +45,35 @@ namespace Telegram.Views.Profile
 
         private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.InRecycleQueue || ViewModel == null)
+            try
             {
-                return;
+                if (args.InRecycleQueue || ViewModel == null)
+                {
+                    return;
+                }
+                else if (args.ItemContainer.ContentTemplateRoot is SharedFileCell cell)
+                {
+                    if (!IsProfile)
+                    {
+                        args.ItemContainer.Padding = new Thickness(4, 0, 4, 0);
+                        cell.Background = null;
+                    }
+
+                    if (args.Item is MessageWithOwner message)
+                    {
+                        cell.UpdateMessage(ViewModel.MessageDelegate, message);
+                    }
+                    else
+                    {
+                        cell.Hide();
+                    }
+
+                    args.Handled = true;
+                }
             }
-            else if (args.ItemContainer.ContentTemplateRoot is SharedFileCell cell)
+            catch (Exception ex)
             {
-                if (!IsProfile)
-                {
-                    args.ItemContainer.Padding = new Thickness(4, 0, 4, 0);
-                    cell.Background = null;
-                }
-
-                if (args.Item is MessageWithOwner message)
-                {
-                    cell.UpdateMessage(ViewModel.MessageDelegate, message);
-                }
-                else
-                {
-                    cell.Hide();
-                }
-
-                args.Handled = true;
+                Logger.Error(ex);
             }
         }
     }

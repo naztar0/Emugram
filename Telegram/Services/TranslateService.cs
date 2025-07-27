@@ -16,7 +16,7 @@ using Telegram.ViewModels;
 
 namespace Telegram.Services
 {
-    public interface ITranslateService
+    public interface ITranslateService : IService
     {
         bool CanTranslateText(string text, bool entireChat = false);
         bool CanTranslateText(FormattedText text, bool entireChat = false);
@@ -30,21 +30,15 @@ namespace Telegram.Services
         bool Translate(MessageViewModel message, string toLanguage);
     }
 
-    public partial class TranslateService : ITranslateService
+    public partial class TranslateService : ServiceBase, ITranslateService
     {
-        private readonly IClientService _clientService;
-        private readonly ISettingsService _settings;
-        private readonly IEventAggregator _aggregator;
-
         private const string LANG_UND = "und";
         private const string LANG_AUTO = "auto";
         private const string LANG_LATN = "latn";
 
         public TranslateService(IClientService clientService, ISettingsService settings, IEventAggregator aggregator)
+            : base(clientService, settings, aggregator)
         {
-            _clientService = clientService;
-            _settings = settings;
-            _aggregator = aggregator;
         }
 
         public static string LanguageName(string locale)
@@ -99,8 +93,8 @@ namespace Telegram.Services
         public bool CanTranslate(string language, bool entireChat)
         {
             var allowed = entireChat
-                ? _settings.Translate.Chats
-                : _settings.Translate.Messages;
+                ? Settings.Translate.Chats
+                : Settings.Translate.Messages;
 
             if (string.IsNullOrEmpty(language) || !allowed)
             {
@@ -108,7 +102,7 @@ namespace Telegram.Services
             }
 
             var split = language.Split('-');
-            var exclude = _settings.Translate.DoNot;
+            var exclude = Settings.Translate.DoNot;
 
             if (entireChat)
             {
@@ -134,12 +128,12 @@ namespace Telegram.Services
 
         public async Task<object> TranslateAsync(FormattedText text, string toLanguage)
         {
-            return await _clientService.SendAsync(new TranslateText(text, toLanguage));
+            return await ClientService.SendAsync(new TranslateText(text, toLanguage));
         }
 
         public async Task<object> TranslateAsync(long chatId, long messageId, string toLanguage)
         {
-            return await _clientService.SendAsync(new TranslateMessageText(chatId, messageId, toLanguage));
+            return await ClientService.SendAsync(new TranslateMessageText(chatId, messageId, toLanguage));
         }
 
         private readonly ConcurrentDictionary<TranslatedKey, TranslatedMessage> _translations = new();
@@ -173,7 +167,7 @@ namespace Telegram.Services
                 message.TranslatedText = new MessageTranslateResultPending();
 
                 _translations[key] = new TranslatedMessage(cached, null);
-                _clientService.Send(new TranslateMessageText(message.ChatId, message.Id, toLanguage), handler =>
+                ClientService.Send(new TranslateMessageText(message.ChatId, message.Id, toLanguage), handler =>
                 {
                     if (handler is FormattedText text && string.Equals(message.Text?.Text, cached))
                     {
@@ -186,7 +180,7 @@ namespace Telegram.Services
                         message.TranslatedText = result;
 
                         _translations[key] = new TranslatedMessage(cached, result);
-                        _aggregator.Publish(new UpdateMessageTranslatedText(message.ChatId, message.Id, result));
+                        Aggregator.Publish(new UpdateMessageTranslatedText(message.ChatId, message.Id, result));
                     }
                 });
 

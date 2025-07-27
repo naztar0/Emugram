@@ -46,7 +46,7 @@
                             <TextBlock x:Name="Link"
                                        TextTrimming="CharacterEllipsis" />
                         </Button>
-                        <TextBlock Text="&#xE8C8;"
+                        <TextBlock Text="&#xEAC9;"
                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
                                    FontSize="20"
                                    Foreground="{ThemeResource AccentButtonBackground}"

@@ -581,6 +581,356 @@ namespace winrt::Telegram::Native::implementation
         set_pixel_alpha(pixels, cx + 1, cy + 4, width, height, sa, sr, sg, sb, 64);
     }
 
+    // 4px diameter star-like plus shapes (thick center, thin arms)
+    inline void draw_plus_4px_100(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // Star-like 4px plus - thick center, thin arms
+        // Thick center (3x3)
+        for (int i = -1; i <= 1; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Thin arm extensions
+        set_pixel(pixels, cx - 2, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 2, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy - 2, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy + 2, width, height, sa, sr, sg, sb);
+
+        // Thin arm extensions
+        set_pixel_alpha(pixels, cx - 1, cy - 1, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx - 1, cy + 1, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx + 1, cy - 1, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx + 1, cy + 1, width, height, sa, sr, sg, sb, 64);
+    }
+
+    inline void draw_plus_4px_125(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 5px effective size with tapered arms
+        draw_plus_4px_100(pixels, width, height, cx, cy, sa, sr, sg, sb);
+
+        // Tapered anti-aliasing on arm tips
+        set_pixel_alpha(pixels, cx - 3, cy, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx + 3, cy, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx, cy - 3, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx, cy + 3, width, height, sa, sr, sg, sb, 64);
+    }
+
+    inline void draw_plus_4px_150(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 6px effective size with gradual taper
+        draw_plus_4px_100(pixels, width, height, cx, cy, sa, sr, sg, sb);
+
+        // Medium taper on arm tips
+        set_pixel_alpha(pixels, cx - 3, cy, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx + 3, cy, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx, cy - 3, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx, cy + 3, width, height, sa, sr, sg, sb, 128);
+    }
+
+    inline void draw_plus_4px_200(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 8px effective size - star-like with longer tapered arms
+        // Thick center (3x3)
+        for (int i = -1; i <= 1; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Medium thickness at arm base
+        set_pixel(pixels, cx - 2, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 2, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy - 2, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy + 2, width, height, sa, sr, sg, sb);
+
+        // Gradual taper with alpha
+        set_pixel_alpha(pixels, cx - 3, cy, width, height, sa, sr, sg, sb, 160);
+        set_pixel_alpha(pixels, cx + 3, cy, width, height, sa, sr, sg, sb, 160);
+        set_pixel_alpha(pixels, cx, cy - 3, width, height, sa, sr, sg, sb, 160);
+        set_pixel_alpha(pixels, cx, cy + 3, width, height, sa, sr, sg, sb, 160);
+
+        // Thin tips
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 96);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 96);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 96);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 96);
+    }
+
+    inline void draw_plus_4px_250(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 10px effective size with smooth star taper
+        // Thick center (3x3)
+        for (int i = -1; i <= 1; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Medium thickness at arm base
+        set_pixel(pixels, cx - 2, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 2, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy - 2, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy + 2, width, height, sa, sr, sg, sb);
+
+        // Smooth gradual taper
+        set_pixel_alpha(pixels, cx - 3, cy, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx + 3, cy, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx, cy - 3, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx, cy + 3, width, height, sa, sr, sg, sb, 200);
+
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 140);
+
+        // Very thin tips
+        set_pixel_alpha(pixels, cx - 5, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx + 5, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy - 5, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy + 5, width, height, sa, sr, sg, sb, 80);
+    }
+
+    inline void draw_plus_4px_400(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 16px effective size with dramatic star taper
+        // Thick center (5x5)
+        for (int i = -2; i <= 2; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Add some thickness to center
+        set_pixel(pixels, cx - 1, cy - 1, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 1, cy - 1, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx - 1, cy + 1, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 1, cy + 1, width, height, sa, sr, sg, sb);
+
+        // Gradual taper with multiple alpha levels
+        set_pixel_alpha(pixels, cx - 3, cy, width, height, sa, sr, sg, sb, 220);
+        set_pixel_alpha(pixels, cx + 3, cy, width, height, sa, sr, sg, sb, 220);
+        set_pixel_alpha(pixels, cx, cy - 3, width, height, sa, sr, sg, sb, 220);
+        set_pixel_alpha(pixels, cx, cy + 3, width, height, sa, sr, sg, sb, 220);
+
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 180);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 180);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 180);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 180);
+
+        set_pixel_alpha(pixels, cx - 5, cy, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx + 5, cy, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx, cy - 5, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx, cy + 5, width, height, sa, sr, sg, sb, 140);
+
+        set_pixel_alpha(pixels, cx - 6, cy, width, height, sa, sr, sg, sb, 100);
+        set_pixel_alpha(pixels, cx + 6, cy, width, height, sa, sr, sg, sb, 100);
+        set_pixel_alpha(pixels, cx, cy - 6, width, height, sa, sr, sg, sb, 100);
+        set_pixel_alpha(pixels, cx, cy + 6, width, height, sa, sr, sg, sb, 100);
+
+        // Very thin tips
+        set_pixel_alpha(pixels, cx - 7, cy, width, height, sa, sr, sg, sb, 60);
+        set_pixel_alpha(pixels, cx + 7, cy, width, height, sa, sr, sg, sb, 60);
+        set_pixel_alpha(pixels, cx, cy - 7, width, height, sa, sr, sg, sb, 60);
+        set_pixel_alpha(pixels, cx, cy + 7, width, height, sa, sr, sg, sb, 60);
+    }
+
+    // 6px diameter star-like plus shapes (thick center, thin arms)
+    inline void draw_plus_6px_100(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // Star-like 6px plus - thick center, thin arms
+        // Thick center (5x5)
+        for (int i = -2; i <= 2; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Thin arm extensions
+        set_pixel(pixels, cx - 3, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 3, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy - 3, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy + 3, width, height, sa, sr, sg, sb);
+
+        // Thin arm extensions
+        set_pixel_alpha(pixels, cx - 1, cy - 1, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx - 1, cy + 1, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx + 1, cy - 1, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx + 1, cy + 1, width, height, sa, sr, sg, sb, 128);
+    }
+
+    inline void draw_plus_6px_125(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 7.5px effective size with tapered arms
+        draw_plus_6px_100(pixels, width, height, cx, cy, sa, sr, sg, sb);
+
+        // Tapered anti-aliasing on arm tips
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 64);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 64);
+    }
+
+    inline void draw_plus_6px_150(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 9px effective size with gradual taper
+        draw_plus_6px_100(pixels, width, height, cx, cy, sa, sr, sg, sb);
+
+        // Medium taper on arm tips
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 128);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 128);
+    }
+
+    inline void draw_plus_6px_200(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 12px effective size - star-like with longer tapered arms
+        // Thick center (5x5)
+        for (int i = -2; i <= 2; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Medium thickness at arm base
+        set_pixel(pixels, cx - 3, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 3, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy - 3, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy + 3, width, height, sa, sr, sg, sb);
+
+        // Gradual taper with alpha
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 180);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 180);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 180);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 180);
+
+        // Thin tips
+        set_pixel_alpha(pixels, cx - 5, cy, width, height, sa, sr, sg, sb, 120);
+        set_pixel_alpha(pixels, cx + 5, cy, width, height, sa, sr, sg, sb, 120);
+        set_pixel_alpha(pixels, cx, cy - 5, width, height, sa, sr, sg, sb, 120);
+        set_pixel_alpha(pixels, cx, cy + 5, width, height, sa, sr, sg, sb, 120);
+
+        set_pixel_alpha(pixels, cx - 6, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx + 6, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy - 6, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy + 6, width, height, sa, sr, sg, sb, 80);
+    }
+
+    inline void draw_plus_6px_250(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 15px effective size with smooth star taper
+        // Thick center (5x5)
+        for (int i = -2; i <= 2; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Medium thickness at arm base
+        set_pixel(pixels, cx - 3, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx + 3, cy, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy - 3, width, height, sa, sr, sg, sb);
+        set_pixel(pixels, cx, cy + 3, width, height, sa, sr, sg, sb);
+
+        // Smooth gradual taper
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 200);
+
+        set_pixel_alpha(pixels, cx - 5, cy, width, height, sa, sr, sg, sb, 160);
+        set_pixel_alpha(pixels, cx + 5, cy, width, height, sa, sr, sg, sb, 160);
+        set_pixel_alpha(pixels, cx, cy - 5, width, height, sa, sr, sg, sb, 160);
+        set_pixel_alpha(pixels, cx, cy + 5, width, height, sa, sr, sg, sb, 160);
+
+        set_pixel_alpha(pixels, cx - 6, cy, width, height, sa, sr, sg, sb, 120);
+        set_pixel_alpha(pixels, cx + 6, cy, width, height, sa, sr, sg, sb, 120);
+        set_pixel_alpha(pixels, cx, cy - 6, width, height, sa, sr, sg, sb, 120);
+        set_pixel_alpha(pixels, cx, cy + 6, width, height, sa, sr, sg, sb, 120);
+
+        // Very thin tips
+        set_pixel_alpha(pixels, cx - 7, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx + 7, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy - 7, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy + 7, width, height, sa, sr, sg, sb, 80);
+    }
+
+    inline void draw_plus_6px_400(int32_t* pixels, int width, int height,
+        int cx, int cy, int sa, int sr, int sg, int sb)
+    {
+        // 24px effective size with dramatic star taper
+        // Thick center (7x7)
+        for (int i = -3; i <= 3; i++)
+        {
+            set_pixel(pixels, cx + i, cy, width, height, sa, sr, sg, sb);
+            set_pixel(pixels, cx, cy + i, width, height, sa, sr, sg, sb);
+        }
+
+        // Add thickness to center
+        for (int i = -1; i <= 1; i++)
+        {
+            for (int j = -1; j <= 1; j++)
+            {
+                set_pixel(pixels, cx + i, cy + j, width, height, sa, sr, sg, sb);
+            }
+        }
+
+        // Gradual taper with multiple alpha levels
+        set_pixel_alpha(pixels, cx - 4, cy, width, height, sa, sr, sg, sb, 230);
+        set_pixel_alpha(pixels, cx + 4, cy, width, height, sa, sr, sg, sb, 230);
+        set_pixel_alpha(pixels, cx, cy - 4, width, height, sa, sr, sg, sb, 230);
+        set_pixel_alpha(pixels, cx, cy + 4, width, height, sa, sr, sg, sb, 230);
+
+        set_pixel_alpha(pixels, cx - 5, cy, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx + 5, cy, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx, cy - 5, width, height, sa, sr, sg, sb, 200);
+        set_pixel_alpha(pixels, cx, cy + 5, width, height, sa, sr, sg, sb, 200);
+
+        set_pixel_alpha(pixels, cx - 6, cy, width, height, sa, sr, sg, sb, 170);
+        set_pixel_alpha(pixels, cx + 6, cy, width, height, sa, sr, sg, sb, 170);
+        set_pixel_alpha(pixels, cx, cy - 6, width, height, sa, sr, sg, sb, 170);
+        set_pixel_alpha(pixels, cx, cy + 6, width, height, sa, sr, sg, sb, 170);
+
+        set_pixel_alpha(pixels, cx - 7, cy, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx + 7, cy, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx, cy - 7, width, height, sa, sr, sg, sb, 140);
+        set_pixel_alpha(pixels, cx, cy + 7, width, height, sa, sr, sg, sb, 140);
+
+        set_pixel_alpha(pixels, cx - 8, cy, width, height, sa, sr, sg, sb, 110);
+        set_pixel_alpha(pixels, cx + 8, cy, width, height, sa, sr, sg, sb, 110);
+        set_pixel_alpha(pixels, cx, cy - 8, width, height, sa, sr, sg, sb, 110);
+        set_pixel_alpha(pixels, cx, cy + 8, width, height, sa, sr, sg, sb, 110);
+
+        set_pixel_alpha(pixels, cx - 9, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx + 9, cy, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy - 9, width, height, sa, sr, sg, sb, 80);
+        set_pixel_alpha(pixels, cx, cy + 9, width, height, sa, sr, sg, sb, 80);
+
+        // Very thin tips
+        set_pixel_alpha(pixels, cx - 10, cy, width, height, sa, sr, sg, sb, 50);
+        set_pixel_alpha(pixels, cx + 10, cy, width, height, sa, sr, sg, sb, 50);
+        set_pixel_alpha(pixels, cx, cy - 10, width, height, sa, sr, sg, sb, 50);
+        set_pixel_alpha(pixels, cx, cy + 10, width, height, sa, sr, sg, sb, 50);
+
+        set_pixel_alpha(pixels, cx - 11, cy, width, height, sa, sr, sg, sb, 30);
+        set_pixel_alpha(pixels, cx + 11, cy, width, height, sa, sr, sg, sb, 30);
+        set_pixel_alpha(pixels, cx, cy - 11, width, height, sa, sr, sg, sb, 30);
+        set_pixel_alpha(pixels, cx, cy + 11, width, height, sa, sr, sg, sb, 30);
+    }
+
     // Dispatch function for easy usage
     inline void draw_plus_scaled(int32_t* pixels, int width, int height, Particle* particle, Color color, int scale, double rasterizationScale)
     {
@@ -612,6 +962,30 @@ namespace winrt::Telegram::Native::implementation
             case 400: draw_plus_2px_400(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
             }
         }
+        else if (radius == 2)
+        {
+            switch (scale)
+            {
+            case 100: draw_plus_4px_100(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 125: draw_plus_4px_125(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 150: draw_plus_4px_150(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 200: draw_plus_4px_200(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 250: draw_plus_4px_250(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 400: draw_plus_4px_400(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            }
+        }
+        else if (radius == 3)
+        {
+            switch (scale)
+            {
+            case 100: draw_plus_6px_100(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 125: draw_plus_6px_125(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 150: draw_plus_6px_150(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 200: draw_plus_6px_200(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 250: draw_plus_6px_250(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            case 400: draw_plus_6px_400(pixels, width, height, cx, cy, color.A, color.R, color.G, color.B); break;
+            }
+        }
     }
 
 #pragma endregion
@@ -632,10 +1006,10 @@ namespace winrt::Telegram::Native::implementation
             // if(dot.mOpacity <= 0) dot.mOpacity = dot.opacity;
 
             // const easedOpacity = easing(dot.mOpacity);
-            auto easedOpacity = (byte)(std::clamp(dot->Opacity, 0., 1.) * 255);
+            auto easedOpacity = (byte)(std::clamp(dot->Opacity, 0., 1.) * m_foreground.A);
             auto color = premultiply_color(m_foreground.R, m_foreground.G, m_foreground.B, easedOpacity);
 
-            if (m_type == ParticlesType::Status)
+            if (m_type == ParticlesType::Status || m_type == ParticlesType::Premium)
             {
                 draw_plus_scaled(pixels, m_width, m_height, dot, color, m_scalePercent, m_rasterizationScale);
             }
@@ -789,7 +1163,7 @@ namespace winrt::Telegram::Native::implementation
         auto h = m_height * (1 / m_rasterizationScale);
 
         auto count = round(w * h / (35 * (IS_MOBILE ? 2 : 1)));
-        count *= m_type == ParticlesType::Text ? 4 : 1;
+        count *= m_type == ParticlesType::Text ? 4 : m_type == ParticlesType::Premium ? 0.5 : 1;
         count = min(/*!liteMode.isAvailable('chat_spoilers') ? 400 :*/ IS_MOBILE ? 1000 : 2200, count);
 
         auto particles = NextPoints(count, m_width, m_height);
@@ -803,10 +1177,12 @@ namespace winrt::Telegram::Native::implementation
 
     Particle ParticlesAnimation::GenerateParticle(int32_t type, const Point& position)
     {
-        const auto threshold = m_type == ParticlesType::Status ? .2f : .8f;
+        const auto threshold = m_type == ParticlesType::Status || m_type == ParticlesType::Premium ? .2f : .8f;
+        const auto small = m_type == ParticlesType::Premium ? 2 : 0.5f;
+        const auto large = m_type == ParticlesType::Premium ? 3 : 1.0f;
 
         auto opacity = type == 1 ? 0 : NextDouble();
-        auto radius = (NextDouble() >= threshold ? 1.f : 0.5f);
+        auto radius = (NextDouble() >= threshold ? large : small);
         auto adding = type == -1
             ? NextDouble() >= .5
             : type;

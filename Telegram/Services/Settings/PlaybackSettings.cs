@@ -13,7 +13,6 @@ namespace Telegram.Services.Settings
         public PlaybackSettings(ApplicationDataContainer container)
             : base(container)
         {
-
         }
 
         private int? _repeatMode;

@@ -921,63 +921,39 @@ namespace Telegram.Views.Host
             view.TryResizeView(ApplicationView.PreferredLaunchViewSize);
         }
 
-        private Task Test()
-        {
-            var tsc = new TaskCompletionSource<bool>();
-            void handler(object sender, object e)
-            {
-                Windows.UI.Xaml.Media.CompositionTarget.Rendered -= handler;
-                tsc.SetResult(true);
-            }
-
-            Windows.UI.Xaml.Media.CompositionTarget.Rendered += handler;
-            return tsc.Task;
-        }
-
         private async void Theme_Click(object sender, RoutedEventArgs e)
         {
-            var animate = true;
-            if (animate)
+            if (PowerSavingPolicy.AreSmoothTransitionsEnabled)
             {
+                Transition.Visibility = Visibility.Collapsed;
                 Theme.Visibility = Visibility.Collapsed;
-
-                if (false)
-                {
-                    await Test();
-                }
 
                 var visual = BootStrapper.Current.Compositor.CreateRedirectVisual(this, Vector2.Zero, ActualSize, true);
                 await VisualUtilities.WaitForCompositionRenderedAsync();
 
                 ElementCompositionPreview.SetElementChildVisual(Transition, visual);
 
-                //var bitmap = ScreenshotManager.Capture();
-                //Transition.Background = new ImageBrush { ImageSource = bitmap, AlignmentX = AlignmentX.Center, AlignmentY = AlignmentY.Center, RelativeTransform = new ScaleTransform { ScaleY = -1, CenterY = 0.5 } };
-
+                Transition.Visibility = Visibility.Visible;
                 Theme.Visibility = Visibility.Visible;
                 Theme.Foreground = new SolidColorBrush(ActualTheme != ElementTheme.Dark ? Windows.UI.Colors.White : Windows.UI.Colors.Black);
-                //Theme.Foreground = new SolidColorBrush(Windows.UI.Colors.White);
 
                 var actualWidth = (float)ActualWidth;
                 var actualHeight = (float)ActualHeight;
 
                 var transform = Theme.TransformToVisual(this);
                 var point = transform.TransformVector2();
-
-                var width = MathF.Max(actualWidth - point.X, actualHeight - point.Y);
-                var diaginal = MathF.Sqrt((width * width) + (width * width));
+                var diagonal = MathFEx.DistanceToFarthestCorner(point + Theme.ActualSize / 2, LayoutRoot.ActualSize);
 
                 var expand = false; // ActualTheme == ElementTheme.Dark;
 
                 var rect1 = CanvasGeometry.CreateRectangle(null, 0, 0, expand ? 0 : actualWidth, expand ? 0 : actualHeight);
 
-                var elli1 = CanvasGeometry.CreateCircle(null, point.X + 24, point.Y + 24, expand ? 0 : diaginal);
+                var elli1 = CanvasGeometry.CreateCircle(null, point.X + 24, point.Y + 24, expand ? 0 : diagonal);
                 var group1 = CanvasGeometry.CreateGroup(null, new[] { elli1, rect1 }, CanvasFilledRegionDetermination.Alternate);
 
-                var elli2 = CanvasGeometry.CreateCircle(null, point.X + 24, point.Y + 24, expand ? diaginal : 0);
+                var elli2 = CanvasGeometry.CreateCircle(null, point.X + 24, point.Y + 24, expand ? diagonal : 0);
                 var group2 = CanvasGeometry.CreateGroup(null, new[] { elli2, rect1 }, CanvasFilledRegionDetermination.Alternate);
 
-                //var visual = ElementComposition.GetElementVisual(Transition);
                 var ellipse = visual.Compositor.CreatePathGeometry(new CompositionPath(group2));
                 var clip = visual.Compositor.CreateGeometricClip(ellipse);
 
@@ -988,9 +964,10 @@ namespace Telegram.Views.Host
                 {
                     visual.Clip = null;
                     visual.Brush = visual.Compositor.CreateColorBrush(Windows.UI.Colors.Transparent);
-                    //Transition.Background = null;
 
                     ElementCompositionPreview.SetElementChildVisual(Transition, visual.Compositor.CreateSpriteVisual());
+
+                    Transition.Visibility = Visibility.Collapsed;
                     Theme.Foreground = new SolidColorBrush(ActualTheme == ElementTheme.Dark ? Windows.UI.Colors.White : Windows.UI.Colors.Black);
                 };
 

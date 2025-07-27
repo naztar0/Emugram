@@ -230,6 +230,11 @@ namespace Telegram.Controls.Messages.Content
                 premium = sticker.IsPremium;
                 return sticker.Sticker;
             }
+            else if (content is MessageAnimatedEmoji animatedEmoji)
+            {
+                premium = false;
+                return animatedEmoji.AnimatedEmoji.Sticker;
+            }
             else if (content is MessageText text && text.LinkPreview?.Type is LinkPreviewTypeSticker previewSticker)
             {
                 premium = false;

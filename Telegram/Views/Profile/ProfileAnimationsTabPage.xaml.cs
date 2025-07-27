@@ -4,13 +4,13 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using System;
 using Telegram.Common;
 using Telegram.Controls;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.ViewModels.Chats;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Automation;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Media.Animation;
@@ -43,33 +43,40 @@ namespace Telegram.Views.Profile
 
         private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.InRecycleQueue || ViewModel == null)
+            try
             {
-                return;
+                if (args.InRecycleQueue)
+                {
+                    return;
+                }
+                else if (args.ItemContainer.ContentTemplateRoot is Grid content)
+                {
+                    var photo = content.Children[0] as ImageView;
+
+                    if (args.Item is MessageWithOwner message && message.Content is MessageAnimation animation)
+                    {
+                        if (animation.Animation.Thumbnail is { Format: ThumbnailFormatJpeg })
+                        {
+                            photo.SetSource(message.ClientService, animation.Animation.Thumbnail.File, animation.Animation.Minithumbnail);
+                        }
+                        else if (animation.Animation.Minithumbnail != null)
+                        {
+                            var bitmap = new BitmapImage();
+                            PlaceholderHelper.GetBlurred(bitmap, animation.Animation.Minithumbnail.Data);
+                            photo.Source = bitmap;
+                        }
+                    }
+                    else
+                    {
+                        photo.Clear();
+                    }
+
+                    args.Handled = true;
+                }
             }
-            else if (args.ItemContainer.ContentTemplateRoot is Grid content)
+            catch (Exception ex)
             {
-                var photo = content.Children[0] as ImageView;
-
-                if (args.Item is MessageWithOwner { Content: MessageAnimation animation })
-                {
-                    if (animation.Animation.Thumbnail is { Format: ThumbnailFormatJpeg })
-                    {
-                        photo.SetSource(ViewModel.ClientService, animation.Animation.Thumbnail.File, animation.Animation.Minithumbnail);
-                    }
-                    else if (animation.Animation.Minithumbnail != null)
-                    {
-                        var bitmap = new BitmapImage();
-                        PlaceholderHelper.GetBlurred(bitmap, animation.Animation.Minithumbnail.Data);
-                        photo.Source = bitmap;
-                    }
-                }
-                else
-                {
-                    photo.Clear();
-                }
-
-                args.Handled = true;
+                Logger.Error(ex);
             }
         }
 
