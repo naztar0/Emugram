@@ -318,7 +318,7 @@ namespace Telegram.Services
                     }
                 }
 
-                if (!hashtags.Contains(updateChannel) || !document.Document.FileName.Contains("x64") || !document.Document.FileName.EndsWith(".msixbundle"))
+                if (!hashtags.Contains(updateChannel) || !document.Document.FileName.Contains("arm64") || !document.Document.FileName.EndsWith(".msixbundle"))
                 {
                     continue;
                 }
