@@ -14,8 +14,6 @@ namespace Telegram.Streams
 {
     public partial class RemoteFileStream : MediaInput
     {
-        private readonly File _file;
-
         private readonly RemoteFileSource _source;
 
         private FileStreamFromApp _fileStream;
@@ -25,9 +23,7 @@ namespace Telegram.Streams
 
         public RemoteFileStream(IClientService clientService, File file)
         {
-            _file = file;
             _source = new RemoteFileSource(clientService, file);
-
             CanSeek = true;
         }
 
@@ -38,7 +34,7 @@ namespace Telegram.Streams
         /// <returns><c>true</c> if the stream opened successfully</returns>
         public override bool Open(out ulong size)
         {
-            size = (ulong)_file.Size;
+            size = (ulong)_source.FileSize;
 
             _source.Open();
             return true;
@@ -56,12 +52,12 @@ namespace Telegram.Streams
             {
                 _source.ReadCallback((int)len);
 
-                if (_disposed || _source.Offset == _file.Size)
+                if (_disposed || _source.Offset == _source.FileSize)
                 {
                     return 0;
                 }
 
-                var path = _file.Local.Path;
+                var path = _source.FilePath;
                 if (path.Length > 0 && !_source.IsCanceled && (_fileStream == null || _filePath != path))
                 {
                     _fileStream?.Close();

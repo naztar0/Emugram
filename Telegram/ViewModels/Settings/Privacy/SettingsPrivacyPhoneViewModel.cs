@@ -4,12 +4,14 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Telegram.Converters;
 using Telegram.Navigation;
 using Telegram.Navigation.Services;
 using Telegram.Services;
 using Telegram.Td.Api;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 
 namespace Telegram.ViewModels.Settings.Privacy
@@ -25,8 +27,19 @@ namespace Telegram.ViewModels.Settings.Privacy
             _showPhone = showPhone;
             _allowFindingByPhoneNumber = allowFindingByPhoneNumber;
 
+            _showPhone.PropertyChanged += OnPropertyChanged;
+            _allowFindingByPhoneNumber.PropertyChanged += OnPropertyChanged;
+
             Children.Add(showPhone);
             Children.Add(allowFindingByPhoneNumber);
+        }
+
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(HasChanged))
+            {
+                RaisePropertyChanged(nameof(HasChanged));
+            }
         }
 
         public SettingsPrivacyShowPhoneViewModel ShowPhone => _showPhone;
@@ -49,8 +62,32 @@ namespace Telegram.ViewModels.Settings.Privacy
             return Task.CompletedTask;
         }
 
-        public async void Save()
+        public override async void NavigatingFrom(NavigatingEventArgs args)
         {
+            if (!_completed && HasChanged)
+            {
+                args.Cancel = true;
+
+                var confirm = await ShowPopupAsync(Strings.PrivacySettingsChangedAlert, Strings.UnsavedChanges, Strings.ApplyTheme, Strings.PassportDiscard);
+                if (confirm == ContentDialogResult.Primary)
+                {
+                    Continue();
+                }
+                else if (confirm == ContentDialogResult.Secondary)
+                {
+                    _completed = true;
+                    NavigationService.GoBack();
+                }
+            }
+        }
+
+        protected bool _completed;
+        public virtual bool HasChanged => ShowPhone.HasChanged || AllowFindingByPhoneNumber.HasChanged;
+
+        public async void Continue()
+        {
+            _completed = true;
+
             var response1 = await ShowPhone.SendAsync();
             var response2 = await AllowFindingByPhoneNumber.SendAsync();
             if (response1 is Ok && response2 is Ok)

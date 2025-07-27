@@ -106,20 +106,22 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="controls:ProgressVoice">
-                                    <Grid>
-                                        <Path x:Name="HorizontalTrackRect"
-                                              Margin="{TemplateBinding Padding}"
-                                              Fill="{TemplateBinding Background}"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              HorizontalAlignment="Stretch" />
-                                        <Path x:Name="ProgressBarIndicator"
-                                              Margin="{TemplateBinding Padding}"
-                                              Fill="{TemplateBinding Foreground}"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              HorizontalAlignment="Left" />
-                                    </Grid>
+                                    <Border Background="Transparent">
+                                        <Grid x:Name="RootGrid">
+                                            <Rectangle x:Name="HorizontalTrackRect"
+                                                       Margin="{TemplateBinding Padding}"
+                                                       Fill="{TemplateBinding Background}"
+                                                       StrokeStartLineCap="Round"
+                                                       StrokeEndLineCap="Round"
+                                                       HorizontalAlignment="Stretch" />
+                                            <Rectangle x:Name="ProgressBarIndicator"
+                                                       Margin="{TemplateBinding Padding}"
+                                                       Fill="{TemplateBinding Foreground}"
+                                                       StrokeStartLineCap="Round"
+                                                       StrokeEndLineCap="Round"
+                                                       HorizontalAlignment="Left" />
+                                        </Grid>
+                                    </Border>
                                 </ControlTemplate>
                             </Setter.Value>
                         </Setter>
@@ -172,7 +174,7 @@
                                                                 CheckedGlyph="&#xE720;"
                                                                 CornerRadius="22"
                                                                 IsOneWay="False"
-                                                                Margin="-4"/>
+                                                                Margin="-4" />
                         </Border>
                     </Grid>
 

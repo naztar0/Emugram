@@ -118,6 +118,7 @@ namespace Telegram.Common
             this["ContentControlThemeFontFamily"] = new FontFamily(XamlAutoFontFamily);
             this["EmojiThemeFontFamily"] = new FontFamily(XamlAutoFontFamily);
             this["EmojiThemeFontFamilyWithSymbols"] = new FontFamily(XamlAutoFontFamily + comma + "ms-appx:///Assets/Fonts/Telegram.ttf#Telegram");
+            this["EmojiThemeFontFamilyWithRounded"] = new FontFamily(XamlAutoFontFamily + comma + "ms-appx:///Assets/Fonts/Nunito.ttf#Nunito" + comma + "ms-appx:///Assets/Fonts/Telegram.ttf#Telegram");
             this["EmojiTextThemeFontFamily"] = new FontFamily(XamlAutoFontFamily + comma + xamlAutoFontFamilyValue);
         }
 
@@ -224,6 +225,13 @@ namespace Telegram.Common
 
                     var accent = settings.AccentColor.ToColor();
                     var outgoing = settings.OutgoingMessageAccentColor.ToColor();
+                    //var outgoing = settings.OutgoingMessageFill switch
+                    //{
+                    //    //BackgroundFillSolid solid => solid.Color.ToColor(),
+                    //    BackgroundFillGradient gradient => gradient.TopColor.ToColor(),
+                    //    BackgroundFillFreeformGradient freeform => freeform.Colors[0].ToColor(),
+                    //    _ => settings.OutgoingMessageAccentColor.ToColor()
+                    //};
 
                     var info = ThemeAccentInfo.FromAccent(tint, accent, outgoing);
                     ThemeOutgoing.Update(info.Parent, info.Values);

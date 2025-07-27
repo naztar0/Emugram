@@ -6,8 +6,13 @@
 //
 using System;
 using System.Collections.Generic;
+using Telegram.Native;
+using Telegram.Navigation;
 using Telegram.Td.Api;
 using Windows.Foundation;
+using Windows.UI.Composition;
+using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -17,40 +22,58 @@ namespace Telegram.Controls
 
     public partial class ProgressVoice : PlaybackSlider
     {
-        private Path ProgressBarIndicator;
-        private Path HorizontalTrackRect;
+        private Grid RootGrid;
+        private Rectangle ProgressBarIndicator;
+        private Rectangle HorizontalTrackRect;
 
-        private GeometryGroup _group1;
-        private GeometryGroup _group2;
+        private CompositionGeometricClip _clip;
 
         public ProgressVoice()
         {
             DefaultStyleKey = typeof(ProgressVoice);
 
-            _group1 = new GeometryGroup();
-            _group2 = new GeometryGroup();
+            _clip = BootStrapper.Current.Compositor.CreateGeometricClip();
         }
 
         protected override void OnApplyTemplate()
         {
-            ProgressBarIndicator = GetTemplateChild("ProgressBarIndicator") as Path;
-            HorizontalTrackRect = GetTemplateChild("HorizontalTrackRect") as Path;
+            RootGrid = GetTemplateChild(nameof(RootGrid)) as Grid;
+            ProgressBarIndicator = GetTemplateChild("ProgressBarIndicator") as Rectangle;
+            HorizontalTrackRect = GetTemplateChild("HorizontalTrackRect") as Rectangle;
 
-            ProgressBarIndicator.Data = _group1;
-            HorizontalTrackRect.Data = _group2;
-
-            if (_deferred != null && _deferred.Duration != -1)
-            {
-                UpdateWaveform(_deferred);
-                //_deferred = null;
-            }
+            var visual = ElementComposition.GetElementVisual(RootGrid);
+            visual.Clip = _clip;
 
             base.OnApplyTemplate();
         }
 
+        private VoiceNote _deferred;
+
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            if (_deferred is VoiceNote voiceNote)
+            {
+                var maxVoiceLength = 30.0;
+                var minVoiceLength = 2.0;
+
+                var minVoiceWidth = 72.0;
+                var maxVoiceWidth = 226.0;
+
+                var calcDuration = Math.Max(minVoiceLength, Math.Min(maxVoiceLength, voiceNote.Duration));
+                var waveformWidth = minVoiceWidth + (maxVoiceWidth - minVoiceWidth) * (calcDuration - minVoiceLength) / (maxVoiceLength - minVoiceLength);
+
+                availableSize = new Size(waveformWidth, 20);
+
+                RootGrid.Measure(availableSize);
+                return availableSize;
+            }
+
+            return base.MeasureOverride(availableSize);
+        }
+
         protected override Size ArrangeOverride(Size finalSize)
         {
-            if (_deferred != null && _deferred.Duration == -1)
+            if (_deferred != null)
             {
                 UpdateWaveform(_deferred.Waveform, 0, finalSize.Width);
             }
@@ -58,32 +81,11 @@ namespace Telegram.Controls
             return base.ArrangeOverride(finalSize);
         }
 
-        private VoiceNote _deferred;
-
         public void UpdateWaveform(VoiceNote voiceNote)
         {
             _deferred = voiceNote;
-
-            if (voiceNote.Duration == -1)
-            {
-                // Recording
-                InvalidateArrange();
-            }
-            else
-            {
-                // Bubble
-                var maxVoiceLength = 30.0;
-                var minVoiceLength = 2.0;
-
-                var minVoiceWidth = 72.0;
-                var maxVoiceWidth = 226.0;
-
-
-                var calcDuration = Math.Max(minVoiceLength, Math.Min(maxVoiceLength, voiceNote.Duration));
-                var waveformWidth = minVoiceWidth + (maxVoiceWidth - minVoiceWidth) * (calcDuration - minVoiceLength) / (maxVoiceLength - minVoiceLength);
-
-                UpdateWaveform(voiceNote.Waveform, calcDuration, waveformWidth);
-            }
+            InvalidateMeasure();
+            InvalidateArrange();
         }
 
         private void UpdateWaveform(IList<byte> waveform, double duration, double waveformWidth)
@@ -93,59 +95,8 @@ namespace Telegram.Controls
                 waveform = new byte[1] { 0 };
             }
 
-            var result = new double[waveform.Count * 8 / 5];
-            for (int i = 0; i < result.Length; i++)
-            {
-                int j = (i * 5) / 8, shift = (i * 5) % 8;
-                result[i] = ((waveform[j] | ((j + 1 < waveform.Count ? waveform[j + 1] : 0) << 8)) >> shift & 0x1F) / 31.0;
-            }
-
-            //var maxVoiceLength = 30.0;
-            //var minVoiceLength = 2.0;
-
-            //var minVoiceWidth = 72.0;
-            //var maxVoiceWidth = 226.0;
-
-            //var calcDuration = Math.Max(minVoiceLength, Math.Min(maxVoiceLength, duration));
-            //var waveformWidth = minVoiceWidth + (maxVoiceWidth - minVoiceWidth) * (calcDuration - minVoiceLength) / (maxVoiceLength - minVoiceLength);
-
-            //var imageWidth = 209.0;
-            //var imageHeight = 24;
-            var imageWidth = waveformWidth; // 142d; // double.IsNaN(ActualWidth) ? 142 : ActualWidth;
-            var imageHeight = 20;
-
-            var space = 1.0;
-            var lineWidth = 2.0;
-            var lines = waveform.Count * 8 / 5;
-            var maxLines = (imageWidth - space) / (lineWidth + space);
-            var maxWidth = lines / maxLines;
-
-            _group1.Children.Clear();
-            _group2.Children.Clear();
-
-            for (int index = 0; index < maxLines; index++)
-            {
-                var lineIndex = (int)(index * maxWidth);
-                var lineHeight = result[lineIndex] * (double)(imageHeight - 2.0) + 2.0;
-
-                var x1 = (int)(index * (lineWidth + space));
-                var y1 = (imageHeight - (int)lineHeight) / 2;
-                var x2 = (int)(index * (lineWidth + space) + lineWidth);
-                var y2 = imageHeight - y1;
-
-                _group1.Children.Add(new RectangleGeometry { Rect = new Rect(new Point(x1, y1), new Point(x2, y2)) });
-                _group2.Children.Add(new RectangleGeometry { Rect = new Rect(new Point(x1, y1), new Point(x2, y2)) });
-            }
-
-            //ProgressBarIndicator.Data = geometry1;
-            //HorizontalTrackRect.Data = geometry2;
-
-            //Width = waveformWidth;
-
-            if (duration != 0)
-            {
-                Width = waveformWidth;
-            }
+            var clip = PlaceholderImageHelper.Foreground.GetVoiceNoteClip(waveform, waveformWidth);
+            _clip.Geometry = BootStrapper.Current.Compositor.CreatePathGeometry(clip);
         }
     }
 }

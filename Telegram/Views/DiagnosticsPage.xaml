@@ -93,6 +93,18 @@
                     <CheckBox IsChecked="{x:Bind services:SettingsService.Current.Diagnostics.DeleteFilesDebug, Mode=TwoWay}"
                               Content="Delete Files Debug"
                               Style="{StaticResource SettingsCheckBoxStyle}" />
+
+                    <CheckBox IsChecked="{x:Bind services:SettingsService.Current.Diagnostics.MediaServerDebug, Mode=TwoWay}"
+                              Content="Media Server Debug"
+                              Style="{StaticResource SettingsCheckBoxStyle}" />
+
+                    <CheckBox IsChecked="{x:Bind services:SettingsService.Current.Diagnostics.AlbumPreloadDebug, Mode=TwoWay}"
+                              Content="Album Preload Debug"
+                              Style="{StaticResource SettingsCheckBoxStyle}" />
+
+                    <CheckBox IsChecked="{x:Bind services:SettingsService.Current.Diagnostics.AlbumPreloadDebug, Mode=TwoWay}"
+                              Content="Video Preload Debug"
+                              Style="{StaticResource SettingsCheckBoxStyle}" />
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl Header="Crash Mitigation">

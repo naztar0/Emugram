@@ -45,6 +45,7 @@ namespace Telegram.Services
         AppearanceSettings Appearance { get; }
         PasscodeLockSettings PasscodeLock { get; }
         PlaybackSettings Playback { get; }
+        VideoSettings Video { get; }
         VoIPSettings VoIP { get; }
         TranslateSettings Translate { get; }
 
@@ -67,7 +68,6 @@ namespace Telegram.Services
         bool IsSecretPreviewsEnabled { get; set; }
         bool AutoPlayAnimations { get; set; }
         bool AutoPlayVideos { get; set; }
-        bool IsSendGrouped { get; set; }
         bool IsAccountsSelectorExpanded { get; set; }
         bool IsAllAccountsNotifications { get; set; }
         bool AreSmoothTransitionsEnabled { get; set; }
@@ -89,6 +89,8 @@ namespace Telegram.Services
         bool SwipeToReply { get; set; }
         bool FullScreenGallery { get; set; }
         bool UseSystemSpellChecker { get; set; }
+
+        bool SendLargePhotos { get; set; }
 
         bool IsStreamingEnabled { get; set; }
         double VolumeLevel { get; set; }
@@ -138,7 +140,7 @@ namespace Telegram.Services
             return AddOrUpdateValue(_container, key, value);
         }
 
-        protected bool AddOrUpdateValue<T>(ref T storage, string key, T value)
+        public bool AddOrUpdateValue<T>(ref T storage, string key, T value)
         {
             storage = value;
             return AddOrUpdateValue(_container, key, value);
@@ -305,6 +307,9 @@ namespace Telegram.Services
 
         private static PlaybackSettings _playback;
         public PlaybackSettings Playback => _playback ??= new PlaybackSettings(_local);
+
+        private static VideoSettings _video;
+        public VideoSettings Video => _video ??= new VideoSettings(_own);
 
         private static VoIPSettings _voip;
         public VoIPSettings VoIP => _voip ??= new VoIPSettings();
@@ -582,11 +587,11 @@ namespace Telegram.Services
             set => AddOrUpdateValue(ref _isPowerSavingEnabled, "IsPowerSavingEnabled", value);
         }
 
-        private bool? _isSendGrouped;
-        public bool IsSendGrouped
+        private bool? _sendLargePhotos;
+        public bool SendLargePhotos
         {
-            get => _isSendGrouped ??= GetValueOrDefault("IsSendGrouped", true);
-            set => AddOrUpdateValue(ref _isSendGrouped, "IsSendGrouped", value);
+            get => _sendLargePhotos ??= Diagnostics.GetValueOrDefault("SendLargePhotos", false);
+            set => Diagnostics.AddOrUpdateValue(ref _sendLargePhotos, "SendLargePhotos", value);
         }
 
         private bool? _isStreamingEnabled;

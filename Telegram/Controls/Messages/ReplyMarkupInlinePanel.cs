@@ -1,17 +1,15 @@
-﻿//
+//
 // Copyright (c) Fela Ameghino 2015-2025
 //
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
-
 using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Telegram.Common;
 using Telegram.Controls.Media;
 using Telegram.Native;
-using Telegram.Navigation;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Windows.Foundation;
@@ -84,7 +82,7 @@ namespace Telegram.Controls.Messages
             {
                 foreach (var item in row)
                 {
-                    var button = new ReplyMarkupInlineButton(item);
+                    var button = new ReplyMarkupInlineButton(this, item);
                     button.HorizontalAlignment = HorizontalAlignment.Stretch;
                     button.VerticalAlignment = VerticalAlignment.Stretch;
                     button.Text = item.Text.Replace('\n', ' ');

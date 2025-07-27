@@ -186,7 +186,30 @@ namespace Telegram.Controls.Views
                 if (args.Item is AddedReaction addedReaction)
                 {
                     cell.UpdateAddedReaction(_clientService, args, OnContainerContentChanging);
-                    animated.Source = new ReactionFileSource(_clientService, addedReaction.Type);
+
+                    if (_reactionType == null)
+                    {
+                        using (animated.BeginBatchUpdate())
+                        {
+                            var custom = addedReaction.Type is ReactionTypeCustomEmoji;
+                            var size = custom ? 20 : 40;
+
+                            animated.Width = animated.Height = size;
+                            animated.Margin = new Thickness(0, 0, custom ? 12 : 2, 0);
+                            animated.FrameSize = new Size(size, size);
+                            animated.LoopCount = custom ? 3 : 1;
+                            animated.IsViewportAware = custom;
+
+                            animated.Source = new ReactionFileSource(_clientService, addedReaction.Type)
+                            {
+                                UseCenterAnimation = true
+                            };
+                        }
+                    }
+                    else
+                    {
+                        animated.Source = null;
+                    }
                 }
                 else if (args.Item is MessageViewer messageViewer)
                 {

@@ -1,4 +1,10 @@
-﻿using System;
+//
+// Copyright Fela Ameghino 2015-2025
+//
+// Distributed under the GNU General Public License v3.0. (See accompanying
+// file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
+//
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -353,7 +359,13 @@ namespace Telegram.Services
         {
             alias ??= chat.VideoChat.DefaultParticipantId;
 
-            if (alias == null)
+            var response = await ClientService.SendAsync(new GetGroupCall(groupCallId));
+            if (response is not GroupCall groupCall)
+            {
+                return;
+            }
+
+            if (alias == null && !groupCall.IsRtmpStream)
             {
                 MessageSenders availableAliases;
                 availableAliases = await ClientService.SendAsync(new GetVideoChatAvailableParticipants(chat.Id)) as MessageSenders;
@@ -370,36 +382,32 @@ namespace Telegram.Services
                 alias = popup.SelectedSender ?? new MessageSenderUser(ClientService.Options.MyId);
             }
 
-            var response = await ClientService.SendAsync(new GetGroupCall(groupCallId));
-            if (response is GroupCall groupCall)
+            if (!groupCall.IsRtmpStream)
             {
-                if (!groupCall.IsRtmpStream)
+                var permissions = await MediaDevicePermissions.CheckAccessAsync(xamlRoot, MediaDeviceAccess.Audio);
+                if (permissions == false)
                 {
-                    var permissions = await MediaDevicePermissions.CheckAccessAsync(xamlRoot, MediaDeviceAccess.Audio);
-                    if (permissions == false)
-                    {
-                        return;
-                    }
+                    return;
+                }
+            }
+
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                var changed = false;
+
+                lock (_activeLock)
+                {
+                    _activeCall = new VoipGroupCall(ClientService, Settings, Aggregator, xamlRoot, chat, groupCall, alias, inviteHash);
+                    changed = groupCall.ScheduledStartDate > 0;
                 }
 
-                ThreadPool.QueueUserWorkItem(state =>
+                Aggregator.Publish(new UpdateActiveCall());
+
+                if (changed)
                 {
-                    var changed = false;
-
-                    lock (_activeLock)
-                    {
-                        _activeCall = new VoipGroupCall(ClientService, Settings, Aggregator, xamlRoot, chat, groupCall, alias, inviteHash);
-                        changed = groupCall.ScheduledStartDate > 0;
-                    }
-
-                    Aggregator.Publish(new UpdateActiveCall());
-
-                    if (changed)
-                    {
-                        Aggregator.Publish(new UpdateGroupCall(new GroupCall(groupCall.Id, groupCall.Title, groupCall.InviteLink, groupCall.ScheduledStartDate, groupCall.EnabledStartNotification, groupCall.IsActive, groupCall.IsVideoChat, groupCall.IsRtmpStream, true, false, groupCall.IsOwned, groupCall.CanBeManaged, groupCall.ParticipantCount, groupCall.HasHiddenListeners, groupCall.LoadedAllParticipants, groupCall.RecentSpeakers, groupCall.IsMyVideoEnabled, groupCall.IsMyVideoPaused, groupCall.CanEnableVideo, groupCall.MuteNewParticipants, groupCall.CanToggleMuteNewParticipants, groupCall.RecordDuration, groupCall.IsVideoRecorded, groupCall.Duration)));
-                    }
-                });
-            }
+                    Aggregator.Publish(new UpdateGroupCall(new GroupCall(groupCall.Id, groupCall.Title, groupCall.InviteLink, groupCall.ScheduledStartDate, groupCall.EnabledStartNotification, groupCall.IsActive, groupCall.IsVideoChat, groupCall.IsRtmpStream, true, false, groupCall.IsOwned, groupCall.CanBeManaged, groupCall.ParticipantCount, groupCall.HasHiddenListeners, groupCall.LoadedAllParticipants, groupCall.RecentSpeakers, groupCall.IsMyVideoEnabled, groupCall.IsMyVideoPaused, groupCall.CanEnableVideo, groupCall.MuteNewParticipants, groupCall.CanToggleMuteNewParticipants, groupCall.RecordDuration, groupCall.IsVideoRecorded, groupCall.Duration)));
+                }
+            });
         }
 
         #endregion

@@ -140,7 +140,7 @@
                                    Margin="8,5,4,6"
                                    VerticalAlignment="Bottom" />
 
-                        <TextBlock Text="&#xE8C8;"
+                        <TextBlock Text="&#xEAC9;"
                                    FontFamily="{StaticResource SymbolThemeFontFamily}"
                                    FontSize="20"
                                    Foreground="{ThemeResource AccentButtonBackground}"

@@ -85,13 +85,13 @@
                         Margin="-430,-32,-430,-156" />
 
                 <controls:ProfilePatternCover x:Name="Pattern"
-                                               Loaded="Pattern_Loaded"
-                                               VerticalAlignment="Top"
-                                               Margin="-430,-32,-430,-156"
-                                               Width="1000"
-                                               Height="320"
-                                               Opacity="0"
-                                               RenderTransformOrigin="0.5,0.5" />
+                                              Loaded="Pattern_Loaded"
+                                              VerticalAlignment="Top"
+                                              Margin="-430,-32,-430,-156"
+                                              Width="1000"
+                                              Height="320"
+                                              Opacity="0"
+                                              RenderTransformOrigin="0.5,0.5" />
 
                 <controls:ProfileGiftsCover x:Name="GiftsCover"
                                             SizeChanged="GiftsCover_SizeChanged"
@@ -364,26 +364,23 @@
                                       Visibility="Collapsed"
                                       Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                                       ContextRequested="Description_ContextRequested"
-                                      BadgeTemplate="{x:Null}"
                                       Glyph="&#xE946;">
-                    <controls:BadgeButton.Badge>
-                        <RichTextBlock x:Name="DescriptionLabel"
-                                       ContextRequested="About_ContextRequested"
-                                       ContextMenuOpening="About_ContextMenuOpening"
-                                       Style="{StaticResource BodyRichTextBlockStyle}"
-                                       FontFamily="{ThemeResource EmojiThemeFontFamily}"
-                                       Grid.Column="1">
-                            <Paragraph>
-                                <Span x:Name="DescriptionSpan" />
-                            </Paragraph>
-                        </RichTextBlock>
-                    </controls:BadgeButton.Badge>
+                    <RichTextBlock x:Name="DescriptionLabel"
+                                   ContextRequested="About_ContextRequested"
+                                   ContextMenuOpening="About_ContextMenuOpening"
+                                   Style="{StaticResource BodyRichTextBlockStyle}"
+                                   FontFamily="{ThemeResource EmojiThemeFontFamily}"
+                                   Grid.Column="1">
+                        <Paragraph>
+                            <Span x:Name="DescriptionSpan" />
+                        </Paragraph>
+                    </RichTextBlock>
                 </controls:BadgeButton>
 
                 <controls:BadgeButton x:Name="UserPhone"
                                       Click="{x:Bind ViewModel.OpenPhoneInfo}"
                                       Visibility="Collapsed"
-                                      Content="{CustomResource Phone}"
+                                      Description="{CustomResource Phone}"
                                       Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                                       Glyph="&#xE717;">
                     <Button.ContextFlyout>
@@ -391,7 +388,7 @@
                             <MenuFlyoutItem Text="{CustomResource Copy}"
                                             Click="{x:Bind ViewModel.CopyPhone}">
                                 <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE8C8;"
+                                    <FontIcon Glyph="&#xEAC9;"
                                               Style="{StaticResource DefaultFontIconStyle}" />
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
@@ -408,7 +405,6 @@
 
                 <controls:BadgeButton x:Name="Username"
                                       Visibility="Collapsed"
-                                      ContentTemplate="{x:Null}"
                                       Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                                       Glyph="&#xE168;">
                     <Button.ContextFlyout>
@@ -416,7 +412,7 @@
                             <MenuFlyoutItem Text="{CustomResource Copy}"
                                             Click="{x:Bind ViewModel.CopyUsername}">
                                 <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE8C8;"
+                                    <FontIcon Glyph="&#xEAC9;"
                                               Style="{StaticResource DefaultFontIconStyle}" />
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
@@ -429,23 +425,30 @@
                             </MenuFlyoutItem>
                         </MenuFlyout>
                     </Button.ContextFlyout>
-                    <TextBlock x:Name="ActiveUsernames"
-                               Style="{StaticResource InfoCaptionTextBlockStyle}"
-                               HorizontalAlignment="Left"
-                               VerticalAlignment="Top" />
+                    <controls:BadgeButton.Badge>
+                        <controls:GlyphButton Content="&#xEACA;"
+                                              Click="{x:Bind ViewModel.ShareUsername}"
+                                              Foreground="{ThemeResource SystemColorControlAccentBrush}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,-12,0" />
+                    </controls:BadgeButton.Badge>
+                    <controls:BadgeButton.Description>
+                        <TextBlock x:Name="ActiveUsernames"
+                                   Style="{StaticResource InfoCaptionTextBlockStyle}"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Top" />
+                    </controls:BadgeButton.Description>
                 </controls:BadgeButton>
 
                 <controls:BadgeButton x:Name="UserBirthday"
                                       Visibility="Collapsed"
                                       Click="Birthday_Click"
-                                      Content="[Birthday Today]"
-                                      Badge="21 Mar 2024 (99 years old)"
                                       Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                                       Glyph="&#xEA84;" />
 
                 <controls:BadgeButton x:Name="Location"
                                       Visibility="Collapsed"
-                                      Content="{CustomResource AttachLocation}"
+                                      Description="{CustomResource AttachLocation}"
                                       Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                                       Glyph="&#xE1C4;">
                     <Button.ContextFlyout>
@@ -453,7 +456,7 @@
                             <MenuFlyoutItem Text="{CustomResource Copy}"
                                             Click="{x:Bind ViewModel.CopyUsername}">
                                 <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE8C8;"
+                                    <FontIcon Glyph="&#xEAC9;"
                                               Style="{StaticResource DefaultFontIconStyle}" />
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
@@ -474,7 +477,7 @@
                             <MenuFlyoutItem Text="{CustomResource Copy}"
                                             Click="{x:Bind ViewModel.CopyId}">
                                 <MenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE8C8;"
+                                    <FontIcon Glyph="&#xEAC9;"
                                               Style="{StaticResource DefaultFontIconStyle}" />
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>

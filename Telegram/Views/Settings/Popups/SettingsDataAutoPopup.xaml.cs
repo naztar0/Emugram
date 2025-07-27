@@ -109,6 +109,11 @@ namespace Telegram.Views.Settings.Popups
             return FileSizeConverter.Convert(limit, true);
         }
 
+        private string ConvertPreload(long limit)
+        {
+            return string.Format(Strings.AutoDownloadPreloadVideoInfo, ConvertUpTo(limit));
+        }
+
         #endregion
 
     }

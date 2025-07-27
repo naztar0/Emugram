@@ -5958,7 +5958,7 @@ public static class CachedVideoAnimation_stub
             throw new RuntimeException(ex);
         }
     }
-    public static void RenderSync_stub(this Telegram.Native.CachedVideoAnimation sender, Windows.Storage.Streams.IBuffer bitmap, out int seconds, out bool completed)
+    public static void RenderSync_stub(this Telegram.Native.CachedVideoAnimation sender, Windows.Storage.Streams.IBuffer bitmap, out double seconds, out bool completed)
     {
         try
         {
@@ -6348,11 +6348,35 @@ public static class PlaceholderImageHelper_stub
             throw new RuntimeException(ex);
         }
     }
+    public static Windows.UI.Composition.CompositionPath GetEllipticalClip_stub(this Telegram.Native.PlaceholderImageHelper sender, float width, float height, float radius, float x, float y)
+    {
+        try
+        {
+            return sender.GetEllipticalClip(width, height, radius, x, y);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(Environment.StackTrace);
+            throw new RuntimeException(ex);
+        }
+    }
     public static Windows.UI.Composition.CompositionPath GetOutline_stub(this Telegram.Native.PlaceholderImageHelper sender, System.Collections.Generic.IList<Telegram.Td.Api.ClosedVectorPath> contours)
     {
         try
         {
             return sender.GetOutline(contours);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(Environment.StackTrace);
+            throw new RuntimeException(ex);
+        }
+    }
+    public static Windows.UI.Composition.CompositionPath GetReplyMarkupClip_stub(this Telegram.Native.PlaceholderImageHelper sender, System.Collections.Generic.IList<System.Collections.Generic.IList<Windows.Foundation.Rect>> buttons, float bottomRightRadius, float bottomLeftRadius)
+    {
+        try
+        {
+            return sender.GetReplyMarkupClip(buttons, bottomRightRadius, bottomLeftRadius);
         }
         catch (Exception ex)
         {
@@ -6372,11 +6396,35 @@ public static class PlaceholderImageHelper_stub
             throw new RuntimeException(ex);
         }
     }
+    public static Windows.UI.Composition.CompositionPath GetVoiceNoteClip_stub(this Telegram.Native.PlaceholderImageHelper sender, System.Collections.Generic.IList<byte> waveform, double waveformWidth)
+    {
+        try
+        {
+            return sender.GetVoiceNoteClip(waveform, waveformWidth);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(Environment.StackTrace);
+            throw new RuntimeException(ex);
+        }
+    }
     public static bool IsWebP_stub(string fileName, out int pixelWidth, out int pixelHeight)
     {
         try
         {
             return Telegram.Native.PlaceholderImageHelper.IsWebP(fileName, out pixelWidth, out pixelHeight);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(Environment.StackTrace);
+            throw new RuntimeException(ex);
+        }
+    }
+    public static Windows.Foundation.Rect LayoutMetrics_stub(this Telegram.Native.PlaceholderImageHelper sender, string text, int offset, int length, System.Collections.Generic.IList<Telegram.Td.Api.TextEntity> entities, double fontSize, double width, bool rtl)
+    {
+        try
+        {
+            return sender.LayoutMetrics(text, offset, length, entities, fontSize, width, rtl);
         }
         catch (Exception ex)
         {
@@ -6462,7 +6510,7 @@ public static class VideoAnimation_stub
             throw new RuntimeException(ex);
         }
     }
-    public static int RenderSync_stub(this Telegram.Native.VideoAnimation sender, Windows.Storage.Streams.IBuffer bitmap, int width, int height, bool preview, out int seconds)
+    public static int RenderSync_stub(this Telegram.Native.VideoAnimation sender, Windows.Storage.Streams.IBuffer bitmap, int width, int height, bool preview, out double seconds)
     {
         try
         {

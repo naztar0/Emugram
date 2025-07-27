@@ -435,7 +435,7 @@ namespace Telegram.ViewModels.Profile
                 {
                     if (selectedItems.TryGetValue(property.Key, out var message))
                     {
-                        messagesToShare.Add(new MessageToShare(message, property.Value, message.ChatId != ClientService.Options.MyId || message.ForwardInfo != null));
+                        messagesToShare.Add(new MessageToShare(message, property.Value));
                     }
                 }
 

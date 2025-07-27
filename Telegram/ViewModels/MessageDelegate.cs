@@ -72,7 +72,7 @@ namespace Telegram.ViewModels
         public virtual bool CanBeDownloaded(object content, File file)
         {
             var chat = Chat;
-            if (chat == null || ClientService.IsDownloadFileCanceled(file.Id))
+            if (chat == null || ClientService.IsDownloadFileCanceled(file.Id) || ClientService.IsDownloadFilePartial(file.Id))
             {
                 return false;
             }
@@ -361,12 +361,12 @@ namespace Telegram.ViewModels
         /// <summary>
         /// Only available when created through DialogViewModel
         /// </summary>
-        public virtual void OpenMedia(MessageViewModel message, FrameworkElement target, int timestamp = 0) { }
+        public virtual void OpenMedia(MessageViewModel message, FrameworkElement target, double timestamp = 0) { }
 
         /// <summary>
         /// Only available when created through DialogViewModel
         /// </summary>
-        public virtual void OpenPaidMedia(MessageViewModel message, PaidMedia media, FrameworkElement target, int timestamp = 0) { }
+        public virtual void OpenPaidMedia(MessageViewModel message, PaidMedia media, FrameworkElement target, double timestamp = 0) { }
 
         /// <summary>
         /// Only available when created through DialogViewModel
@@ -497,9 +497,9 @@ namespace Telegram.ViewModels
             //}
         }
 
-        public override void OpenMedia(MessageViewModel message, FrameworkElement target, int timestamp = 0) => _viewModel.OpenMedia(message, target, timestamp);
+        public override void OpenMedia(MessageViewModel message, FrameworkElement target, double timestamp = 0) => _viewModel.OpenMedia(message, target, timestamp);
 
-        public override void OpenPaidMedia(MessageViewModel message, PaidMedia media, FrameworkElement target, int timestamp = 0)
+        public override void OpenPaidMedia(MessageViewModel message, PaidMedia media, FrameworkElement target, double timestamp = 0)
         {
             _viewModel.OpenPaidMedia(message, media, target, timestamp);
         }
@@ -543,7 +543,7 @@ namespace Telegram.ViewModels
             return !Settings.AutoDownload.Disabled;
         }
 
-        public override void OpenMedia(MessageViewModel message, FrameworkElement target, int timestamp = 0)
+        public override void OpenMedia(MessageViewModel message, FrameworkElement target, double timestamp = 0)
         {
             var content = target.Tag as GalleryMedia;
             content ??= _viewModel.Gallery.Items.FirstOrDefault();

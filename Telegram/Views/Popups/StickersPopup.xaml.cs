@@ -272,7 +272,7 @@ namespace Telegram.Views.Popups
             }
 
             var flyout = new MenuFlyout();
-            flyout.CreateFlyoutItem(Copy, (Sticker)sticker, Strings.CopyEmojiPreview, Icons.DocumentCopy);
+            flyout.CreateFlyoutItem(Copy, (Sticker)sticker, Strings.CopyEmojiPreview, Icons.Copy);
             flyout.CreateFlyoutItem(SetAsStatus, (Sticker)sticker, Strings.SetAsEmojiStatus, Icons.Emoji);
 
             flyout.ShowAt(sender as UIElement, args);

@@ -53,7 +53,7 @@ namespace Telegram
 
 #if !DEBUG
             var report = WatchDog.BuildReport(exception);
-            //Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, attachments: Microsoft.AppCenter.Crashes.ErrorAttachmentLog.AttachmentWithText(report, "crash.txt"));
+            Microsoft.AppCenter.Crashes.Crashes.TrackError(exception, attachments: Microsoft.AppCenter.Crashes.ErrorAttachmentLog.AttachmentWithText(report, "crash.txt"));
 #endif
         }
 

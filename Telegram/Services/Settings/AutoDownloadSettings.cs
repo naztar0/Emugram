@@ -65,6 +65,7 @@ namespace Telegram.Services.Settings
             _maximumVideoSize = container.GetInt64("maxVideoSize", 10 * 1024 * 1024);
             _documents = (AutoDownloadMode)container.GetInt32("documents", (int)AutoDownloadMode.All);
             _maximumDocumentSize = container.GetInt64("maxDocumentSize", 3 * 1024 * 1024);
+            _preloadLargeVideos = container.GetBoolean("preloadVideos", true);
         }
 
         public void Save(ApplicationDataContainer container)
@@ -75,6 +76,7 @@ namespace Telegram.Services.Settings
             container.Values["maxVideoSize"] = _maximumVideoSize;
             container.Values["documents"] = (int)_documents;
             container.Values["maxDocumentSize"] = _maximumDocumentSize;
+            container.Values["preloadVideos"] = _preloadLargeVideos;
         }
 
         public static AutoDownloadSettings Default
@@ -87,6 +89,7 @@ namespace Telegram.Services.Settings
                 preferences._maximumVideoSize = 10 * 1024 * 1024;
                 preferences._documents = AutoDownloadMode.All;
                 preferences._maximumDocumentSize = 3 * 1024 * 1024;
+                preferences._preloadLargeVideos = true;
                 return preferences;
             }
         }
@@ -100,6 +103,7 @@ namespace Telegram.Services.Settings
             preferences._maximumVideoSize = preset.MaxVideoFileSize;
             preferences._documents = AutoDownloadMode.All;
             preferences._maximumDocumentSize = preset.MaxOtherFileSize;
+            preferences._preloadLargeVideos = preset.PreloadLargeVideos;
             return preferences;
         }
 
@@ -107,7 +111,8 @@ namespace Telegram.Services.Settings
             && _videos == AutoDownloadMode.All
             && _maximumVideoSize == 10 * 1024 * 1024
             && _documents == AutoDownloadMode.All
-            && _maximumDocumentSize == 3 * 1024 * 1024;
+            && _maximumDocumentSize == 3 * 1024 * 1024
+            && _preloadLargeVideos == true;
 
         private bool _disabled;
         public bool Disabled => _disabled;
@@ -127,6 +132,9 @@ namespace Telegram.Services.Settings
         private long _maximumDocumentSize;
         public long MaximumDocumentSize => _maximumDocumentSize;
 
+        private bool _preloadLargeVideos;
+        public bool PreloadLargeVideos => _preloadLargeVideos;
+
         public AutoDownloadSettings UpdateDisabled(bool disabled)
         {
             var preferences = new AutoDownloadSettings();
@@ -136,6 +144,7 @@ namespace Telegram.Services.Settings
             preferences._maximumVideoSize = _maximumVideoSize;
             preferences._documents = _documents;
             preferences._maximumDocumentSize = _maximumDocumentSize;
+            preferences._preloadLargeVideos = _preloadLargeVideos;
             return preferences;
         }
 
@@ -147,10 +156,11 @@ namespace Telegram.Services.Settings
             preferences._maximumVideoSize = _maximumVideoSize;
             preferences._documents = _documents;
             preferences._maximumDocumentSize = _maximumDocumentSize;
+            preferences._preloadLargeVideos = _preloadLargeVideos;
             return preferences;
         }
 
-        public AutoDownloadSettings UpdateVideosMode(AutoDownloadMode mode, long maximumSize)
+        public AutoDownloadSettings UpdateVideosMode(AutoDownloadMode mode, long maximumSize, bool preload)
         {
             var preferences = new AutoDownloadSettings();
             preferences._photos = _photos;
@@ -158,6 +168,7 @@ namespace Telegram.Services.Settings
             preferences._maximumVideoSize = maximumSize;
             preferences._documents = _documents;
             preferences._maximumDocumentSize = _maximumDocumentSize;
+            preferences._preloadLargeVideos = preload;
             return preferences;
         }
 
@@ -169,6 +180,7 @@ namespace Telegram.Services.Settings
             preferences._maximumVideoSize = _maximumVideoSize;
             preferences._documents = mode;
             preferences._maximumDocumentSize = maximumSize;
+            preferences._preloadLargeVideos = _preloadLargeVideos;
             return preferences;
         }
 

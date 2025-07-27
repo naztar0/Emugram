@@ -88,6 +88,14 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
+            <controls:AnimatedImage x:Name="StarCountParticles"
+                                    IsViewportAware="True"
+                                    FrameSize="0,0"
+                                    FitToSize="True"
+                                    DecodeFrameType="Logical"
+                                    Stretch="UniformToFill"
+                                    Grid.ColumnSpan="2" />
+            
             <controls:PremiumStarCount Width="18"
                                        VerticalAlignment="Top"
                                        HorizontalAlignment="Left"

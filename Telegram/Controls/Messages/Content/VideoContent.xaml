@@ -55,6 +55,11 @@
                                        TextWrapping="NoWrap"
                                        Typography.NumeralAlignment="Tabular" />
                         </controls:FileButton>
+
+                        <ProgressBar x:Name="Indicator"
+                                     VerticalAlignment="Bottom"
+                                     Visibility="Collapsed"
+                                     MinHeight="2" />
                     </controls:AspectView>
                 </ControlTemplate>
             </Setter.Value>

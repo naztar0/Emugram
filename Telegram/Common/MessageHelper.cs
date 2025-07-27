@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Controls;
+using Telegram.Controls.Cells;
 using Telegram.Controls.Media;
 using Telegram.Controls.Stories;
 using Telegram.Native;
@@ -1634,7 +1635,7 @@ namespace Telegram.Common
             var length = text.Length;
             if (length > 0)
             {
-                flyout.CreateFlyoutItem(() => LinkCopy_Click(xamlRoot, text), Strings.Copy, Icons.DocumentCopy);
+                flyout.CreateFlyoutItem(() => LinkCopy_Click(xamlRoot, text), Strings.Copy, Icons.Copy);
 
                 if (service != null && service.CanTranslateText(text))
                 {
@@ -1676,7 +1677,7 @@ namespace Telegram.Common
             }
         }
 
-        public static void Hyperlink_ContextRequested(MenuFlyout flyout, ITranslateService service, Hyperlink hyperlink)
+        public static async void Hyperlink_ContextRequested(MenuFlyout flyout, ITranslateService service, Hyperlink hyperlink)
         {
             var link = GetEntityData(hyperlink);
             if (link == null)
@@ -1697,11 +1698,78 @@ namespace Telegram.Common
                     flyout.CreateFlyoutItem(() => LinkOpen_Click(hyperlink.XamlRoot, link), Strings.Open, Icons.OpenIn);
                 }
 
-                flyout.CreateFlyoutItem(() => LinkCopy_Click(hyperlink.XamlRoot, link), Strings.Copy, Icons.DocumentCopy);
+                flyout.CreateFlyoutItem(() => LinkCopy_Click(hyperlink.XamlRoot, link), Strings.CopyLink, Icons.Copy);
+            }
+            else if (type is TextEntityTypePhoneNumber)
+            {
+                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, link), Strings.CopyNumber, Icons.Copy);
+                flyout.CreateFlyoutSeparator();
+
+                var profile = new ProfileCell();
+                var button = new Button
+                {
+                    Content = profile,
+                    Style = BootStrapper.Current.Resources["ListEmptyButtonStyle"] as Style,
+                    CornerRadius = new CornerRadius(4),
+                    IsEnabled = false
+                };
+
+                var content = new MenuFlyoutContent
+                {
+                    Content = button,
+                    Height = 48,
+                    Width = 200,
+                    Padding = new Thickness(0)
+                };
+
+                void handler(object sender, RoutedEventArgs e)
+                {
+                    profile.Loaded -= handler;
+                    profile.ShowHideSkeleton(true);
+                }
+
+                profile.Loaded += handler;
+
+                flyout.Items.Add(content);
+
+                var response = await service.ClientService.SendAsync(new SearchUserByPhoneNumber(link, false));
+                if (response is User user)
+                {
+                    button.IsEnabled = true;
+                    button.Click += (s, args) =>
+                    {
+                        flyout.Hide();
+                        WindowContext.GetNavigationService(hyperlink.XamlRoot).NavigateToUser(user.Id);
+                    };
+
+                    profile.Loaded -= handler;
+                    profile.ShowHideSkeleton(false);
+                    profile.UpdateUser(service.ClientService, user, 36, true);
+                    profile.Subtitle = Strings.ViewProfile;
+                }
+                else
+                {
+                    button.Content = new TextBlock
+                    {
+                        Text = Strings.NumberNotOnTelegram,
+                        TextWrapping = TextWrapping.Wrap,
+                        Style = BootStrapper.Current.Resources["InfoCaptionTextBlockStyle"] as Style,
+                        Margin = new Thickness(12, 0, 12, 0)
+                    };
+                    button.HorizontalContentAlignment = HorizontalAlignment.Center;
+                    button.VerticalContentAlignment = VerticalAlignment.Center;
+                }
             }
             else
             {
-                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, link), Strings.Copy, Icons.DocumentCopy);
+                var text = type switch
+                {
+                    TextEntityTypeHashtag or TextEntityTypeCashtag => Strings.CopyHashtag,
+                    TextEntityTypeEmailAddress => Strings.CopyMail,
+                    _ => Strings.Copy
+                };
+
+                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, link), text, Icons.Copy);
             }
         }
 
@@ -1716,7 +1784,7 @@ namespace Telegram.Common
 
                 var flyout = new MenuFlyout();
                 flyout.CreateFlyoutItem(() => LinkOpen_Click(sender.XamlRoot, link), Strings.Open, Icons.OpenIn);
-                flyout.CreateFlyoutItem(() => LinkCopy_Click(sender.XamlRoot, link), Strings.Copy, Icons.DocumentCopy);
+                flyout.CreateFlyoutItem(() => LinkCopy_Click(sender.XamlRoot, link), Strings.Copy, Icons.Copy);
 
                 // We don't want to unfocus the text are when the context menu gets opened
                 flyout.ShowAt(sender, new FlyoutShowOptions { Position = point, ShowMode = FlyoutShowMode.Transient });

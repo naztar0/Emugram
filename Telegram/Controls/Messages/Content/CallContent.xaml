@@ -157,7 +157,10 @@
                                        Margin="0,1,4,-1"
                                        Grid.Row="1" />
                             <TextBlock x:Name="DateLabel"
-                                       Style="{StaticResource DisabledCaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource MessageSubtleLabelBrush}"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
                                        Grid.Column="1"
                                        Grid.Row="1">
                                 <ToolTipService.ToolTip>

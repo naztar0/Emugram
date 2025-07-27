@@ -377,11 +377,15 @@ namespace Telegram.Controls.Messages.Content
 
                 Button.SetGlyph(file.Id, MessageContentState.Downloading);
                 Button.Progress = (double)file.Local.DownloadedSize / size;
+
+                UpdateDuration();
             }
             else if (file.Remote.IsUploadingActive || message.SendingState is MessageSendingStateFailed || (message.SendingState is MessageSendingStatePending && !file.Remote.IsUploadingCompleted))
             {
                 Button.SetGlyph(file.Id, MessageContentState.Uploading);
                 Button.Progress = (double)file.Remote.UploadedSize / size;
+
+                UpdateDuration();
             }
             else if (canBeDownloaded)
             {

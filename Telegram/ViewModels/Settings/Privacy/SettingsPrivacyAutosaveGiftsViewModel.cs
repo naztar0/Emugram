@@ -24,6 +24,7 @@ namespace Telegram.ViewModels.Settings.Privacy
         {
             if (ClientService.TryGetUserFull(ClientService.Options.MyId, out UserFullInfo fullInfo))
             {
+                _cached = fullInfo.GiftSettings;
                 AllowLimited = fullInfo.GiftSettings.AcceptedGiftTypes.LimitedGifts;
                 AllowUnlimited = fullInfo.GiftSettings.AcceptedGiftTypes.UnlimitedGifts;
                 AllowUnique = fullInfo.GiftSettings.AcceptedGiftTypes.UpgradedGifts;
@@ -38,14 +39,14 @@ namespace Telegram.ViewModels.Settings.Privacy
         public bool ShowIcon
         {
             get => _showIcon;
-            set => Set(ref _showIcon, value);
+            set => Invalidate(ref _showIcon, value);
         }
 
         private bool _allowLimited;
         public bool AllowLimited
         {
             get => _allowLimited || !IsPremium;
-            set => Set(ref _allowLimited, value);
+            set => Invalidate(ref _allowLimited, value);
         }
 
         public void ChangeAllowLimited()
@@ -64,7 +65,7 @@ namespace Telegram.ViewModels.Settings.Privacy
         public bool AllowUnlimited
         {
             get => _allowUnlimited || !IsPremium;
-            set => Set(ref _allowUnlimited, value);
+            set => Invalidate(ref _allowUnlimited, value);
         }
 
         public void ChangeAllowUnlimited()
@@ -83,7 +84,7 @@ namespace Telegram.ViewModels.Settings.Privacy
         public bool AllowUnique
         {
             get => _allowUnique || !IsPremium;
-            set => Set(ref _allowUnique, value);
+            set => Invalidate(ref _allowUnique, value);
         }
 
         public void ChangeAllowUnique()
@@ -102,7 +103,7 @@ namespace Telegram.ViewModels.Settings.Privacy
         public bool AllowPremium
         {
             get => _allowPremium || !IsPremium;
-            set => Set(ref _allowPremium, value);
+            set => Invalidate(ref _allowPremium, value);
         }
 
         public void ChangeAllowPremium()
@@ -122,21 +123,17 @@ namespace Telegram.ViewModels.Settings.Privacy
             ToastPopup.ShowFeaturePromo(NavigationService, null);
         }
 
-        public override async void Save()
+        private GiftSettings _cached;
+
+        public override bool HasChanged => _cached != null && (base.HasChanged || !_cached.AreTheSame(GetSettings()));
+
+        public override async void Continue()
         {
+            _completed = true;
+
             if (ClientService.TryGetUserFull(ClientService.Options.MyId, out UserFullInfo fullInfo))
             {
-                var settings = new GiftSettings
-                {
-                    AcceptedGiftTypes = new AcceptedGiftTypes
-                    {
-                        LimitedGifts = AllowLimited,
-                        UnlimitedGifts = AllowUnlimited,
-                        UpgradedGifts = AllowUnique,
-                        PremiumSubscription = AllowPremium,
-                    },
-                    ShowGiftButton = ShowIcon
-                };
+                var settings = GetSettings();
 
                 if (!fullInfo.GiftSettings.AreTheSame(settings))
                 {
@@ -149,7 +146,22 @@ namespace Telegram.ViewModels.Settings.Privacy
                 }
             }
 
-            base.Save();
+            base.Continue();
+        }
+
+        private GiftSettings GetSettings()
+        {
+            return new GiftSettings
+            {
+                AcceptedGiftTypes = new AcceptedGiftTypes
+                {
+                    LimitedGifts = AllowLimited,
+                    UnlimitedGifts = AllowUnlimited,
+                    UpgradedGifts = AllowUnique,
+                    PremiumSubscription = AllowPremium,
+                },
+                ShowGiftButton = ShowIcon
+            };
         }
     }
 }

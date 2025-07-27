@@ -1,4 +1,10 @@
-﻿using System;
+//
+// Copyright Fela Ameghino 2015-2025
+//
+// Distributed under the GNU General Public License v3.0. (See accompanying
+// file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
+//
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -685,46 +691,47 @@ namespace Telegram.Controls.Gallery
             }
         }
 
-        public new void ProcessKeyboardAccelerators(ProcessKeyboardAcceleratorEventArgs args)
+        public new void ProcessKeyboardAccelerators(KeyRoutedEventArgs args)
         {
             if (_player == null)
             {
                 return;
             }
 
+            var modifiers = WindowContext.KeyModifiers();
             var keyCode = (int)args.Key;
 
-            if (args.Key is VirtualKey.K && args.Modifiers == VirtualKeyModifiers.None)
+            if (args.Key is VirtualKey.K && modifiers == VirtualKeyModifiers.None)
             {
                 TogglePlaybackState();
                 args.Handled = true;
             }
-            else if (args.Key is VirtualKey.M && args.Modifiers == VirtualKeyModifiers.None)
+            else if (args.Key is VirtualKey.M && modifiers == VirtualKeyModifiers.None)
             {
                 Volume_Click(null, null);
                 args.Handled = true;
             }
-            else if (args.Key is VirtualKey.Up && args.Modifiers == VirtualKeyModifiers.None)
+            else if (args.Key is VirtualKey.Up && modifiers == VirtualKeyModifiers.None)
             {
                 VolumeSlider.Value += 10;
                 args.Handled = true;
             }
-            else if (args.Key is VirtualKey.Down && args.Modifiers == VirtualKeyModifiers.None)
+            else if (args.Key is VirtualKey.Down && modifiers == VirtualKeyModifiers.None)
             {
                 VolumeSlider.Value -= 10;
                 args.Handled = true;
             }
-            else if ((args.Key is VirtualKey.J && args.Modifiers == VirtualKeyModifiers.None) || (args.Key is VirtualKey.Left && args.Modifiers == VirtualKeyModifiers.Control))
+            else if ((args.Key is VirtualKey.J && modifiers == VirtualKeyModifiers.None) || (args.Key is VirtualKey.Left && modifiers == VirtualKeyModifiers.Control))
             {
-                _player.AddTime(-10000);
+                _player.AddTime(-10);
                 args.Handled = true;
             }
-            else if ((args.Key is VirtualKey.L && args.Modifiers == VirtualKeyModifiers.None) || (args.Key is VirtualKey.Right && args.Modifiers == VirtualKeyModifiers.Control))
+            else if ((args.Key is VirtualKey.L && modifiers == VirtualKeyModifiers.None) || (args.Key is VirtualKey.Right && modifiers == VirtualKeyModifiers.Control))
             {
-                _player.AddTime(10000);
+                _player.AddTime(10);
                 args.Handled = true;
             }
-            else if (keyCode is 188 or 190 && args.Modifiers == VirtualKeyModifiers.Shift)
+            else if (keyCode is 188 or 190 && modifiers == VirtualKeyModifiers.Shift)
             {
                 ChangePlaybackSpeed(keyCode is 188 ? -0.25f : 0.25f);
                 args.Handled = true;

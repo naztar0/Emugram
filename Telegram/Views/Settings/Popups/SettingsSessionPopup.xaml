@@ -52,19 +52,19 @@
         </StackPanel>
 
         <controls:BadgeButton x:Name="Application"
-                              Content="{CustomResource Application}"
+                              Description="{CustomResource Application}"
                               Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                               Glyph="&#xE975;"
                               Background="Transparent"
                               Grid.Row="1" />
         <controls:BadgeButton x:Name="Location"
-                              Content="{CustomResource Location}"
+                              Description="{CustomResource Location}"
                               Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                               Glyph="&#xE1C4;"
                               Background="Transparent"
                               Grid.Row="2" />
         <controls:BadgeButton x:Name="Address"
-                              Content="{CustomResource IpAddress}"
+                              Description="{CustomResource IpAddress}"
                               Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
                               Glyph="&#xE774;"
                               Background="Transparent"

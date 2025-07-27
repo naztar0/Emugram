@@ -499,7 +499,7 @@ namespace Telegram.Controls.Chats
             var fore = compositor.CreateRoundedRectangleGeometry();
             fore.Offset = new Vector2(0, 6);
             fore.Size = new Vector2(4, 36);
-            fore.CornerRadius = new Vector2(3);
+            fore.CornerRadius = new Vector2(1.5f);
 
             var foreShape = compositor.CreateSpriteShape(fore);
             foreShape.FillBrush = _strokeBrush ??= new CompositionColorSource(Stroke, IsConnected);
@@ -784,7 +784,7 @@ namespace Telegram.Controls.Chats
 
             for (int i = 0; i < geometries.Length; i++)
             {
-                geometries[i] = CanvasGeometry.CreateRoundedRectangle(null, 0, 6 + i * (h + m), 3, h, 3, 3);
+                geometries[i] = CanvasGeometry.CreateRoundedRectangle(null, 0, 6 + i * (h + m), 3, h, 1.5f, 1.5f);
             }
 
             return new CompositionPath(CanvasGeometry.CreateGroup(null, geometries, CanvasFilledRegionDetermination.Winding));

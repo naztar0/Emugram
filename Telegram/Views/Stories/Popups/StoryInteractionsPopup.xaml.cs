@@ -1,4 +1,10 @@
-﻿using Microsoft.Graphics.Canvas.Geometry;
+//
+// Copyright Fela Ameghino 2015-2025
+//
+// Distributed under the GNU General Public License v3.0. (See accompanying
+// file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
+//
+using Microsoft.Graphics.Canvas.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -198,6 +204,9 @@ namespace Telegram.Views.Stories.Popups
                     cell.UpdateStoryViewer(ViewModel.ClientService, args, OnContainerContentChanging);
                     animated.Source = interaction.Type is StoryInteractionTypeView view && view.ChosenReactionType != null
                         ? new ReactionFileSource(ViewModel.ClientService, view.ChosenReactionType)
+                        {
+                            UseCenterAnimation = true
+                        }
                         : null;
                 }
             }

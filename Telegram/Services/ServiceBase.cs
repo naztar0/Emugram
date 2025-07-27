@@ -9,7 +9,14 @@ using Windows.System;
 
 namespace Telegram.Services
 {
-    public partial class ServiceBase : BindableBase
+    public interface IService
+    {
+        IClientService ClientService { get; }
+        ISettingsService Settings { get; }
+        IEventAggregator Aggregator { get; }
+    }
+
+    public partial class ServiceBase : BindableBase, IService
     {
         private readonly IClientService _clientService;
         private readonly ISettingsService _settingsService;

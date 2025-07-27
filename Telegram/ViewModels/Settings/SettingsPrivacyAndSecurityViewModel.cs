@@ -147,6 +147,11 @@ namespace Telegram.ViewModels.Settings
             return Task.CompletedTask;
         }
 
+        public override void NavigatingFrom(NavigatingEventArgs args)
+        {
+            // Do nothing
+        }
+
         public override void Subscribe()
         {
             Aggregator.Subscribe<UpdateOption>(this, Handle);

@@ -140,8 +140,15 @@ namespace Telegram.Controls
 
         private async void OnTextChanged(string text, string placeholder)
         {
+            var visual1 = ElementComposition.GetElementVisual(_presenter);
+            var visual2 = ElementComposition.GetElementVisual(_placeholder);
+
             if (string.IsNullOrEmpty(text))
             {
+                _placeholder.Visibility = Visibility.Visible;
+
+                visual1.Clip = null;
+                visual2.Clip = null;
                 return;
             }
 
@@ -158,9 +165,6 @@ namespace Telegram.Controls
             var fadeIn = BootStrapper.Current.Compositor.CreateScalarKeyFrameAnimation();
             fadeIn.InsertKeyFrame(0, 0);
             fadeIn.InsertKeyFrame(1, 1);
-
-            var visual2 = ElementComposition.GetElementVisual(_placeholder);
-            var visual1 = ElementComposition.GetElementVisual(_presenter);
 
             visual1.StartAnimation("Opacity", fadeIn);
 
@@ -185,15 +189,13 @@ namespace Telegram.Controls
             var width = MathF.Max(actualWidth - left, actualHeight - top);
             var diaginal = MathF.Sqrt((width * width) + (width * width));
 
-            var device = ElementComposition.GetSharedDevice();
+            var rect1 = CanvasGeometry.CreateRectangle(null, 0, 0, show ? 0 : actualWidth, show ? 0 : actualHeight);
 
-            var rect1 = CanvasGeometry.CreateRectangle(device, 0, 0, show ? 0 : actualWidth, show ? 0 : actualHeight);
+            var elli1 = CanvasGeometry.CreateCircle(null, left, top, 0);
+            var group1 = CanvasGeometry.CreateGroup(null, new[] { elli1, rect1 }, CanvasFilledRegionDetermination.Alternate);
 
-            var elli1 = CanvasGeometry.CreateCircle(device, left, top, 0);
-            var group1 = CanvasGeometry.CreateGroup(device, new[] { elli1, rect1 }, CanvasFilledRegionDetermination.Alternate);
-
-            var elli2 = CanvasGeometry.CreateCircle(device, left, top, diaginal);
-            var group2 = CanvasGeometry.CreateGroup(device, new[] { elli2, rect1 }, CanvasFilledRegionDetermination.Alternate);
+            var elli2 = CanvasGeometry.CreateCircle(null, left, top, diaginal);
+            var group2 = CanvasGeometry.CreateGroup(null, new[] { elli2, rect1 }, CanvasFilledRegionDetermination.Alternate);
 
             var ellipse = BootStrapper.Current.Compositor.CreatePathGeometry(new CompositionPath(group2));
             var clip = BootStrapper.Current.Compositor.CreateGeometricClip(ellipse);

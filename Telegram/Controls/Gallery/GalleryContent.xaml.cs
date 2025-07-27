@@ -385,7 +385,7 @@ namespace Telegram.Controls.Gallery
 
             if (file.Local.IsDownloadingActive)
             {
-                item.ClientService.Send(new CancelDownloadFile(file.Id, false));
+                item.ClientService.CancelDownloadFile(file, false);
             }
             else if (file.Local.CanBeDownloaded && !file.Local.IsDownloadingActive && !file.Local.IsDownloadingCompleted)
             {
@@ -565,12 +565,23 @@ namespace Telegram.Controls.Gallery
             }
         }
 
-        public void Stop(out int fileId, out double position)
+        public void Stop(out GalleryMedia item, out double position)
         {
             if (Video != null && !_unloaded)
             {
-                fileId = _fileId;
-                position = Video.Position;
+                item = _item;
+
+                var time = Video.Position;
+                var length = Video.Duration;
+
+                if (length >= 30 && time >= 10 && time <= length - 10)
+                {
+                    position = time;
+                }
+                else
+                {
+                    position = 0;
+                }
 
                 _stopped = true;
                 Video.Stop();
@@ -578,7 +589,7 @@ namespace Telegram.Controls.Gallery
             }
             else
             {
-                fileId = 0;
+                item = null;
                 position = 0;
             }
 

@@ -79,7 +79,7 @@ namespace Telegram.Controls
                 StartAnimating();
                 UpdateCurveColors(newGroupCall.IsMuted);
 
-                Audio.Visibility = Visibility.Visible;
+                Audio.Visibility = newGroupCall.IsRtmpStream ? Visibility.Collapsed : Visibility.Visible;
                 Dismiss.Visibility = Visibility.Visible;
 
                 TitleInfo.Text = newGroupCall.GetTitle();

@@ -152,6 +152,10 @@ namespace Telegram.ViewModels.Profile
             {
                 IsSavedMessages = chatId == ClientService.Options.MyId;
             }
+            else if (parameter is ChatMessageTopic chatMessageTopic)
+            {
+                IsSavedMessages = chatMessageTopic.ChatId == ClientService.Options.MyId;
+            }
 
             return base.NavigatedToAsync(parameter, mode, state);
         }

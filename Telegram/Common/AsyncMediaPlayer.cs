@@ -18,6 +18,7 @@ using Telegram.Td.Api;
 using Windows.Foundation;
 using Windows.Media.Devices;
 using Windows.Storage;
+using Windows.System;
 
 namespace Telegram.Common
 {
@@ -36,7 +37,7 @@ namespace Telegram.Common
 
     public partial class AsyncMediaPlayer
     {
-        private readonly IDispatcherContext _dispatcherQueue;
+        private readonly DispatcherQueue _dispatcherQueue;
 
         private readonly LibVLC _library;
         private readonly MediaPlayer _player;
@@ -51,11 +52,7 @@ namespace Telegram.Common
 
         public AsyncMediaPlayer(params string[] options)
         {
-            _dispatcherQueue = WindowContext.Current.Dispatcher;
-
-            // This should be not needed
-            _dispatcherQueue ??= WindowContext.Main.Dispatcher;
-
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             _enableDebugLogs = SettingsService.Current.VerbosityLevel >= 4;
 
             // Generating plugins cache requires a breakpoint in bank.c#504
@@ -132,6 +129,34 @@ namespace Telegram.Common
             }
         }
 
+        public void Play(Uri input)
+        {
+            Write(valid => PlayImpl(input, valid));
+        }
+
+        private void PlayImpl(Uri input, bool play)
+        {
+            if (play)
+            {
+                // Not sure whether it's file or network caching and if they make any difference at all
+                var media = new Media(input, ":file-caching=10000", ":network-caching=10000");
+
+                _player.Play(media);
+
+                // We need to retain both Media and MediaInput due to the bad (IMHO) design of libvlc API.
+                // When creating a Media from a MediaInput, some callbacks are registered to access the stream.
+                // The problem is that the library creates a GC handle in MediaInput that is then used by Media
+                // to register the aforementioned callbacks. What happens, in my understanding, is that there are
+                // some good chances that MediaInput is disposed before Media, and due to that the GC handle is deleted
+                // and this causes an access violation in libvlccore when trying to raise the callbacks for the media.
+                _media?.Dispose();
+                _media = media;
+
+                _input?.Dispose();
+                _input = null;
+            }
+        }
+
         public void Play()
         {
             Write(() => _player.Play());
@@ -203,6 +228,8 @@ namespace Telegram.Common
 
         private void CloseImpl()
         {
+            MediaDevice.DefaultAudioRenderDeviceChanged -= OnDefaultAudioRenderDeviceChanged;
+
             _player.ESSelected -= OnESSelected;
             _player.Vout -= OnVout;
             _player.Buffering -= OnBuffering;
@@ -299,57 +326,69 @@ namespace Telegram.Common
 
         private void OnVout(object sender, MediaPlayerVoutEventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => Vout?.Invoke(this, EventArgs.Empty));
+            TryEnqueue(() => Vout?.Invoke(this, EventArgs.Empty));
         }
 
         private void OnESSelected(object sender, MediaPlayerESSelectedEventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => ESSelected?.Invoke(this, e));
+            TryEnqueue(() => ESSelected?.Invoke(this, e));
         }
 
         private void OnEndReached(object sender, EventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => EndReached?.Invoke(this, EventArgs.Empty));
+            TryEnqueue(() => EndReached?.Invoke(this, EventArgs.Empty));
         }
 
         private void OnBuffering(object sender, MediaPlayerBufferingEventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => Buffering?.Invoke(this, e));
+            TryEnqueue(() => Buffering?.Invoke(this, e));
         }
 
         private void OnTimeChanged(object sender, MediaPlayerTimeChangedEventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => TimeChanged?.Invoke(this, e));
+            TryEnqueue(() => TimeChanged?.Invoke(this, e));
         }
 
         private void OnLengthChanged(object sender, MediaPlayerLengthChangedEventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => LengthChanged?.Invoke(this, e));
+            TryEnqueue(() => LengthChanged?.Invoke(this, e));
         }
 
         private void OnPlaying(object sender, EventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => Playing?.Invoke(this, EventArgs.Empty));
+            TryEnqueue(() => Playing?.Invoke(this, EventArgs.Empty));
         }
 
         private void OnPaused(object sender, EventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => Paused?.Invoke(this, EventArgs.Empty));
+            TryEnqueue(() => Paused?.Invoke(this, EventArgs.Empty));
         }
 
         private void OnStopped(object sender, EventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => Stopped?.Invoke(this, EventArgs.Empty));
+            TryEnqueue(() => Stopped?.Invoke(this, EventArgs.Empty));
         }
 
         private void OnVolumeChanged(object sender, MediaPlayerVolumeChangedEventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => VolumeChanged?.Invoke(this, e));
+            TryEnqueue(() => VolumeChanged?.Invoke(this, e));
         }
 
         private void OnEncounteredError(object sender, EventArgs e)
         {
-            _dispatcherQueue.Dispatch(() => EncounteredError?.Invoke(this, EventArgs.Empty));
+            TryEnqueue(() => EncounteredError?.Invoke(this, EventArgs.Empty));
+        }
+
+        private void TryEnqueue(DispatcherQueueHandler action)
+        {
+            if (_dispatcherQueue != null)
+            {
+                _dispatcherQueue.TryEnqueue(action);
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(state => action());
+            }
         }
 
         #endregion

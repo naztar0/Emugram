@@ -2388,7 +2388,7 @@ namespace Telegram.Controls.Messages
             var chat = message.Chat;
             if (chat != null)
             {
-                var content = ReplaceWithLink(Strings.ActionRequestedPeer, "un1", usersShared.Users.Select(x => x.UserId), message.ClientService);
+                var content = ReplaceWithLinks(Strings.ActionRequestedPeer, "un1", usersShared.Users.Select(x => x.UserId), message.ClientService);
                 return ReplaceWithLink(content, "un2", chat);
             }
             else if (chat != null)
