@@ -271,11 +271,10 @@ namespace Telegram.Views.Settings
 
             var message = new Message(0, senderId, 0, null, null, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, 0, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, null, null);
 
-            var playback = TypeResolver.Current.Playback;
             var settings = TypeResolver.Current.Resolve<ISettingsService>(clientService.SessionId);
 
             var delegato = new ChatMessageDelegate(clientService, settings, null);
-            var viewModel = new MessageViewModel(clientService, playback, delegato, null, null, null, message, true);
+            var viewModel = new MessageViewModel(clientService, delegato, null, null, null, message, true);
 
             Reaction.SetReaction(viewModel, new MessageReaction(reaction, 1, false, senderId, new MessageSender[] { }));
 

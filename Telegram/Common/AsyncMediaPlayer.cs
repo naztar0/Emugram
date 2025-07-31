@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td;
 using Telegram.Td.Api;
@@ -39,6 +38,8 @@ namespace Telegram.Common
     {
         private readonly DispatcherQueue _dispatcherQueue;
 
+        private readonly AsyncMediaPlayerSwapChain _graphicsContext;
+
         private readonly LibVLC _library;
         private readonly MediaPlayer _player;
 
@@ -50,13 +51,21 @@ namespace Telegram.Common
         private readonly object _closeLock = new();
         private bool _closed;
 
-        public AsyncMediaPlayer(params string[] options)
+        public AsyncMediaPlayer(bool createGraphicsContext, params string[] options)
         {
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             _enableDebugLogs = SettingsService.Current.VerbosityLevel >= 4;
 
-            // Generating plugins cache requires a breakpoint in bank.c#504
-            _library = new LibVLC(_enableDebugLogs, options); //"--quiet", "--reset-plugins-cache");
+            if (createGraphicsContext && _dispatcherQueue != null)
+            {
+                _graphicsContext = new AsyncMediaPlayerSwapChain();
+                _library = new LibVLC(_enableDebugLogs, _graphicsContext.SwapChainOptions);
+            }
+            else
+            {
+                // Generating plugins cache requires a breakpoint in bank.c#504
+                _library = new LibVLC(_enableDebugLogs, options); //"--quiet", "--reset-plugins-cache");
+            }
 
             if (_enableDebugLogs)
             {
@@ -96,6 +105,8 @@ namespace Telegram.Common
                 Write(() => _player.SetAudioOutput(args.Id));
             }
         }
+
+        public AsyncMediaPlayerSwapChain Context => _graphicsContext;
 
         public void Play(MediaInput input)
         {
@@ -258,6 +269,11 @@ namespace Telegram.Common
             if (_enableDebugLogs)
             {
                 _library.Log -= OnLog;
+            }
+
+            if (_graphicsContext != null)
+            {
+                _dispatcherQueue.TryEnqueue(_graphicsContext.Destroy);
             }
 
             lock (_closeLock)

@@ -139,7 +139,7 @@ namespace Telegram.Views
 
         public TypeLocator Build(int id)
         {
-            return _containers[id] = new TypeLocator(_lifetime, _locale, _passcode, _playback, id, id == SettingsService.Current.ActiveSession);
+            return _containers[id] = new TypeLocator(_lifetime, _locale, _passcode, id, id == SettingsService.Current.ActiveSession);
         }
 
         public void Destroy(int id)

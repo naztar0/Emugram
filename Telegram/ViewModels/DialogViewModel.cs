@@ -79,13 +79,10 @@ namespace Telegram.ViewModels
 
         protected readonly ILocationService _locationService;
         protected readonly INotificationsService _notificationsService;
-        protected readonly IPlaybackService _playbackService;
         protected readonly IVoipService _voipService;
         protected readonly INetworkService _networkService;
         protected readonly IStorageService _storageService;
         protected readonly ITranslateService _translateService;
-
-        public IPlaybackService PlaybackService => _playbackService;
 
         public IStorageService StorageService => _storageService;
 
@@ -100,12 +97,11 @@ namespace Telegram.ViewModels
 
         public IDialogDelegate Delegate { get; set; }
 
-        public DialogViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, ILocationService locationService, INotificationsService pushService, IPlaybackService playbackService, IVoipService voipService, INetworkService networkService, IStorageService storageService, ITranslateService translateService)
+        public DialogViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, ILocationService locationService, INotificationsService pushService, IVoipService voipService, INetworkService networkService, IStorageService storageService, ITranslateService translateService)
             : base(clientService, settingsService, aggregator)
         {
             _locationService = locationService;
             _notificationsService = pushService;
-            _playbackService = playbackService;
             _voipService = voipService;
             _networkService = networkService;
             _storageService = storageService;
@@ -1805,7 +1801,7 @@ namespace Telegram.ViewModels
                 return null;
             }
 
-            var model = new MessageViewModel(ClientService, _playbackService, _messageDelegate, _chat, _forumTopic, _directMessagesChatTopic, message, true);
+            var model = new MessageViewModel(ClientService, _messageDelegate, _chat, _forumTopic, _directMessagesChatTopic, message, true);
 
             if (forLanguageStatistics)
             {
@@ -1822,7 +1818,7 @@ namespace Telegram.ViewModels
                 return null;
             }
 
-            return new PinnedMessageViewModel(ClientService, _playbackService, _messageDelegate, _chat, message, index);
+            return new PinnedMessageViewModel(ClientService, _messageDelegate, _chat, message, index);
         }
 
         protected void ProcessMessages(Chat chat, IList<MessageViewModel> messages, bool returnAlbumRoot = false)

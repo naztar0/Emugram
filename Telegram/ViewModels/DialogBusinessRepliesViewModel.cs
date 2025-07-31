@@ -15,8 +15,8 @@ namespace Telegram.ViewModels
 {
     public partial class QuickReplyMessageViewModel : MessageViewModel
     {
-        public QuickReplyMessageViewModel(IClientService clientService, IPlaybackService playbackService, IMessageDelegate delegato, Chat chat, Message message, bool processText = false)
-            : base(clientService, playbackService, delegato, chat, null, null, message, processText)
+        public QuickReplyMessageViewModel(IClientService clientService, IMessageDelegate delegato, Chat chat, Message message, bool processText = false)
+            : base(clientService, delegato, chat, null, null, message, processText)
         {
         }
 
@@ -25,8 +25,8 @@ namespace Telegram.ViewModels
 
     public partial class DialogBusinessRepliesViewModel : DialogViewModel, IDiffHandler<MessageViewModel>
     {
-        public DialogBusinessRepliesViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, ILocationService locationService, INotificationsService pushService, IPlaybackService playbackService, IVoipService voipService, INetworkService networkService, IStorageService storageService, ITranslateService translateService)
-            : base(clientService, settingsService, aggregator, locationService, pushService, playbackService, voipService, networkService, storageService, translateService)
+        public DialogBusinessRepliesViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, ILocationService locationService, INotificationsService pushService, IVoipService voipService, INetworkService networkService, IStorageService storageService, ITranslateService translateService)
+            : base(clientService, settingsService, aggregator, locationService, pushService, voipService, networkService, storageService, translateService)
         {
         }
 
@@ -59,7 +59,7 @@ namespace Telegram.ViewModels
             var replied = update.Messages.OrderBy(x => x.Id).Select(x =>
             {
                 var message = new Message(x.Id, new MessageSenderUser(ClientService.Options.MyId), ClientService.Options.MyId, x.SendingState, null, true, false, false, false, false, false, false, 0, 0, null, null, null, null, null, null, 0, null, null, 0, 0, x.ViaBotUserId, 0, 0, 0, string.Empty, x.MediaAlbumId, 0, false, string.Empty, x.Content, x.ReplyMarkup);
-                var model = new QuickReplyMessageViewModel(ClientService, PlaybackService, _messageDelegate, _chat, message, true)
+                var model = new QuickReplyMessageViewModel(ClientService, _messageDelegate, _chat, message, true)
                 {
                     CanBeEdited = x.CanBeEdited
                 };

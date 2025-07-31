@@ -71,7 +71,7 @@ namespace Telegram.Views
             _clientService = ViewModel.ClientService;
 
             ViewModel.Chats.Delegate = this;
-            ViewModel.PlaybackService.SourceChanged += OnPlaybackSourceChanged;
+            TypeResolver.Current.Playback.SourceChanged += OnPlaybackSourceChanged;
 
             InitializeLock();
 
@@ -154,8 +154,6 @@ namespace Telegram.Views
                 var viewModel = _viewModel;
                 if (viewModel != null)
                 {
-                    viewModel.PlaybackService.SourceChanged -= OnPlaybackSourceChanged;
-
                     viewModel.Settings.Delegate = null;
                     viewModel.Chats.Delegate = null;
                     viewModel.Topics.Delegate = null;
@@ -163,6 +161,8 @@ namespace Telegram.Views
                     viewModel.Aggregator.Unsubscribe(this);
                     viewModel.Dispose();
                 }
+
+                TypeResolver.Current.Playback.SourceChanged -= OnPlaybackSourceChanged;
 
                 MasterDetail.NavigationService.FrameFacade.Navigating -= OnNavigating;
                 MasterDetail.NavigationService.FrameFacade.Navigated -= OnNavigated;
@@ -1000,7 +1000,7 @@ namespace Telegram.Views
 
             OnStateChanged(null, null);
 
-            ShowHideBanner(ViewModel.PlaybackService.CurrentItem != null);
+            ShowHideBanner(TypeResolver.Current.Playback.CurrentItem != null);
 
             var update = new UpdateConnectionState(ViewModel.ClientService.ConnectionState);
             if (update.State != null)
@@ -1088,7 +1088,7 @@ namespace Telegram.Views
             if (show && Playback == null)
             {
                 FindName(nameof(Playback));
-                Playback.Update(ViewModel.ClientService, ViewModel.PlaybackService, ViewModel.NavigationService);
+                Playback.Update(ViewModel.ClientService, TypeResolver.Current.Playback, ViewModel.NavigationService);
             }
 
             return;

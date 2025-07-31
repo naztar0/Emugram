@@ -108,7 +108,7 @@ namespace Telegram.Common
         {
             var token = 0L;
 
-            var player = new AsyncMediaPlayer("--no-audio");
+            var player = new AsyncMediaPlayer(false, "--no-audio");
             void handler(AsyncMediaPlayer sender, MediaPlayerBufferingEventArgs e)
             {
                 if (e.Cache == 100)

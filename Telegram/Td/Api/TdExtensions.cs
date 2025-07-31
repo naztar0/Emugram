@@ -2042,15 +2042,34 @@ namespace Telegram.Td.Api
 
         private static bool CompareOrderedRules(IList<UserPrivacySettingRule> xRules, IList<UserPrivacySettingRule> yRules)
         {
-            var xSorted = xRules.OrderBy(r => r.GetType()).ToArray();
-            var ySorted = yRules.OrderBy(r => r.GetType()).ToArray();
+            var xSorted = GetOrderedRules(xRules);
+            var ySorted = GetOrderedRules(yRules);
 
-            for (int i = 0; i < xSorted.Length; i++)
+            for (int i = 0; i < xSorted.Count; i++)
             {
                 if (!xSorted[i].AreTheSame(ySorted[i]))
                     return false;
             }
             return true;
+        }
+
+        private static IList<UserPrivacySettingRule> GetOrderedRules(IList<UserPrivacySettingRule> rules)
+        {
+            return rules.OrderBy(x => x switch
+            {
+                UserPrivacySettingRuleAllowAll => 0,
+                UserPrivacySettingRuleAllowBots => 1,
+                UserPrivacySettingRuleAllowChatMembers => 2,
+                UserPrivacySettingRuleAllowContacts => 3,
+                UserPrivacySettingRuleAllowPremiumUsers => 4,
+                UserPrivacySettingRuleAllowUsers => 5,
+                UserPrivacySettingRuleRestrictAll => 6,
+                UserPrivacySettingRuleRestrictBots => 7,
+                UserPrivacySettingRuleRestrictChatMembers => 8,
+                UserPrivacySettingRuleRestrictContacts => 9,
+                UserPrivacySettingRuleRestrictUsers => 10,
+                _ => -1
+            }).ToArray();
         }
 
         public static bool AreTheSame(this UserPrivacySettingRule x, UserPrivacySettingRule y)
