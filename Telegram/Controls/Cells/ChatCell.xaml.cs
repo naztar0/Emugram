@@ -1643,7 +1643,7 @@ namespace Telegram.Controls.Cells
                     clientService.TryGetChat(message.ChatId, out chat);
                 }
 
-                return MessageService.GetText(new MessageViewModel(clientService, null, null, chat, null, null, message));
+                return MessageService.GetText(new MessageViewModel(clientService, null, chat, null, null, message));
             }
 
             var format = "{0}: \u200B";

@@ -43,8 +43,8 @@ namespace Telegram.ViewModels
         private readonly INotificationsService _notificationsService;
         private readonly ITranslateService _translateService;
 
-        public ProfileViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, IPlaybackService playbackService, IVoipService voipService, INotificationsService notificationsService, IStorageService storageService, ITranslateService translateService)
-            : base(clientService, settingsService, storageService, aggregator, playbackService)
+        public ProfileViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, IVoipService voipService, INotificationsService notificationsService, IStorageService storageService, ITranslateService translateService)
+            : base(clientService, settingsService, storageService, aggregator)
         {
             _voipService = voipService;
             _notificationsService = notificationsService;

@@ -113,15 +113,13 @@ namespace Telegram.ViewModels.Profile
 
     public abstract partial class MediaTabsViewModelBase : MultiViewModelBase
     {
-        private readonly IPlaybackService _playbackService;
         private readonly IStorageService _storageService;
 
         private readonly IMessageDelegate _messageDelegate;
 
-        public MediaTabsViewModelBase(IClientService clientService, ISettingsService settingsService, IStorageService storageService, IEventAggregator aggregator, IPlaybackService playbackService)
+        public MediaTabsViewModelBase(IClientService clientService, ISettingsService settingsService, IStorageService storageService, IEventAggregator aggregator)
             : base(clientService, settingsService, aggregator)
         {
-            _playbackService = playbackService;
             _storageService = storageService;
 
             _messageDelegate = new MessageDelegate(this);
@@ -146,7 +144,6 @@ namespace Telegram.ViewModels.Profile
             CanForwardSelectedMessages = properties.Count > 0 && properties.Values.All(x => x.CanBeForwarded);
         }
 
-        public IPlaybackService PlaybackService => _playbackService;
         public IStorageService StorageService => _storageService;
 
         public MessageTopic Topic { get; set; }

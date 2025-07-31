@@ -622,14 +622,17 @@ namespace Telegram.Views
                 element = VisualTreeHelper.GetParent(element) as UIElement;
             }
 
-            var visual = ElementComposition.GetElementVisual(ToolTip);
-            var thumb = ElementComposition.GetElementVisual(element);
+            if (element is not null)
+            {
+                var visual = ElementComposition.GetElementVisual(ToolTip);
+                var thumb = ElementComposition.GetElementVisual(element);
 
-            var animation = visual.Compositor.CreateExpressionAnimation("thumb.Offset.Y + (target.Size.Y - this.Target.Size.Y) / 2");
-            animation.SetReferenceParameter("thumb", thumb);
-            animation.SetReferenceParameter("target", target);
+                var animation = visual.Compositor.CreateExpressionAnimation("thumb.Offset.Y + (target.Size.Y - this.Target.Size.Y) / 2");
+                animation.SetReferenceParameter("thumb", thumb);
+                animation.SetReferenceParameter("target", target);
 
-            visual.StartAnimation("Translation.Y", animation);
+                visual.StartAnimation("Translation.Y", animation);
+            }
         }
 
         private bool _initialViewChanging = true;

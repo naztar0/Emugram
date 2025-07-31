@@ -40,12 +40,11 @@ namespace Telegram.ViewModels
         private readonly ISessionService _sessionService;
         private readonly IVoipService _voipService;
         private readonly ICloudUpdateService _cloudUpdateService;
-        private readonly IPlaybackService _playbackService;
         private readonly IShortcutsService _shortcutService;
 
         public bool Refresh { get; set; }
 
-        public MainViewModel(IClientService clientService, ISettingsService settingsService, IStorageService storageService, IEventAggregator aggregator, INotificationsService pushService, IContactsService contactsService, IPasscodeService passcodeService, ILifetimeService lifecycle, ISessionService session, IVoipService voipService, ISettingsSearchService settingsSearchService, ICloudUpdateService cloudUpdateService, IPlaybackService playbackService, IShortcutsService shortcutService)
+        public MainViewModel(IClientService clientService, ISettingsService settingsService, IStorageService storageService, IEventAggregator aggregator, INotificationsService pushService, IContactsService contactsService, IPasscodeService passcodeService, ILifetimeService lifecycle, ISessionService session, IVoipService voipService, ISettingsSearchService settingsSearchService, ICloudUpdateService cloudUpdateService, IShortcutsService shortcutService)
             : base(clientService, settingsService, aggregator)
         {
             _contactsService = contactsService;
@@ -54,7 +53,6 @@ namespace Telegram.ViewModels
             _sessionService = session;
             _voipService = voipService;
             _cloudUpdateService = cloudUpdateService;
-            _playbackService = playbackService;
             _shortcutService = shortcutService;
 
             Folders = new ChatFolderCollection();
@@ -117,8 +115,6 @@ namespace Telegram.ViewModels
         public ISessionService Session => _sessionService;
 
         public IPasscodeService Passcode => _passcodeService;
-
-        public IPlaybackService PlaybackService => _playbackService;
 
         public IShortcutsService ShortcutService => _shortcutService;
 
@@ -210,7 +206,7 @@ namespace Telegram.ViewModels
                 return;
             }
 
-            var message = _playbackService.CurrentItem;
+            var message = TypeResolver.Current.Playback.CurrentItem;
             if (message == null || message.ClientService != ClientService)
             {
                 return;
@@ -218,7 +214,7 @@ namespace Telegram.ViewModels
 
             if (message.ChatId == update.ChatId && update.MessageIds.Contains(message.Id))
             {
-                _playbackService.Clear();
+                TypeResolver.Current.Playback.Clear();
             }
         }
 

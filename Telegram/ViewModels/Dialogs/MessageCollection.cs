@@ -412,7 +412,7 @@ namespace Telegram.ViewModels
             {
                 if (!item.AreOnTheSameDay(next))
                 {
-                    return new MessageViewModel(next.ClientService, next.PlaybackService, next.Delegate, next.Chat, _viewModel.ForumTopic, _viewModel.DirectMessagesChatTopic, new Message(0, next.SenderId, next.ChatId, null, _viewModel.IsSavedMessagesTab ? item.SchedulingState : next.SchedulingState, next.IsOutgoing, false, false, false, false, next.IsChannelPost, false, next.Date, 0, null, null, null, null, null, null, next.MessageThreadId, next.TopicId, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, new MessageHeaderDate(_viewModel.IsSavedMessagesTab ? item.Date : next.Date), null));
+                    return new MessageViewModel(next.ClientService, next.Delegate, next.Chat, _viewModel.ForumTopic, _viewModel.DirectMessagesChatTopic, new Message(0, next.SenderId, next.ChatId, null, _viewModel.IsSavedMessagesTab ? item.SchedulingState : next.SchedulingState, next.IsOutgoing, false, false, false, false, next.IsChannelPost, false, next.Date, 0, null, null, null, null, null, null, next.MessageThreadId, next.TopicId, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, new MessageHeaderDate(_viewModel.IsSavedMessagesTab ? item.Date : next.Date), null));
                 }
             }
 
@@ -430,7 +430,7 @@ namespace Telegram.ViewModels
             {
                 if (!item.TopicId.AreTheSame(next.TopicId))
                 {
-                    return new MessageViewModel(next.ClientService, next.PlaybackService, next.Delegate, next.Chat, _viewModel.ForumTopic, _viewModel.DirectMessagesChatTopic, new Message(0, next.SenderId, next.ChatId, null, next.SchedulingState, next.IsOutgoing, false, false, false, false, next.IsChannelPost, false, next.Date, 0, null, null, null, null, null, null, next.MessageThreadId, next.TopicId, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, new MessageHeaderMessageTopic(), null));
+                    return new MessageViewModel(next.ClientService, next.Delegate, next.Chat, _viewModel.ForumTopic, _viewModel.DirectMessagesChatTopic, new Message(0, next.SenderId, next.ChatId, null, next.SchedulingState, next.IsOutgoing, false, false, false, false, next.IsChannelPost, false, next.Date, 0, null, null, null, null, null, null, next.MessageThreadId, next.TopicId, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, new MessageHeaderMessageTopic(), null));
                 }
             }
 

@@ -41,8 +41,7 @@ namespace Telegram
             {
                 typeof(ILifetimeService),
                 typeof(ILocaleService),
-                typeof(IPasscodeService),
-                typeof(IPlaybackService)
+                typeof(IPasscodeService)
             };
 
             _singletons = new List<(Type, Type)>

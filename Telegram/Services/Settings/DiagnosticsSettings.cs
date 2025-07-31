@@ -200,7 +200,7 @@ namespace Telegram.Services.Settings
         private bool? _mediaServerDebug;
         public bool MediaServerDebug
         {
-            get => _mediaServerDebug ??= GetValueOrDefault("MediaServerDebug", ApiInfo.IsPackagedRelease);
+            get => _mediaServerDebug ??= GetValueOrDefault("MediaServerDebug", true);
             set => AddOrUpdateValue(ref _mediaServerDebug, "MediaServerDebug", value);
         }
 

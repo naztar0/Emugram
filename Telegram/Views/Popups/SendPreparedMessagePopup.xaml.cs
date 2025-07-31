@@ -30,11 +30,10 @@ namespace Telegram.Views.Popups
             message.IsOutgoing = false;
             clientService.TryGetChatFromUser(clientService.Options.MyId, out Chat chat);
 
-            var playback = TypeResolver.Current.Playback;
             var settings = TypeResolver.Current.Resolve<ISettingsService>(clientService.SessionId);
 
             var delegato = new ChatMessageDelegate(clientService, settings, chat);
-            var viewModel = new MessageViewModel(clientService, playback, delegato, chat, null, null, message, true);
+            var viewModel = new MessageViewModel(clientService, delegato, chat, null, null, message, true);
 
             BackgroundControl.Update(clientService, null);
             Message.UpdateMessage(viewModel);

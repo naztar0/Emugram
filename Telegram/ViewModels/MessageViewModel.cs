@@ -10,13 +10,14 @@ using Telegram.Common;
 using Telegram.Services;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Delegates;
+using Telegram.Views;
 
 namespace Telegram.ViewModels
 {
     public partial class PinnedMessageViewModel : MessageViewModel
     {
-        public PinnedMessageViewModel(IClientService clientService, IPlaybackService playbackService, IMessageDelegate delegato, Chat chat, Message message, int index)
-            : base(clientService, playbackService, delegato, chat, null, null, message, true)
+        public PinnedMessageViewModel(IClientService clientService, IMessageDelegate delegato, Chat chat, Message message, int index)
+            : base(clientService, delegato, chat, null, null, message, true)
         {
             Index = index;
         }
@@ -31,8 +32,6 @@ namespace Telegram.ViewModels
 
     public partial class MessageViewModel : MessageWithOwner
     {
-        private readonly IPlaybackService _playbackService;
-
         // TODO: find a way NOT to use a weak reference here
         private readonly WeakReference _delegate;
 
@@ -41,10 +40,9 @@ namespace Telegram.ViewModels
 
         private Action _updateSelection;
 
-        public MessageViewModel(IClientService clientService, IPlaybackService playbackService, IMessageDelegate delegato, Chat chat, ForumTopic forumTopic, DirectMessagesChatTopic directMessagesChatTopic, Message message, bool processText = false)
+        public MessageViewModel(IClientService clientService, IMessageDelegate delegato, Chat chat, ForumTopic forumTopic, DirectMessagesChatTopic directMessagesChatTopic, Message message, bool processText = false)
             : base(clientService, message, chat)
         {
-            _playbackService = playbackService;
             _delegate = new WeakReference(delegato);
 
             _forumTopic = forumTopic;
@@ -91,7 +89,7 @@ namespace Telegram.ViewModels
         //    ReplyToMessage = null;
         //}
 
-        public IPlaybackService PlaybackService => _playbackService;
+        public IPlaybackService PlaybackService => TypeResolver.Current.Playback;
         public IMessageDelegate Delegate => _delegate.Target as IMessageDelegate;
 
         public bool IsInitial { get; set; } = true;

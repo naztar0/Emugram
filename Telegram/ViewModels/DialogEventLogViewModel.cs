@@ -22,8 +22,8 @@ namespace Telegram.ViewModels
 {
     public partial class DialogEventLogViewModel : DialogViewModel
     {
-        public DialogEventLogViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, ILocationService locationService, INotificationsService pushService, IPlaybackService playbackService, IVoipService voipService, INetworkService networkService, IStorageService storageService, ITranslateService translateService)
-            : base(clientService, settingsService, aggregator, locationService, pushService, playbackService, voipService, networkService, storageService, translateService)
+        public DialogEventLogViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator, ILocationService locationService, INotificationsService pushService, IVoipService voipService, INetworkService networkService, IStorageService storageService, ITranslateService translateService)
+            : base(clientService, settingsService, aggregator, locationService, pushService, voipService, networkService, storageService, translateService)
         {
         }
 
