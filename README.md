@@ -17,6 +17,7 @@
 - Any device emulation for web apps
 - Voice messages from files
 - Round video messages from files
+- Unlimited accounts
 
 *There's more to come.*
 
