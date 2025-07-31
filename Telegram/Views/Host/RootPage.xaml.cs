@@ -211,7 +211,7 @@ namespace Telegram.Views.Host
 
             var limit = 3;
 
-            if (count >= limit + premium)
+            if (-count >= limit + premium)
             {
                 _navigationService.ShowLimitReached(new PremiumLimitTypeConnectedAccounts());
                 return;
