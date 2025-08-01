@@ -385,11 +385,11 @@ namespace Telegram.ViewModels
         {
             if (message.Content is MessageAudio or MessageVoiceNote)
             {
-                _playbackService.Play(message, Topic);
+                TypeResolver.Current.Playback.Play(message, Topic);
 
                 if (timestamp > 0)
                 {
-                    _playbackService.Seek(TimeSpan.FromSeconds(timestamp));
+                    TypeResolver.Current.Playback.Seek(TimeSpan.FromSeconds(timestamp));
                 }
             }
             else if (message.Content is MessagePoll poll)
@@ -526,7 +526,7 @@ namespace Telegram.ViewModels
 
         public void PlayMessage(MessageViewModel message)
         {
-            _playbackService.Play(message, Topic);
+            TypeResolver.Current.Playback.Play(message, Topic);
         }
 
         public bool RecognizeSpeech(MessageViewModel message)

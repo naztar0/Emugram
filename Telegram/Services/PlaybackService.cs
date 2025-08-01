@@ -752,7 +752,7 @@ namespace Telegram.Services
         {
             if (_player == null)
             {
-                _player = new AsyncMediaPlayer();
+                _player = new AsyncMediaPlayer(false);
                 //_mediaPlayer.SystemMediaTransportControls.AutoRepeatMode = _settingsService.Playback.RepeatMode;
                 //_mediaPlayer.SystemMediaTransportControls.ButtonPressed += Transport_ButtonPressed;
                 //_mediaPlayer.PlaybackSession.PlaybackStateChanged += OnPlaybackStateChanged;

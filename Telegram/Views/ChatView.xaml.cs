@@ -310,7 +310,7 @@ namespace Telegram.Views
 
         private ChatBackgroundControl FindBackgroundControl()
         {
-            var masterDetailPanel = ViewModel.NavigationService.XamlRoot?.Content?.GetChild<MasterDetailPanel>();
+            var masterDetailPanel = XamlRoot?.Content?.GetChild<MasterDetailPanel>();
             if (masterDetailPanel != null)
             {
                 return masterDetailPanel.GetChild<ChatBackgroundControl>();

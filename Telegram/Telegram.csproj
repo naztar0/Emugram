@@ -204,6 +204,7 @@
     <Compile Include="Collections\ListWithTotalCount.cs" />
     <Compile Include="Collections\SearchEmojiCollection.cs" />
     <Compile Include="Collections\SynchronizedList.cs" />
+    <Compile Include="Common\AsyncMediaPlayerSwapChain.cs" />
     <Compile Include="Common\AutomaticDragHelper.cs" />
     <Compile Include="Common\BezierPoint.cs" />
     <Compile Include="Common\DebouncedPropertyWithToken.cs" />
