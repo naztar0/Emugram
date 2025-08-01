@@ -25,7 +25,7 @@
 
 ### Official
 
-You can download prebuilt Windows binary from [Releases tab](/releases).
+You can download prebuilt Windows binary from [Releases tab](https://github.com/naztar0/Emugram/releases).
 
 ### Self-built
 
