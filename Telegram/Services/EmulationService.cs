@@ -118,6 +118,24 @@ namespace Telegram.Services
                 SecChUaModel = "\"Pixel 7\"",
                 SecChUaPlatformVersion = "\"16\"",
                 SecChUaWoW64 = false,
+            },
+            new EmulationPreset
+            {
+                Id = -3,
+                Title = "Telegram iOS",
+                ApplicationName = "ios",
+                UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+
+                SecChUa = "\"iOS\";v=\"17.5.1\"",
+                SecChUaPlatform = "\"iOS\"",
+                SecChUaMobile = true,
+                SecChUaArch = "arm",
+                SecChUaBitness = "64",
+                SecChUaFormFactors = "\"Mobile\"",
+                SecChUaFullVersionList = "\"iOS\";v=\"17.5.1\"",
+                SecChUaModel = "\"iPhone 15\"",
+                SecChUaPlatformVersion = "\"17\"",
+                SecChUaWoW64 = false,
             }
         };
 
