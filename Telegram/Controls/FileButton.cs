@@ -57,12 +57,6 @@ namespace Telegram.Controls
         public FileButton()
         {
             DefaultStyleKey = typeof(FileButton);
-            Connected += OnConnected;
-        }
-
-        private void OnConnected(object sender, RoutedEventArgs e)
-        {
-            // Used to enable FrameworkElementEx
         }
 
         public MessageContentState State => _state;

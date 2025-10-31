@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Common;
@@ -76,8 +77,8 @@ namespace Telegram.Services
          */
 
         private readonly HashSet<int> _canceledDownloads = new();
-        private readonly HashSet<int> _partialDownloads = new();
         private readonly HashSet<string> _completedDownloads = new();
+        private readonly object _downloadsLock = new();
 
         public Task<File> GetFileAsync(int fileId)
         {
@@ -99,6 +100,11 @@ namespace Telegram.Services
 
         public async Task<StorageFile> GetFileAsync(File file, bool completed = true)
         {
+            if (file == null)
+            {
+                return null;
+            }
+
             // Extremely important to do this only for completed,
             // as this method is being used by RemoteFileStream as well.
             if (completed)
@@ -149,7 +155,10 @@ namespace Telegram.Services
                     var permanent = await Future.GetFileAsync(file.Remote.UniqueId);
                     if (permanent == null)
                     {
-                        _completedDownloads.Add(file.Remote.UniqueId);
+                        lock (_downloadsLock)
+                        {
+                            _completedDownloads.Add(file.Remote.UniqueId);
+                        }
 
                         var source = await StorageFile.GetFileFromPathAsync(file.Local.Path);
                         if (Future.CheckAccess(source))
@@ -188,7 +197,6 @@ namespace Telegram.Services
 
         public async void AddFileToDownloads(File file, long chatId, long messageId, int priority = 30)
         {
-            _partialDownloads.Remove(file.Id);
             Send(new AddFileToDownloads(file.Id, chatId, messageId, priority));
 
             if (ApiInfo.HasCacheOnly || !SettingsService.Current.IsDownloadFolderEnabled || Future.Contains(file.Remote.UniqueId, true) || await Future.ContainsAsync(file.Remote.UniqueId))
@@ -215,12 +223,15 @@ namespace Telegram.Services
                 && file.Remote.IsUploadingCompleted
                 && Future.Contains(file.Remote.UniqueId, true))
             {
-                if (_completedDownloads.Contains(file.Remote.UniqueId))
+                lock (_downloadsLock)
                 {
-                    return;
-                }
+                    if (_completedDownloads.Contains(file.Remote.UniqueId))
+                    {
+                        return;
+                    }
 
-                _completedDownloads.Add(file.Remote.UniqueId);
+                    _completedDownloads.Add(file.Remote.UniqueId);
+                }
 
                 try
                 {
@@ -250,8 +261,11 @@ namespace Telegram.Services
 
         public async void CancelDownloadFile(File file, bool onlyIfPending = false)
         {
-            _canceledDownloads.Add(file.Id);
-            _completedDownloads.Remove(file.Remote.UniqueId);
+            lock (_downloadsLock)
+            {
+                _canceledDownloads.Add(file.Id);
+                _completedDownloads.Remove(file.Remote.UniqueId);
+            }
 
             Send(new CancelDownloadFile(file.Id, onlyIfPending));
             Send(new RemoveFileFromDownloads(file.Id, false));
@@ -280,12 +294,10 @@ namespace Telegram.Services
 
         public bool IsDownloadFileCanceled(int fileId)
         {
-            return _canceledDownloads.Contains(fileId);
-        }
-
-        public bool IsDownloadFilePartial(int fileId)
-        {
-            return _partialDownloads.Contains(fileId);
+            lock (_downloadsLock)
+            {
+                return _canceledDownloads.Contains(fileId);
+            }
         }
 
         private File ProcessFile(File file)
@@ -308,17 +320,40 @@ namespace Telegram.Services
             }
         }
 
+        public void ProcessFiles(ref Object target)
+        {
+            ProcessFiles(target);
+
+            if (target is global::Telegram.Td.Api.Chat chat)
+            {
+                if (_chats.TryGetValue(chat.Id, out ChatProjection projection))
+                {
+                    target = projection;
+                }
+                else
+                {
+                    // THIS SHOULD NEVER HAPPEN
+                    if (ApiInfo.IsPackagedRelease)
+                    {
+                        Debug.Assert(false, "Not found chat in ProcessFiles");
+                    }
+
+                    target = new ChatProjection(chat);
+                }
+            }
+        }
+
         public void ProcessFiles(object target)
         {
             switch (target)
             {
-                case AdvertisementSponsor advertisementSponsor:
+                case global::Telegram.Td.Api.AdvertisementSponsor advertisementSponsor:
                     if (advertisementSponsor.Photo != null)
                     {
                         ProcessFiles(advertisementSponsor.Photo);
                     }
                     break;
-                case AlternativeVideo alternativeVideo:
+                case global::Telegram.Td.Api.AlternativeVideo alternativeVideo:
                     if (alternativeVideo.HlsFile != null)
                     {
                         alternativeVideo.HlsFile = ProcessFile(alternativeVideo.HlsFile);
@@ -328,13 +363,13 @@ namespace Telegram.Services
                         alternativeVideo.Video = ProcessFile(alternativeVideo.Video);
                     }
                     break;
-                case AnimatedChatPhoto animatedChatPhoto:
+                case global::Telegram.Td.Api.AnimatedChatPhoto animatedChatPhoto:
                     if (animatedChatPhoto.File != null)
                     {
                         animatedChatPhoto.File = ProcessFile(animatedChatPhoto.File);
                     }
                     break;
-                case AnimatedEmoji animatedEmoji:
+                case global::Telegram.Td.Api.AnimatedEmoji animatedEmoji:
                     if (animatedEmoji.Sound != null)
                     {
                         animatedEmoji.Sound = ProcessFile(animatedEmoji.Sound);
@@ -344,7 +379,7 @@ namespace Telegram.Services
                         ProcessFiles(animatedEmoji.Sticker);
                     }
                     break;
-                case Animation animation:
+                case global::Telegram.Td.Api.Animation animation:
                     if (animation.AnimationValue != null)
                     {
                         animation.AnimationValue = ProcessFile(animation.AnimationValue);
@@ -354,13 +389,13 @@ namespace Telegram.Services
                         ProcessFiles(animation.Thumbnail);
                     }
                     break;
-                case Animations animations:
+                case global::Telegram.Td.Api.Animations animations:
                     foreach (var item in animations.AnimationsValue)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case AttachmentMenuBot attachmentMenuBot:
+                case global::Telegram.Td.Api.AttachmentMenuBot attachmentMenuBot:
                     if (attachmentMenuBot.AndroidIcon != null)
                     {
                         attachmentMenuBot.AndroidIcon = ProcessFile(attachmentMenuBot.AndroidIcon);
@@ -398,7 +433,7 @@ namespace Telegram.Services
                         attachmentMenuBot.WebAppPlaceholder = ProcessFile(attachmentMenuBot.WebAppPlaceholder);
                     }
                     break;
-                case Audio audio:
+                case global::Telegram.Td.Api.Audio audio:
                     if (audio.AlbumCoverThumbnail != null)
                     {
                         ProcessFiles(audio.AlbumCoverThumbnail);
@@ -412,37 +447,43 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case AvailableGift availableGift:
+                case global::Telegram.Td.Api.Audios audios:
+                    foreach (var item in audios.AudiosValue)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.AvailableGift availableGift:
                     if (availableGift.Gift != null)
                     {
                         ProcessFiles(availableGift.Gift);
                     }
                     break;
-                case AvailableGifts availableGifts:
+                case global::Telegram.Td.Api.AvailableGifts availableGifts:
                     foreach (var item in availableGifts.Gifts)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case Background background:
+                case global::Telegram.Td.Api.Background background:
                     if (background.Document != null)
                     {
                         ProcessFiles(background.Document);
                     }
                     break;
-                case Backgrounds backgrounds:
+                case global::Telegram.Td.Api.Backgrounds backgrounds:
                     foreach (var item in backgrounds.BackgroundsValue)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case BasicGroupFullInfo basicGroupFullInfo:
+                case global::Telegram.Td.Api.BasicGroupFullInfo basicGroupFullInfo:
                     if (basicGroupFullInfo.Photo != null)
                     {
                         ProcessFiles(basicGroupFullInfo.Photo);
                     }
                     break;
-                case BotInfo botInfo:
+                case global::Telegram.Td.Api.BotInfo botInfo:
                     if (botInfo.Animation != null)
                     {
                         ProcessFiles(botInfo.Animation);
@@ -452,43 +493,43 @@ namespace Telegram.Services
                         ProcessFiles(botInfo.Photo);
                     }
                     break;
-                case BotMediaPreview botMediaPreview:
+                case global::Telegram.Td.Api.BotMediaPreview botMediaPreview:
                     if (botMediaPreview.Content != null)
                     {
                         ProcessFiles(botMediaPreview.Content);
                     }
                     break;
-                case BotMediaPreviewInfo botMediaPreviewInfo:
+                case global::Telegram.Td.Api.BotMediaPreviewInfo botMediaPreviewInfo:
                     foreach (var item in botMediaPreviewInfo.Previews)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case BotMediaPreviews botMediaPreviews:
+                case global::Telegram.Td.Api.BotMediaPreviews botMediaPreviews:
                     foreach (var item in botMediaPreviews.Previews)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case BotWriteAccessAllowReasonLaunchedWebApp botWriteAccessAllowReasonLaunchedWebApp:
+                case global::Telegram.Td.Api.BotWriteAccessAllowReasonLaunchedWebApp botWriteAccessAllowReasonLaunchedWebApp:
                     if (botWriteAccessAllowReasonLaunchedWebApp.WebApp != null)
                     {
                         ProcessFiles(botWriteAccessAllowReasonLaunchedWebApp.WebApp);
                     }
                     break;
-                case BusinessFeaturePromotionAnimation businessFeaturePromotionAnimation:
+                case global::Telegram.Td.Api.BusinessFeaturePromotionAnimation businessFeaturePromotionAnimation:
                     if (businessFeaturePromotionAnimation.Animation != null)
                     {
                         ProcessFiles(businessFeaturePromotionAnimation.Animation);
                     }
                     break;
-                case BusinessInfo businessInfo:
+                case global::Telegram.Td.Api.BusinessInfo businessInfo:
                     if (businessInfo.StartPage != null)
                     {
                         ProcessFiles(businessInfo.StartPage);
                     }
                     break;
-                case BusinessMessage businessMessage:
+                case global::Telegram.Td.Api.BusinessMessage businessMessage:
                     if (businessMessage.Message != null)
                     {
                         ProcessFiles(businessMessage.Message);
@@ -498,19 +539,19 @@ namespace Telegram.Services
                         ProcessFiles(businessMessage.ReplyToMessage);
                     }
                     break;
-                case BusinessMessages businessMessages:
+                case global::Telegram.Td.Api.BusinessMessages businessMessages:
                     foreach (var item in businessMessages.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case BusinessStartPage businessStartPage:
+                case global::Telegram.Td.Api.BusinessStartPage businessStartPage:
                     if (businessStartPage.Sticker != null)
                     {
                         ProcessFiles(businessStartPage.Sticker);
                     }
                     break;
-                case Chat chat:
+                case global::Telegram.Td.Api.Chat chat:
                     if (chat.Background != null)
                     {
                         ProcessFiles(chat.Background);
@@ -523,20 +564,24 @@ namespace Telegram.Services
                     {
                         ProcessFiles(chat.Photo);
                     }
+                    if (chat.Theme != null)
+                    {
+                        ProcessFiles(chat.Theme);
+                    }
                     break;
-                case ChatBackground chatBackground:
+                case global::Telegram.Td.Api.ChatBackground chatBackground:
                     if (chatBackground.Background != null)
                     {
                         ProcessFiles(chatBackground.Background);
                     }
                     break;
-                case ChatEvent chatEvent:
+                case global::Telegram.Td.Api.ChatEvent chatEvent:
                     if (chatEvent.Action != null)
                     {
                         ProcessFiles(chatEvent.Action);
                     }
                     break;
-                case ChatEventBackgroundChanged chatEventBackgroundChanged:
+                case global::Telegram.Td.Api.ChatEventBackgroundChanged chatEventBackgroundChanged:
                     if (chatEventBackgroundChanged.NewBackground != null)
                     {
                         ProcessFiles(chatEventBackgroundChanged.NewBackground);
@@ -546,13 +591,13 @@ namespace Telegram.Services
                         ProcessFiles(chatEventBackgroundChanged.OldBackground);
                     }
                     break;
-                case ChatEventMessageDeleted chatEventMessageDeleted:
+                case global::Telegram.Td.Api.ChatEventMessageDeleted chatEventMessageDeleted:
                     if (chatEventMessageDeleted.Message != null)
                     {
                         ProcessFiles(chatEventMessageDeleted.Message);
                     }
                     break;
-                case ChatEventMessageEdited chatEventMessageEdited:
+                case global::Telegram.Td.Api.ChatEventMessageEdited chatEventMessageEdited:
                     if (chatEventMessageEdited.NewMessage != null)
                     {
                         ProcessFiles(chatEventMessageEdited.NewMessage);
@@ -562,19 +607,19 @@ namespace Telegram.Services
                         ProcessFiles(chatEventMessageEdited.OldMessage);
                     }
                     break;
-                case ChatEventMessagePinned chatEventMessagePinned:
+                case global::Telegram.Td.Api.ChatEventMessagePinned chatEventMessagePinned:
                     if (chatEventMessagePinned.Message != null)
                     {
                         ProcessFiles(chatEventMessagePinned.Message);
                     }
                     break;
-                case ChatEventMessageUnpinned chatEventMessageUnpinned:
+                case global::Telegram.Td.Api.ChatEventMessageUnpinned chatEventMessageUnpinned:
                     if (chatEventMessageUnpinned.Message != null)
                     {
                         ProcessFiles(chatEventMessageUnpinned.Message);
                     }
                     break;
-                case ChatEventPhotoChanged chatEventPhotoChanged:
+                case global::Telegram.Td.Api.ChatEventPhotoChanged chatEventPhotoChanged:
                     if (chatEventPhotoChanged.NewPhoto != null)
                     {
                         ProcessFiles(chatEventPhotoChanged.NewPhoto);
@@ -584,25 +629,25 @@ namespace Telegram.Services
                         ProcessFiles(chatEventPhotoChanged.OldPhoto);
                     }
                     break;
-                case ChatEventPollStopped chatEventPollStopped:
+                case global::Telegram.Td.Api.ChatEventPollStopped chatEventPollStopped:
                     if (chatEventPollStopped.Message != null)
                     {
                         ProcessFiles(chatEventPollStopped.Message);
                     }
                     break;
-                case ChatEvents chatEvents:
+                case global::Telegram.Td.Api.ChatEvents chatEvents:
                     foreach (var item in chatEvents.Events)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case ChatInviteLinkInfo chatInviteLinkInfo:
+                case global::Telegram.Td.Api.ChatInviteLinkInfo chatInviteLinkInfo:
                     if (chatInviteLinkInfo.Photo != null)
                     {
                         ProcessFiles(chatInviteLinkInfo.Photo);
                     }
                     break;
-                case ChatPhoto chatPhoto:
+                case global::Telegram.Td.Api.ChatPhoto chatPhoto:
                     if (chatPhoto.Animation != null)
                     {
                         ProcessFiles(chatPhoto.Animation);
@@ -616,7 +661,7 @@ namespace Telegram.Services
                         ProcessFiles(chatPhoto.SmallAnimation);
                     }
                     break;
-                case ChatPhotoInfo chatPhotoInfo:
+                case global::Telegram.Td.Api.ChatPhotoInfo chatPhotoInfo:
                     if (chatPhotoInfo.Big != null)
                     {
                         chatPhotoInfo.Big = ProcessFile(chatPhotoInfo.Big);
@@ -626,35 +671,31 @@ namespace Telegram.Services
                         chatPhotoInfo.Small = ProcessFile(chatPhotoInfo.Small);
                     }
                     break;
-                case ChatPhotos chatPhotos:
+                case global::Telegram.Td.Api.ChatPhotos chatPhotos:
                     foreach (var item in chatPhotos.Photos)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case ChatTheme chatTheme:
-                    if (chatTheme.DarkSettings != null)
+                case global::Telegram.Td.Api.ChatThemeGift chatThemeGift:
+                    if (chatThemeGift.GiftTheme != null)
                     {
-                        ProcessFiles(chatTheme.DarkSettings);
-                    }
-                    if (chatTheme.LightSettings != null)
-                    {
-                        ProcessFiles(chatTheme.LightSettings);
+                        ProcessFiles(chatThemeGift.GiftTheme);
                     }
                     break;
-                case DatedFile datedFile:
+                case global::Telegram.Td.Api.DatedFile datedFile:
                     if (datedFile.File != null)
                     {
                         datedFile.File = ProcessFile(datedFile.File);
                     }
                     break;
-                case DiceStickersRegular diceStickersRegular:
+                case global::Telegram.Td.Api.DiceStickersRegular diceStickersRegular:
                     if (diceStickersRegular.Sticker != null)
                     {
                         ProcessFiles(diceStickersRegular.Sticker);
                     }
                     break;
-                case DiceStickersSlotMachine diceStickersSlotMachine:
+                case global::Telegram.Td.Api.DiceStickersSlotMachine diceStickersSlotMachine:
                     if (diceStickersSlotMachine.Background != null)
                     {
                         ProcessFiles(diceStickersSlotMachine.Background);
@@ -676,13 +717,13 @@ namespace Telegram.Services
                         ProcessFiles(diceStickersSlotMachine.RightReel);
                     }
                     break;
-                case DirectMessagesChatTopic directMessagesChatTopic:
+                case global::Telegram.Td.Api.DirectMessagesChatTopic directMessagesChatTopic:
                     if (directMessagesChatTopic.LastMessage != null)
                     {
                         ProcessFiles(directMessagesChatTopic.LastMessage);
                     }
                     break;
-                case Document document:
+                case global::Telegram.Td.Api.Document document:
                     if (document.DocumentValue != null)
                     {
                         document.DocumentValue = ProcessFile(document.DocumentValue);
@@ -692,19 +733,29 @@ namespace Telegram.Services
                         ProcessFiles(document.Thumbnail);
                     }
                     break;
-                case EmojiCategories emojiCategories:
+                case global::Telegram.Td.Api.EmojiCategories emojiCategories:
                     foreach (var item in emojiCategories.Categories)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case EmojiCategory emojiCategory:
+                case global::Telegram.Td.Api.EmojiCategory emojiCategory:
                     if (emojiCategory.Icon != null)
                     {
                         ProcessFiles(emojiCategory.Icon);
                     }
                     break;
-                case EmojiReaction emojiReaction:
+                case global::Telegram.Td.Api.EmojiChatTheme emojiChatTheme:
+                    if (emojiChatTheme.DarkSettings != null)
+                    {
+                        ProcessFiles(emojiChatTheme.DarkSettings);
+                    }
+                    if (emojiChatTheme.LightSettings != null)
+                    {
+                        ProcessFiles(emojiChatTheme.LightSettings);
+                    }
+                    break;
+                case global::Telegram.Td.Api.EmojiReaction emojiReaction:
                     if (emojiReaction.ActivateAnimation != null)
                     {
                         ProcessFiles(emojiReaction.ActivateAnimation);
@@ -734,7 +785,7 @@ namespace Telegram.Services
                         ProcessFiles(emojiReaction.StaticIcon);
                     }
                     break;
-                case EncryptedPassportElement encryptedPassportElement:
+                case global::Telegram.Td.Api.EncryptedPassportElement encryptedPassportElement:
                     foreach (var item in encryptedPassportElement.Files)
                     {
                         ProcessFiles(item);
@@ -756,55 +807,61 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case FileDownload fileDownload:
+                case global::Telegram.Td.Api.FileDownload fileDownload:
                     if (fileDownload.Message != null)
                     {
                         ProcessFiles(fileDownload.Message);
                     }
                     break;
-                case ForumTopic forumTopic:
+                case global::Telegram.Td.Api.ForumTopic forumTopic:
                     if (forumTopic.LastMessage != null)
                     {
                         ProcessFiles(forumTopic.LastMessage);
                     }
                     break;
-                case ForumTopics forumTopics:
+                case global::Telegram.Td.Api.ForumTopics forumTopics:
                     foreach (var item in forumTopics.Topics)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case FoundChatMessages foundChatMessages:
+                case global::Telegram.Td.Api.FoundChatMessages foundChatMessages:
                     foreach (var item in foundChatMessages.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case FoundFileDownloads foundFileDownloads:
+                case global::Telegram.Td.Api.FoundFileDownloads foundFileDownloads:
                     foreach (var item in foundFileDownloads.Files)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case FoundMessages foundMessages:
+                case global::Telegram.Td.Api.FoundMessages foundMessages:
                     foreach (var item in foundMessages.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case FoundStories foundStories:
+                case global::Telegram.Td.Api.FoundPublicPosts foundPublicPosts:
+                    foreach (var item in foundPublicPosts.Messages)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.FoundStories foundStories:
                     foreach (var item in foundStories.Stories)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case FoundWebApp foundWebApp:
+                case global::Telegram.Td.Api.FoundWebApp foundWebApp:
                     if (foundWebApp.WebApp != null)
                     {
                         ProcessFiles(foundWebApp.WebApp);
                     }
                     break;
-                case Game game:
+                case global::Telegram.Td.Api.Game game:
                     if (game.Animation != null)
                     {
                         ProcessFiles(game.Animation);
@@ -814,19 +871,51 @@ namespace Telegram.Services
                         ProcessFiles(game.Photo);
                     }
                     break;
-                case Gift gift:
+                case global::Telegram.Td.Api.Gift gift:
                     if (gift.Sticker != null)
                     {
                         ProcessFiles(gift.Sticker);
                     }
                     break;
-                case GiftForResale giftForResale:
+                case global::Telegram.Td.Api.GiftChatTheme giftChatTheme:
+                    if (giftChatTheme.DarkSettings != null)
+                    {
+                        ProcessFiles(giftChatTheme.DarkSettings);
+                    }
+                    if (giftChatTheme.Gift != null)
+                    {
+                        ProcessFiles(giftChatTheme.Gift);
+                    }
+                    if (giftChatTheme.LightSettings != null)
+                    {
+                        ProcessFiles(giftChatTheme.LightSettings);
+                    }
+                    break;
+                case global::Telegram.Td.Api.GiftChatThemes giftChatThemes:
+                    foreach (var item in giftChatThemes.Themes)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.GiftCollection giftCollection:
+                    if (giftCollection.Icon != null)
+                    {
+                        ProcessFiles(giftCollection.Icon);
+                    }
+                    break;
+                case global::Telegram.Td.Api.GiftCollections giftCollections:
+                    foreach (var item in giftCollections.Collections)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.GiftForResale giftForResale:
                     if (giftForResale.Gift != null)
                     {
                         ProcessFiles(giftForResale.Gift);
                     }
                     break;
-                case GiftsForResale giftsForResale:
+                case global::Telegram.Td.Api.GiftsForResale giftsForResale:
                     foreach (var item in giftsForResale.Gifts)
                     {
                         ProcessFiles(item);
@@ -840,7 +929,7 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case GiftUpgradePreview giftUpgradePreview:
+                case global::Telegram.Td.Api.GiftUpgradePreview giftUpgradePreview:
                     foreach (var item in giftUpgradePreview.Models)
                     {
                         ProcessFiles(item);
@@ -850,7 +939,7 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case IdentityDocument identityDocument:
+                case global::Telegram.Td.Api.IdentityDocument identityDocument:
                     if (identityDocument.FrontSide != null)
                     {
                         ProcessFiles(identityDocument.FrontSide);
@@ -868,199 +957,221 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case InlineQueryResultAnimation inlineQueryResultAnimation:
+                case global::Telegram.Td.Api.InlineQueryResultAnimation inlineQueryResultAnimation:
                     if (inlineQueryResultAnimation.Animation != null)
                     {
                         ProcessFiles(inlineQueryResultAnimation.Animation);
                     }
                     break;
-                case InlineQueryResultArticle inlineQueryResultArticle:
+                case global::Telegram.Td.Api.InlineQueryResultArticle inlineQueryResultArticle:
                     if (inlineQueryResultArticle.Thumbnail != null)
                     {
                         ProcessFiles(inlineQueryResultArticle.Thumbnail);
                     }
                     break;
-                case InlineQueryResultAudio inlineQueryResultAudio:
+                case global::Telegram.Td.Api.InlineQueryResultAudio inlineQueryResultAudio:
                     if (inlineQueryResultAudio.Audio != null)
                     {
                         ProcessFiles(inlineQueryResultAudio.Audio);
                     }
                     break;
-                case InlineQueryResultContact inlineQueryResultContact:
+                case global::Telegram.Td.Api.InlineQueryResultContact inlineQueryResultContact:
                     if (inlineQueryResultContact.Thumbnail != null)
                     {
                         ProcessFiles(inlineQueryResultContact.Thumbnail);
                     }
                     break;
-                case InlineQueryResultDocument inlineQueryResultDocument:
+                case global::Telegram.Td.Api.InlineQueryResultDocument inlineQueryResultDocument:
                     if (inlineQueryResultDocument.Document != null)
                     {
                         ProcessFiles(inlineQueryResultDocument.Document);
                     }
                     break;
-                case InlineQueryResultGame inlineQueryResultGame:
+                case global::Telegram.Td.Api.InlineQueryResultGame inlineQueryResultGame:
                     if (inlineQueryResultGame.Game != null)
                     {
                         ProcessFiles(inlineQueryResultGame.Game);
                     }
                     break;
-                case InlineQueryResultLocation inlineQueryResultLocation:
+                case global::Telegram.Td.Api.InlineQueryResultLocation inlineQueryResultLocation:
                     if (inlineQueryResultLocation.Thumbnail != null)
                     {
                         ProcessFiles(inlineQueryResultLocation.Thumbnail);
                     }
                     break;
-                case InlineQueryResultPhoto inlineQueryResultPhoto:
+                case global::Telegram.Td.Api.InlineQueryResultPhoto inlineQueryResultPhoto:
                     if (inlineQueryResultPhoto.Photo != null)
                     {
                         ProcessFiles(inlineQueryResultPhoto.Photo);
                     }
                     break;
-                case InlineQueryResults inlineQueryResults:
+                case global::Telegram.Td.Api.InlineQueryResults inlineQueryResults:
                     foreach (var item in inlineQueryResults.Results)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case InlineQueryResultSticker inlineQueryResultSticker:
+                case global::Telegram.Td.Api.InlineQueryResultSticker inlineQueryResultSticker:
                     if (inlineQueryResultSticker.Sticker != null)
                     {
                         ProcessFiles(inlineQueryResultSticker.Sticker);
                     }
                     break;
-                case InlineQueryResultVenue inlineQueryResultVenue:
+                case global::Telegram.Td.Api.InlineQueryResultVenue inlineQueryResultVenue:
                     if (inlineQueryResultVenue.Thumbnail != null)
                     {
                         ProcessFiles(inlineQueryResultVenue.Thumbnail);
                     }
                     break;
-                case InlineQueryResultVideo inlineQueryResultVideo:
+                case global::Telegram.Td.Api.InlineQueryResultVideo inlineQueryResultVideo:
                     if (inlineQueryResultVideo.Video != null)
                     {
                         ProcessFiles(inlineQueryResultVideo.Video);
                     }
                     break;
-                case InlineQueryResultVoiceNote inlineQueryResultVoiceNote:
+                case global::Telegram.Td.Api.InlineQueryResultVoiceNote inlineQueryResultVoiceNote:
                     if (inlineQueryResultVoiceNote.VoiceNote != null)
                     {
                         ProcessFiles(inlineQueryResultVoiceNote.VoiceNote);
                     }
                     break;
-                case LinkPreview linkPreview:
+                case global::Telegram.Td.Api.LinkPreview linkPreview:
                     if (linkPreview.Type != null)
                     {
                         ProcessFiles(linkPreview.Type);
                     }
                     break;
-                case LinkPreviewAlbumMediaPhoto linkPreviewAlbumMediaPhoto:
+                case global::Telegram.Td.Api.LinkPreviewAlbumMediaPhoto linkPreviewAlbumMediaPhoto:
                     if (linkPreviewAlbumMediaPhoto.Photo != null)
                     {
                         ProcessFiles(linkPreviewAlbumMediaPhoto.Photo);
                     }
                     break;
-                case LinkPreviewAlbumMediaVideo linkPreviewAlbumMediaVideo:
+                case global::Telegram.Td.Api.LinkPreviewAlbumMediaVideo linkPreviewAlbumMediaVideo:
                     if (linkPreviewAlbumMediaVideo.Video != null)
                     {
                         ProcessFiles(linkPreviewAlbumMediaVideo.Video);
                     }
                     break;
-                case LinkPreviewTypeAlbum linkPreviewTypeAlbum:
+                case global::Telegram.Td.Api.LinkPreviewTypeAlbum linkPreviewTypeAlbum:
                     foreach (var item in linkPreviewTypeAlbum.Media)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case LinkPreviewTypeAnimation linkPreviewTypeAnimation:
+                case global::Telegram.Td.Api.LinkPreviewTypeAnimation linkPreviewTypeAnimation:
                     if (linkPreviewTypeAnimation.Animation != null)
                     {
                         ProcessFiles(linkPreviewTypeAnimation.Animation);
                     }
                     break;
-                case LinkPreviewTypeApp linkPreviewTypeApp:
+                case global::Telegram.Td.Api.LinkPreviewTypeApp linkPreviewTypeApp:
                     if (linkPreviewTypeApp.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeApp.Photo);
                     }
                     break;
-                case LinkPreviewTypeArticle linkPreviewTypeArticle:
+                case global::Telegram.Td.Api.LinkPreviewTypeArticle linkPreviewTypeArticle:
                     if (linkPreviewTypeArticle.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeArticle.Photo);
                     }
                     break;
-                case LinkPreviewTypeAudio linkPreviewTypeAudio:
+                case global::Telegram.Td.Api.LinkPreviewTypeAudio linkPreviewTypeAudio:
                     if (linkPreviewTypeAudio.Audio != null)
                     {
                         ProcessFiles(linkPreviewTypeAudio.Audio);
                     }
                     break;
-                case LinkPreviewTypeBackground linkPreviewTypeBackground:
+                case global::Telegram.Td.Api.LinkPreviewTypeBackground linkPreviewTypeBackground:
                     if (linkPreviewTypeBackground.Document != null)
                     {
                         ProcessFiles(linkPreviewTypeBackground.Document);
                     }
                     break;
-                case LinkPreviewTypeChannelBoost linkPreviewTypeChannelBoost:
+                case global::Telegram.Td.Api.LinkPreviewTypeChannelBoost linkPreviewTypeChannelBoost:
                     if (linkPreviewTypeChannelBoost.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeChannelBoost.Photo);
                     }
                     break;
-                case LinkPreviewTypeChat linkPreviewTypeChat:
+                case global::Telegram.Td.Api.LinkPreviewTypeChat linkPreviewTypeChat:
                     if (linkPreviewTypeChat.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeChat.Photo);
                     }
                     break;
-                case LinkPreviewTypeDocument linkPreviewTypeDocument:
+                case global::Telegram.Td.Api.LinkPreviewTypeDirectMessagesChat linkPreviewTypeDirectMessagesChat:
+                    if (linkPreviewTypeDirectMessagesChat.Photo != null)
+                    {
+                        ProcessFiles(linkPreviewTypeDirectMessagesChat.Photo);
+                    }
+                    break;
+                case global::Telegram.Td.Api.LinkPreviewTypeDocument linkPreviewTypeDocument:
                     if (linkPreviewTypeDocument.Document != null)
                     {
                         ProcessFiles(linkPreviewTypeDocument.Document);
                     }
                     break;
-                case LinkPreviewTypeEmbeddedAnimationPlayer linkPreviewTypeEmbeddedAnimationPlayer:
+                case global::Telegram.Td.Api.LinkPreviewTypeEmbeddedAnimationPlayer linkPreviewTypeEmbeddedAnimationPlayer:
                     if (linkPreviewTypeEmbeddedAnimationPlayer.Thumbnail != null)
                     {
                         ProcessFiles(linkPreviewTypeEmbeddedAnimationPlayer.Thumbnail);
                     }
                     break;
-                case LinkPreviewTypeEmbeddedAudioPlayer linkPreviewTypeEmbeddedAudioPlayer:
+                case global::Telegram.Td.Api.LinkPreviewTypeEmbeddedAudioPlayer linkPreviewTypeEmbeddedAudioPlayer:
                     if (linkPreviewTypeEmbeddedAudioPlayer.Thumbnail != null)
                     {
                         ProcessFiles(linkPreviewTypeEmbeddedAudioPlayer.Thumbnail);
                     }
                     break;
-                case LinkPreviewTypeEmbeddedVideoPlayer linkPreviewTypeEmbeddedVideoPlayer:
+                case global::Telegram.Td.Api.LinkPreviewTypeEmbeddedVideoPlayer linkPreviewTypeEmbeddedVideoPlayer:
                     if (linkPreviewTypeEmbeddedVideoPlayer.Thumbnail != null)
                     {
                         ProcessFiles(linkPreviewTypeEmbeddedVideoPlayer.Thumbnail);
                     }
                     break;
-                case LinkPreviewTypePhoto linkPreviewTypePhoto:
+                case global::Telegram.Td.Api.LinkPreviewTypeGiftCollection linkPreviewTypeGiftCollection:
+                    foreach (var item in linkPreviewTypeGiftCollection.Icons)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.LinkPreviewTypePhoto linkPreviewTypePhoto:
                     if (linkPreviewTypePhoto.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypePhoto.Photo);
                     }
                     break;
-                case LinkPreviewTypeSticker linkPreviewTypeSticker:
+                case global::Telegram.Td.Api.LinkPreviewTypeSticker linkPreviewTypeSticker:
                     if (linkPreviewTypeSticker.Sticker != null)
                     {
                         ProcessFiles(linkPreviewTypeSticker.Sticker);
                     }
                     break;
-                case LinkPreviewTypeStickerSet linkPreviewTypeStickerSet:
+                case global::Telegram.Td.Api.LinkPreviewTypeStickerSet linkPreviewTypeStickerSet:
                     foreach (var item in linkPreviewTypeStickerSet.Stickers)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case LinkPreviewTypeSupergroupBoost linkPreviewTypeSupergroupBoost:
+                case global::Telegram.Td.Api.LinkPreviewTypeStoryAlbum linkPreviewTypeStoryAlbum:
+                    if (linkPreviewTypeStoryAlbum.PhotoIcon != null)
+                    {
+                        ProcessFiles(linkPreviewTypeStoryAlbum.PhotoIcon);
+                    }
+                    if (linkPreviewTypeStoryAlbum.VideoIcon != null)
+                    {
+                        ProcessFiles(linkPreviewTypeStoryAlbum.VideoIcon);
+                    }
+                    break;
+                case global::Telegram.Td.Api.LinkPreviewTypeSupergroupBoost linkPreviewTypeSupergroupBoost:
                     if (linkPreviewTypeSupergroupBoost.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeSupergroupBoost.Photo);
                     }
                     break;
-                case LinkPreviewTypeTheme linkPreviewTypeTheme:
+                case global::Telegram.Td.Api.LinkPreviewTypeTheme linkPreviewTypeTheme:
                     foreach (var item in linkPreviewTypeTheme.Documents)
                     {
                         ProcessFiles(item);
@@ -1070,19 +1181,19 @@ namespace Telegram.Services
                         ProcessFiles(linkPreviewTypeTheme.Settings);
                     }
                     break;
-                case LinkPreviewTypeUpgradedGift linkPreviewTypeUpgradedGift:
+                case global::Telegram.Td.Api.LinkPreviewTypeUpgradedGift linkPreviewTypeUpgradedGift:
                     if (linkPreviewTypeUpgradedGift.Gift != null)
                     {
                         ProcessFiles(linkPreviewTypeUpgradedGift.Gift);
                     }
                     break;
-                case LinkPreviewTypeUser linkPreviewTypeUser:
+                case global::Telegram.Td.Api.LinkPreviewTypeUser linkPreviewTypeUser:
                     if (linkPreviewTypeUser.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeUser.Photo);
                     }
                     break;
-                case LinkPreviewTypeVideo linkPreviewTypeVideo:
+                case global::Telegram.Td.Api.LinkPreviewTypeVideo linkPreviewTypeVideo:
                     if (linkPreviewTypeVideo.Cover != null)
                     {
                         ProcessFiles(linkPreviewTypeVideo.Cover);
@@ -1092,31 +1203,31 @@ namespace Telegram.Services
                         ProcessFiles(linkPreviewTypeVideo.Video);
                     }
                     break;
-                case LinkPreviewTypeVideoChat linkPreviewTypeVideoChat:
+                case global::Telegram.Td.Api.LinkPreviewTypeVideoChat linkPreviewTypeVideoChat:
                     if (linkPreviewTypeVideoChat.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeVideoChat.Photo);
                     }
                     break;
-                case LinkPreviewTypeVideoNote linkPreviewTypeVideoNote:
+                case global::Telegram.Td.Api.LinkPreviewTypeVideoNote linkPreviewTypeVideoNote:
                     if (linkPreviewTypeVideoNote.VideoNote != null)
                     {
                         ProcessFiles(linkPreviewTypeVideoNote.VideoNote);
                     }
                     break;
-                case LinkPreviewTypeVoiceNote linkPreviewTypeVoiceNote:
+                case global::Telegram.Td.Api.LinkPreviewTypeVoiceNote linkPreviewTypeVoiceNote:
                     if (linkPreviewTypeVoiceNote.VoiceNote != null)
                     {
                         ProcessFiles(linkPreviewTypeVoiceNote.VoiceNote);
                     }
                     break;
-                case LinkPreviewTypeWebApp linkPreviewTypeWebApp:
+                case global::Telegram.Td.Api.LinkPreviewTypeWebApp linkPreviewTypeWebApp:
                     if (linkPreviewTypeWebApp.Photo != null)
                     {
                         ProcessFiles(linkPreviewTypeWebApp.Photo);
                     }
                     break;
-                case Message message:
+                case global::Telegram.Td.Api.Message message:
                     if (message.Content != null)
                     {
                         ProcessFiles(message.Content);
@@ -1126,61 +1237,67 @@ namespace Telegram.Services
                         ProcessFiles(message.ReplyTo);
                     }
                     break;
-                case MessageAnimatedEmoji messageAnimatedEmoji:
+                case global::Telegram.Td.Api.MessageAnimatedEmoji messageAnimatedEmoji:
                     if (messageAnimatedEmoji.AnimatedEmoji != null)
                     {
                         ProcessFiles(messageAnimatedEmoji.AnimatedEmoji);
                     }
                     break;
-                case MessageAnimation messageAnimation:
+                case global::Telegram.Td.Api.MessageAnimation messageAnimation:
                     if (messageAnimation.Animation != null)
                     {
                         ProcessFiles(messageAnimation.Animation);
                     }
                     break;
-                case MessageAudio messageAudio:
+                case global::Telegram.Td.Api.MessageAudio messageAudio:
                     if (messageAudio.Audio != null)
                     {
                         ProcessFiles(messageAudio.Audio);
                     }
                     break;
-                case MessageBotWriteAccessAllowed messageBotWriteAccessAllowed:
+                case global::Telegram.Td.Api.MessageBotWriteAccessAllowed messageBotWriteAccessAllowed:
                     if (messageBotWriteAccessAllowed.Reason != null)
                     {
                         ProcessFiles(messageBotWriteAccessAllowed.Reason);
                     }
                     break;
-                case MessageCalendar messageCalendar:
+                case global::Telegram.Td.Api.MessageCalendar messageCalendar:
                     foreach (var item in messageCalendar.Days)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case MessageCalendarDay messageCalendarDay:
+                case global::Telegram.Td.Api.MessageCalendarDay messageCalendarDay:
                     if (messageCalendarDay.Message != null)
                     {
                         ProcessFiles(messageCalendarDay.Message);
                     }
                     break;
-                case MessageChatChangePhoto messageChatChangePhoto:
+                case global::Telegram.Td.Api.MessageChatChangePhoto messageChatChangePhoto:
                     if (messageChatChangePhoto.Photo != null)
                     {
                         ProcessFiles(messageChatChangePhoto.Photo);
                     }
                     break;
-                case MessageChatSetBackground messageChatSetBackground:
+                case global::Telegram.Td.Api.MessageChatSetBackground messageChatSetBackground:
                     if (messageChatSetBackground.Background != null)
                     {
                         ProcessFiles(messageChatSetBackground.Background);
                     }
                     break;
-                case MessageChatShared messageChatShared:
+                case global::Telegram.Td.Api.MessageChatSetTheme messageChatSetTheme:
+                    if (messageChatSetTheme.Theme != null)
+                    {
+                        ProcessFiles(messageChatSetTheme.Theme);
+                    }
+                    break;
+                case global::Telegram.Td.Api.MessageChatShared messageChatShared:
                     if (messageChatShared.Chat != null)
                     {
                         ProcessFiles(messageChatShared.Chat);
                     }
                     break;
-                case MessageDice messageDice:
+                case global::Telegram.Td.Api.MessageDice messageDice:
                     if (messageDice.FinalState != null)
                     {
                         ProcessFiles(messageDice.FinalState);
@@ -1190,13 +1307,13 @@ namespace Telegram.Services
                         ProcessFiles(messageDice.InitialState);
                     }
                     break;
-                case MessageDocument messageDocument:
+                case global::Telegram.Td.Api.MessageDocument messageDocument:
                     if (messageDocument.Document != null)
                     {
                         ProcessFiles(messageDocument.Document);
                     }
                     break;
-                case MessageEffect messageEffect:
+                case global::Telegram.Td.Api.MessageEffect messageEffect:
                     if (messageEffect.StaticIcon != null)
                     {
                         ProcessFiles(messageEffect.StaticIcon);
@@ -1206,7 +1323,7 @@ namespace Telegram.Services
                         ProcessFiles(messageEffect.Type);
                     }
                     break;
-                case MessageEffectTypeEmojiReaction messageEffectTypeEmojiReaction:
+                case global::Telegram.Td.Api.MessageEffectTypeEmojiReaction messageEffectTypeEmojiReaction:
                     if (messageEffectTypeEmojiReaction.EffectAnimation != null)
                     {
                         ProcessFiles(messageEffectTypeEmojiReaction.EffectAnimation);
@@ -1216,49 +1333,55 @@ namespace Telegram.Services
                         ProcessFiles(messageEffectTypeEmojiReaction.SelectAnimation);
                     }
                     break;
-                case MessageEffectTypePremiumSticker messageEffectTypePremiumSticker:
+                case global::Telegram.Td.Api.MessageEffectTypePremiumSticker messageEffectTypePremiumSticker:
                     if (messageEffectTypePremiumSticker.Sticker != null)
                     {
                         ProcessFiles(messageEffectTypePremiumSticker.Sticker);
                     }
                     break;
-                case MessageGame messageGame:
+                case global::Telegram.Td.Api.MessageGame messageGame:
                     if (messageGame.Game != null)
                     {
                         ProcessFiles(messageGame.Game);
                     }
                     break;
-                case MessageGift messageGift:
+                case global::Telegram.Td.Api.MessageGift messageGift:
                     if (messageGift.Gift != null)
                     {
                         ProcessFiles(messageGift.Gift);
                     }
                     break;
-                case MessageGiftedPremium messageGiftedPremium:
+                case global::Telegram.Td.Api.MessageGiftedPremium messageGiftedPremium:
                     if (messageGiftedPremium.Sticker != null)
                     {
                         ProcessFiles(messageGiftedPremium.Sticker);
                     }
                     break;
-                case MessageGiftedStars messageGiftedStars:
+                case global::Telegram.Td.Api.MessageGiftedStars messageGiftedStars:
                     if (messageGiftedStars.Sticker != null)
                     {
                         ProcessFiles(messageGiftedStars.Sticker);
                     }
                     break;
-                case MessageGiveaway messageGiveaway:
+                case global::Telegram.Td.Api.MessageGiftedTon messageGiftedTon:
+                    if (messageGiftedTon.Sticker != null)
+                    {
+                        ProcessFiles(messageGiftedTon.Sticker);
+                    }
+                    break;
+                case global::Telegram.Td.Api.MessageGiveaway messageGiveaway:
                     if (messageGiveaway.Sticker != null)
                     {
                         ProcessFiles(messageGiveaway.Sticker);
                     }
                     break;
-                case MessageGiveawayPrizeStars messageGiveawayPrizeStars:
+                case global::Telegram.Td.Api.MessageGiveawayPrizeStars messageGiveawayPrizeStars:
                     if (messageGiveawayPrizeStars.Sticker != null)
                     {
                         ProcessFiles(messageGiveawayPrizeStars.Sticker);
                     }
                     break;
-                case MessageInvoice messageInvoice:
+                case global::Telegram.Td.Api.MessageInvoice messageInvoice:
                     if (messageInvoice.PaidMedia != null)
                     {
                         ProcessFiles(messageInvoice.PaidMedia);
@@ -1268,91 +1391,91 @@ namespace Telegram.Services
                         ProcessFiles(messageInvoice.ProductInfo);
                     }
                     break;
-                case MessageLinkInfo messageLinkInfo:
+                case global::Telegram.Td.Api.MessageLinkInfo messageLinkInfo:
                     if (messageLinkInfo.Message != null)
                     {
                         ProcessFiles(messageLinkInfo.Message);
                     }
                     break;
-                case MessagePaidMedia messagePaidMedia:
+                case global::Telegram.Td.Api.MessagePaidMedia messagePaidMedia:
                     foreach (var item in messagePaidMedia.Media)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case MessagePassportDataReceived messagePassportDataReceived:
+                case global::Telegram.Td.Api.MessagePassportDataReceived messagePassportDataReceived:
                     foreach (var item in messagePassportDataReceived.Elements)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case MessagePhoto messagePhoto:
+                case global::Telegram.Td.Api.MessagePhoto messagePhoto:
                     if (messagePhoto.Photo != null)
                     {
                         ProcessFiles(messagePhoto.Photo);
                     }
                     break;
-                case MessagePremiumGiftCode messagePremiumGiftCode:
+                case global::Telegram.Td.Api.MessagePremiumGiftCode messagePremiumGiftCode:
                     if (messagePremiumGiftCode.Sticker != null)
                     {
                         ProcessFiles(messagePremiumGiftCode.Sticker);
                     }
                     break;
-                case MessageRefundedUpgradedGift messageRefundedUpgradedGift:
+                case global::Telegram.Td.Api.MessageRefundedUpgradedGift messageRefundedUpgradedGift:
                     if (messageRefundedUpgradedGift.Gift != null)
                     {
                         ProcessFiles(messageRefundedUpgradedGift.Gift);
                     }
                     break;
-                case MessageReplyToMessage messageReplyToMessage:
+                case global::Telegram.Td.Api.MessageReplyToMessage messageReplyToMessage:
                     if (messageReplyToMessage.Content != null)
                     {
                         ProcessFiles(messageReplyToMessage.Content);
                     }
                     break;
-                case Messages messages:
+                case global::Telegram.Td.Api.Messages messages:
                     foreach (var item in messages.MessagesValue)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case MessageSticker messageSticker:
+                case global::Telegram.Td.Api.MessageSticker messageSticker:
                     if (messageSticker.Sticker != null)
                     {
                         ProcessFiles(messageSticker.Sticker);
                     }
                     break;
-                case MessageSuggestProfilePhoto messageSuggestProfilePhoto:
+                case global::Telegram.Td.Api.MessageSuggestProfilePhoto messageSuggestProfilePhoto:
                     if (messageSuggestProfilePhoto.Photo != null)
                     {
                         ProcessFiles(messageSuggestProfilePhoto.Photo);
                     }
                     break;
-                case MessageText messageText:
+                case global::Telegram.Td.Api.MessageText messageText:
                     if (messageText.LinkPreview != null)
                     {
                         ProcessFiles(messageText.LinkPreview);
                     }
                     break;
-                case MessageThreadInfo messageThreadInfo:
+                case global::Telegram.Td.Api.MessageThreadInfo messageThreadInfo:
                     foreach (var item in messageThreadInfo.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case MessageUpgradedGift messageUpgradedGift:
+                case global::Telegram.Td.Api.MessageUpgradedGift messageUpgradedGift:
                     if (messageUpgradedGift.Gift != null)
                     {
                         ProcessFiles(messageUpgradedGift.Gift);
                     }
                     break;
-                case MessageUsersShared messageUsersShared:
+                case global::Telegram.Td.Api.MessageUsersShared messageUsersShared:
                     foreach (var item in messageUsersShared.Users)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case MessageVideo messageVideo:
+                case global::Telegram.Td.Api.MessageVideo messageVideo:
                     foreach (var item in messageVideo.AlternativeVideos)
                     {
                         ProcessFiles(item);
@@ -1370,55 +1493,55 @@ namespace Telegram.Services
                         ProcessFiles(messageVideo.Video);
                     }
                     break;
-                case MessageVideoNote messageVideoNote:
+                case global::Telegram.Td.Api.MessageVideoNote messageVideoNote:
                     if (messageVideoNote.VideoNote != null)
                     {
                         ProcessFiles(messageVideoNote.VideoNote);
                     }
                     break;
-                case MessageVoiceNote messageVoiceNote:
+                case global::Telegram.Td.Api.MessageVoiceNote messageVoiceNote:
                     if (messageVoiceNote.VoiceNote != null)
                     {
                         ProcessFiles(messageVoiceNote.VoiceNote);
                     }
                     break;
-                case Notification notification:
+                case global::Telegram.Td.Api.Notification notification:
                     if (notification.Type != null)
                     {
                         ProcessFiles(notification.Type);
                     }
                     break;
-                case NotificationGroup notificationGroup:
+                case global::Telegram.Td.Api.NotificationGroup notificationGroup:
                     foreach (var item in notificationGroup.Notifications)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case NotificationSound notificationSound:
+                case global::Telegram.Td.Api.NotificationSound notificationSound:
                     if (notificationSound.Sound != null)
                     {
                         notificationSound.Sound = ProcessFile(notificationSound.Sound);
                     }
                     break;
-                case NotificationSounds notificationSounds:
+                case global::Telegram.Td.Api.NotificationSounds notificationSounds:
                     foreach (var item in notificationSounds.NotificationSoundsValue)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case NotificationTypeNewMessage notificationTypeNewMessage:
+                case global::Telegram.Td.Api.NotificationTypeNewMessage notificationTypeNewMessage:
                     if (notificationTypeNewMessage.Message != null)
                     {
                         ProcessFiles(notificationTypeNewMessage.Message);
                     }
                     break;
-                case NotificationTypeNewPushMessage notificationTypeNewPushMessage:
+                case global::Telegram.Td.Api.NotificationTypeNewPushMessage notificationTypeNewPushMessage:
                     if (notificationTypeNewPushMessage.Content != null)
                     {
                         ProcessFiles(notificationTypeNewPushMessage.Content);
                     }
                     break;
-                case PageBlockAnimation pageBlockAnimation:
+                case global::Telegram.Td.Api.PageBlockAnimation pageBlockAnimation:
                     if (pageBlockAnimation.Animation != null)
                     {
                         ProcessFiles(pageBlockAnimation.Animation);
@@ -1428,7 +1551,7 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockAnimation.Caption);
                     }
                     break;
-                case PageBlockAudio pageBlockAudio:
+                case global::Telegram.Td.Api.PageBlockAudio pageBlockAudio:
                     if (pageBlockAudio.Audio != null)
                     {
                         ProcessFiles(pageBlockAudio.Audio);
@@ -1438,13 +1561,13 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockAudio.Caption);
                     }
                     break;
-                case PageBlockAuthorDate pageBlockAuthorDate:
+                case global::Telegram.Td.Api.PageBlockAuthorDate pageBlockAuthorDate:
                     if (pageBlockAuthorDate.Author != null)
                     {
                         ProcessFiles(pageBlockAuthorDate.Author);
                     }
                     break;
-                case PageBlockBlockQuote pageBlockBlockQuote:
+                case global::Telegram.Td.Api.PageBlockBlockQuote pageBlockBlockQuote:
                     if (pageBlockBlockQuote.Credit != null)
                     {
                         ProcessFiles(pageBlockBlockQuote.Credit);
@@ -1454,7 +1577,7 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockBlockQuote.Text);
                     }
                     break;
-                case PageBlockCaption pageBlockCaption:
+                case global::Telegram.Td.Api.PageBlockCaption pageBlockCaption:
                     if (pageBlockCaption.Credit != null)
                     {
                         ProcessFiles(pageBlockCaption.Credit);
@@ -1464,13 +1587,13 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockCaption.Text);
                     }
                     break;
-                case PageBlockChatLink pageBlockChatLink:
+                case global::Telegram.Td.Api.PageBlockChatLink pageBlockChatLink:
                     if (pageBlockChatLink.Photo != null)
                     {
                         ProcessFiles(pageBlockChatLink.Photo);
                     }
                     break;
-                case PageBlockCollage pageBlockCollage:
+                case global::Telegram.Td.Api.PageBlockCollage pageBlockCollage:
                     if (pageBlockCollage.Caption != null)
                     {
                         ProcessFiles(pageBlockCollage.Caption);
@@ -1480,13 +1603,13 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case PageBlockCover pageBlockCover:
+                case global::Telegram.Td.Api.PageBlockCover pageBlockCover:
                     if (pageBlockCover.Cover != null)
                     {
                         ProcessFiles(pageBlockCover.Cover);
                     }
                     break;
-                case PageBlockDetails pageBlockDetails:
+                case global::Telegram.Td.Api.PageBlockDetails pageBlockDetails:
                     if (pageBlockDetails.Header != null)
                     {
                         ProcessFiles(pageBlockDetails.Header);
@@ -1496,7 +1619,7 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case PageBlockEmbedded pageBlockEmbedded:
+                case global::Telegram.Td.Api.PageBlockEmbedded pageBlockEmbedded:
                     if (pageBlockEmbedded.Caption != null)
                     {
                         ProcessFiles(pageBlockEmbedded.Caption);
@@ -1506,7 +1629,7 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockEmbedded.PosterPhoto);
                     }
                     break;
-                case PageBlockEmbeddedPost pageBlockEmbeddedPost:
+                case global::Telegram.Td.Api.PageBlockEmbeddedPost pageBlockEmbeddedPost:
                     if (pageBlockEmbeddedPost.AuthorPhoto != null)
                     {
                         ProcessFiles(pageBlockEmbeddedPost.AuthorPhoto);
@@ -1520,49 +1643,49 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case PageBlockFooter pageBlockFooter:
+                case global::Telegram.Td.Api.PageBlockFooter pageBlockFooter:
                     if (pageBlockFooter.Footer != null)
                     {
                         ProcessFiles(pageBlockFooter.Footer);
                     }
                     break;
-                case PageBlockHeader pageBlockHeader:
+                case global::Telegram.Td.Api.PageBlockHeader pageBlockHeader:
                     if (pageBlockHeader.Header != null)
                     {
                         ProcessFiles(pageBlockHeader.Header);
                     }
                     break;
-                case PageBlockKicker pageBlockKicker:
+                case global::Telegram.Td.Api.PageBlockKicker pageBlockKicker:
                     if (pageBlockKicker.Kicker != null)
                     {
                         ProcessFiles(pageBlockKicker.Kicker);
                     }
                     break;
-                case PageBlockList pageBlockList:
+                case global::Telegram.Td.Api.PageBlockList pageBlockList:
                     foreach (var item in pageBlockList.Items)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case PageBlockListItem pageBlockListItem:
+                case global::Telegram.Td.Api.PageBlockListItem pageBlockListItem:
                     foreach (var item in pageBlockListItem.PageBlocks)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case PageBlockMap pageBlockMap:
+                case global::Telegram.Td.Api.PageBlockMap pageBlockMap:
                     if (pageBlockMap.Caption != null)
                     {
                         ProcessFiles(pageBlockMap.Caption);
                     }
                     break;
-                case PageBlockParagraph pageBlockParagraph:
+                case global::Telegram.Td.Api.PageBlockParagraph pageBlockParagraph:
                     if (pageBlockParagraph.Text != null)
                     {
                         ProcessFiles(pageBlockParagraph.Text);
                     }
                     break;
-                case PageBlockPhoto pageBlockPhoto:
+                case global::Telegram.Td.Api.PageBlockPhoto pageBlockPhoto:
                     if (pageBlockPhoto.Caption != null)
                     {
                         ProcessFiles(pageBlockPhoto.Caption);
@@ -1572,13 +1695,13 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockPhoto.Photo);
                     }
                     break;
-                case PageBlockPreformatted pageBlockPreformatted:
+                case global::Telegram.Td.Api.PageBlockPreformatted pageBlockPreformatted:
                     if (pageBlockPreformatted.Text != null)
                     {
                         ProcessFiles(pageBlockPreformatted.Text);
                     }
                     break;
-                case PageBlockPullQuote pageBlockPullQuote:
+                case global::Telegram.Td.Api.PageBlockPullQuote pageBlockPullQuote:
                     if (pageBlockPullQuote.Credit != null)
                     {
                         ProcessFiles(pageBlockPullQuote.Credit);
@@ -1588,13 +1711,13 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockPullQuote.Text);
                     }
                     break;
-                case PageBlockRelatedArticle pageBlockRelatedArticle:
+                case global::Telegram.Td.Api.PageBlockRelatedArticle pageBlockRelatedArticle:
                     if (pageBlockRelatedArticle.Photo != null)
                     {
                         ProcessFiles(pageBlockRelatedArticle.Photo);
                     }
                     break;
-                case PageBlockRelatedArticles pageBlockRelatedArticles:
+                case global::Telegram.Td.Api.PageBlockRelatedArticles pageBlockRelatedArticles:
                     foreach (var item in pageBlockRelatedArticles.Articles)
                     {
                         ProcessFiles(item);
@@ -1604,7 +1727,7 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockRelatedArticles.Header);
                     }
                     break;
-                case PageBlockSlideshow pageBlockSlideshow:
+                case global::Telegram.Td.Api.PageBlockSlideshow pageBlockSlideshow:
                     if (pageBlockSlideshow.Caption != null)
                     {
                         ProcessFiles(pageBlockSlideshow.Caption);
@@ -1614,19 +1737,19 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case PageBlockSubheader pageBlockSubheader:
+                case global::Telegram.Td.Api.PageBlockSubheader pageBlockSubheader:
                     if (pageBlockSubheader.Subheader != null)
                     {
                         ProcessFiles(pageBlockSubheader.Subheader);
                     }
                     break;
-                case PageBlockSubtitle pageBlockSubtitle:
+                case global::Telegram.Td.Api.PageBlockSubtitle pageBlockSubtitle:
                     if (pageBlockSubtitle.Subtitle != null)
                     {
                         ProcessFiles(pageBlockSubtitle.Subtitle);
                     }
                     break;
-                case PageBlockTable pageBlockTable:
+                case global::Telegram.Td.Api.PageBlockTable pageBlockTable:
                     if (pageBlockTable.Caption != null)
                     {
                         ProcessFiles(pageBlockTable.Caption);
@@ -1636,19 +1759,19 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case PageBlockTableCell pageBlockTableCell:
+                case global::Telegram.Td.Api.PageBlockTableCell pageBlockTableCell:
                     if (pageBlockTableCell.Text != null)
                     {
                         ProcessFiles(pageBlockTableCell.Text);
                     }
                     break;
-                case PageBlockTitle pageBlockTitle:
+                case global::Telegram.Td.Api.PageBlockTitle pageBlockTitle:
                     if (pageBlockTitle.Title != null)
                     {
                         ProcessFiles(pageBlockTitle.Title);
                     }
                     break;
-                case PageBlockVideo pageBlockVideo:
+                case global::Telegram.Td.Api.PageBlockVideo pageBlockVideo:
                     if (pageBlockVideo.Caption != null)
                     {
                         ProcessFiles(pageBlockVideo.Caption);
@@ -1658,7 +1781,7 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockVideo.Video);
                     }
                     break;
-                case PageBlockVoiceNote pageBlockVoiceNote:
+                case global::Telegram.Td.Api.PageBlockVoiceNote pageBlockVoiceNote:
                     if (pageBlockVoiceNote.Caption != null)
                     {
                         ProcessFiles(pageBlockVoiceNote.Caption);
@@ -1668,13 +1791,13 @@ namespace Telegram.Services
                         ProcessFiles(pageBlockVoiceNote.VoiceNote);
                     }
                     break;
-                case PaidMediaPhoto paidMediaPhoto:
+                case global::Telegram.Td.Api.PaidMediaPhoto paidMediaPhoto:
                     if (paidMediaPhoto.Photo != null)
                     {
                         ProcessFiles(paidMediaPhoto.Photo);
                     }
                     break;
-                case PaidMediaVideo paidMediaVideo:
+                case global::Telegram.Td.Api.PaidMediaVideo paidMediaVideo:
                     if (paidMediaVideo.Cover != null)
                     {
                         ProcessFiles(paidMediaVideo.Cover);
@@ -1684,85 +1807,85 @@ namespace Telegram.Services
                         ProcessFiles(paidMediaVideo.Video);
                     }
                     break;
-                case PassportElementBankStatement passportElementBankStatement:
+                case global::Telegram.Td.Api.PassportElementBankStatement passportElementBankStatement:
                     if (passportElementBankStatement.BankStatement != null)
                     {
                         ProcessFiles(passportElementBankStatement.BankStatement);
                     }
                     break;
-                case PassportElementDriverLicense passportElementDriverLicense:
+                case global::Telegram.Td.Api.PassportElementDriverLicense passportElementDriverLicense:
                     if (passportElementDriverLicense.DriverLicense != null)
                     {
                         ProcessFiles(passportElementDriverLicense.DriverLicense);
                     }
                     break;
-                case PassportElementIdentityCard passportElementIdentityCard:
+                case global::Telegram.Td.Api.PassportElementIdentityCard passportElementIdentityCard:
                     if (passportElementIdentityCard.IdentityCard != null)
                     {
                         ProcessFiles(passportElementIdentityCard.IdentityCard);
                     }
                     break;
-                case PassportElementInternalPassport passportElementInternalPassport:
+                case global::Telegram.Td.Api.PassportElementInternalPassport passportElementInternalPassport:
                     if (passportElementInternalPassport.InternalPassport != null)
                     {
                         ProcessFiles(passportElementInternalPassport.InternalPassport);
                     }
                     break;
-                case PassportElementPassport passportElementPassport:
+                case global::Telegram.Td.Api.PassportElementPassport passportElementPassport:
                     if (passportElementPassport.Passport != null)
                     {
                         ProcessFiles(passportElementPassport.Passport);
                     }
                     break;
-                case PassportElementPassportRegistration passportElementPassportRegistration:
+                case global::Telegram.Td.Api.PassportElementPassportRegistration passportElementPassportRegistration:
                     if (passportElementPassportRegistration.PassportRegistration != null)
                     {
                         ProcessFiles(passportElementPassportRegistration.PassportRegistration);
                     }
                     break;
-                case PassportElementRentalAgreement passportElementRentalAgreement:
+                case global::Telegram.Td.Api.PassportElementRentalAgreement passportElementRentalAgreement:
                     if (passportElementRentalAgreement.RentalAgreement != null)
                     {
                         ProcessFiles(passportElementRentalAgreement.RentalAgreement);
                     }
                     break;
-                case PassportElements passportElements:
+                case global::Telegram.Td.Api.PassportElements passportElements:
                     foreach (var item in passportElements.Elements)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case PassportElementsWithErrors passportElementsWithErrors:
+                case global::Telegram.Td.Api.PassportElementsWithErrors passportElementsWithErrors:
                     foreach (var item in passportElementsWithErrors.Elements)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case PassportElementTemporaryRegistration passportElementTemporaryRegistration:
+                case global::Telegram.Td.Api.PassportElementTemporaryRegistration passportElementTemporaryRegistration:
                     if (passportElementTemporaryRegistration.TemporaryRegistration != null)
                     {
                         ProcessFiles(passportElementTemporaryRegistration.TemporaryRegistration);
                     }
                     break;
-                case PassportElementUtilityBill passportElementUtilityBill:
+                case global::Telegram.Td.Api.PassportElementUtilityBill passportElementUtilityBill:
                     if (passportElementUtilityBill.UtilityBill != null)
                     {
                         ProcessFiles(passportElementUtilityBill.UtilityBill);
                     }
                     break;
-                case PaymentForm paymentForm:
+                case global::Telegram.Td.Api.PaymentForm paymentForm:
                     if (paymentForm.ProductInfo != null)
                     {
                         ProcessFiles(paymentForm.ProductInfo);
                     }
                     break;
-                case PaymentReceipt paymentReceipt:
+                case global::Telegram.Td.Api.PaymentReceipt paymentReceipt:
                     if (paymentReceipt.ProductInfo != null)
                     {
                         ProcessFiles(paymentReceipt.ProductInfo);
                     }
                     break;
-                case PersonalDocument personalDocument:
+                case global::Telegram.Td.Api.PersonalDocument personalDocument:
                     foreach (var item in personalDocument.Files)
                     {
                         ProcessFiles(item);
@@ -1772,37 +1895,37 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case Photo photo:
+                case global::Telegram.Td.Api.Photo photo:
                     foreach (var item in photo.Sizes)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case PhotoSize photoSize:
+                case global::Telegram.Td.Api.PhotoSize photoSize:
                     if (photoSize.Photo != null)
                     {
                         photoSize.Photo = ProcessFile(photoSize.Photo);
                     }
                     break;
-                case PremiumFeaturePromotionAnimation premiumFeaturePromotionAnimation:
+                case global::Telegram.Td.Api.PremiumFeaturePromotionAnimation premiumFeaturePromotionAnimation:
                     if (premiumFeaturePromotionAnimation.Animation != null)
                     {
                         ProcessFiles(premiumFeaturePromotionAnimation.Animation);
                     }
                     break;
-                case PremiumGiftPaymentOption premiumGiftPaymentOption:
+                case global::Telegram.Td.Api.PremiumGiftPaymentOption premiumGiftPaymentOption:
                     if (premiumGiftPaymentOption.Sticker != null)
                     {
                         ProcessFiles(premiumGiftPaymentOption.Sticker);
                     }
                     break;
-                case PremiumGiftPaymentOptions premiumGiftPaymentOptions:
+                case global::Telegram.Td.Api.PremiumGiftPaymentOptions premiumGiftPaymentOptions:
                     foreach (var item in premiumGiftPaymentOptions.Options)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case PremiumState premiumState:
+                case global::Telegram.Td.Api.PremiumState premiumState:
                     foreach (var item in premiumState.Animations)
                     {
                         ProcessFiles(item);
@@ -1812,19 +1935,19 @@ namespace Telegram.Services
                         ProcessFiles(item);
                     }
                     break;
-                case PreparedInlineMessage preparedInlineMessage:
+                case global::Telegram.Td.Api.PreparedInlineMessage preparedInlineMessage:
                     if (preparedInlineMessage.Result != null)
                     {
                         ProcessFiles(preparedInlineMessage.Result);
                     }
                     break;
-                case ProductInfo productInfo:
+                case global::Telegram.Td.Api.ProductInfo productInfo:
                     if (productInfo.Photo != null)
                     {
                         ProcessFiles(productInfo.Photo);
                     }
                     break;
-                case ProfilePhoto profilePhoto:
+                case global::Telegram.Td.Api.ProfilePhoto profilePhoto:
                     if (profilePhoto.Big != null)
                     {
                         profilePhoto.Big = ProcessFile(profilePhoto.Big);
@@ -1834,223 +1957,223 @@ namespace Telegram.Services
                         profilePhoto.Small = ProcessFile(profilePhoto.Small);
                     }
                     break;
-                case PublicForwardMessage publicForwardMessage:
+                case global::Telegram.Td.Api.PublicForwardMessage publicForwardMessage:
                     if (publicForwardMessage.Message != null)
                     {
                         ProcessFiles(publicForwardMessage.Message);
                     }
                     break;
-                case PublicForwards publicForwards:
+                case global::Telegram.Td.Api.PublicForwards publicForwards:
                     foreach (var item in publicForwards.Forwards)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case PublicForwardStory publicForwardStory:
+                case global::Telegram.Td.Api.PublicForwardStory publicForwardStory:
                     if (publicForwardStory.Story != null)
                     {
                         ProcessFiles(publicForwardStory.Story);
                     }
                     break;
-                case PushMessageContentAnimation pushMessageContentAnimation:
+                case global::Telegram.Td.Api.PushMessageContentAnimation pushMessageContentAnimation:
                     if (pushMessageContentAnimation.Animation != null)
                     {
                         ProcessFiles(pushMessageContentAnimation.Animation);
                     }
                     break;
-                case PushMessageContentAudio pushMessageContentAudio:
+                case global::Telegram.Td.Api.PushMessageContentAudio pushMessageContentAudio:
                     if (pushMessageContentAudio.Audio != null)
                     {
                         ProcessFiles(pushMessageContentAudio.Audio);
                     }
                     break;
-                case PushMessageContentDocument pushMessageContentDocument:
+                case global::Telegram.Td.Api.PushMessageContentDocument pushMessageContentDocument:
                     if (pushMessageContentDocument.Document != null)
                     {
                         ProcessFiles(pushMessageContentDocument.Document);
                     }
                     break;
-                case PushMessageContentPhoto pushMessageContentPhoto:
+                case global::Telegram.Td.Api.PushMessageContentPhoto pushMessageContentPhoto:
                     if (pushMessageContentPhoto.Photo != null)
                     {
                         ProcessFiles(pushMessageContentPhoto.Photo);
                     }
                     break;
-                case PushMessageContentSticker pushMessageContentSticker:
+                case global::Telegram.Td.Api.PushMessageContentSticker pushMessageContentSticker:
                     if (pushMessageContentSticker.Sticker != null)
                     {
                         ProcessFiles(pushMessageContentSticker.Sticker);
                     }
                     break;
-                case PushMessageContentVideo pushMessageContentVideo:
+                case global::Telegram.Td.Api.PushMessageContentVideo pushMessageContentVideo:
                     if (pushMessageContentVideo.Video != null)
                     {
                         ProcessFiles(pushMessageContentVideo.Video);
                     }
                     break;
-                case PushMessageContentVideoNote pushMessageContentVideoNote:
+                case global::Telegram.Td.Api.PushMessageContentVideoNote pushMessageContentVideoNote:
                     if (pushMessageContentVideoNote.VideoNote != null)
                     {
                         ProcessFiles(pushMessageContentVideoNote.VideoNote);
                     }
                     break;
-                case PushMessageContentVoiceNote pushMessageContentVoiceNote:
+                case global::Telegram.Td.Api.PushMessageContentVoiceNote pushMessageContentVoiceNote:
                     if (pushMessageContentVoiceNote.VoiceNote != null)
                     {
                         ProcessFiles(pushMessageContentVoiceNote.VoiceNote);
                     }
                     break;
-                case QuickReplyMessage quickReplyMessage:
+                case global::Telegram.Td.Api.QuickReplyMessage quickReplyMessage:
                     if (quickReplyMessage.Content != null)
                     {
                         ProcessFiles(quickReplyMessage.Content);
                     }
                     break;
-                case QuickReplyMessages quickReplyMessages:
+                case global::Telegram.Td.Api.QuickReplyMessages quickReplyMessages:
                     foreach (var item in quickReplyMessages.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case QuickReplyShortcut quickReplyShortcut:
+                case global::Telegram.Td.Api.QuickReplyShortcut quickReplyShortcut:
                     if (quickReplyShortcut.FirstMessage != null)
                     {
                         ProcessFiles(quickReplyShortcut.FirstMessage);
                     }
                     break;
-                case ReceivedGift receivedGift:
+                case global::Telegram.Td.Api.ReceivedGift receivedGift:
                     if (receivedGift.Gift != null)
                     {
                         ProcessFiles(receivedGift.Gift);
                     }
                     break;
-                case ReceivedGifts receivedGifts:
+                case global::Telegram.Td.Api.ReceivedGifts receivedGifts:
                     foreach (var item in receivedGifts.Gifts)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case RichTextAnchorLink richTextAnchorLink:
+                case global::Telegram.Td.Api.RichTextAnchorLink richTextAnchorLink:
                     if (richTextAnchorLink.Text != null)
                     {
                         ProcessFiles(richTextAnchorLink.Text);
                     }
                     break;
-                case RichTextBold richTextBold:
+                case global::Telegram.Td.Api.RichTextBold richTextBold:
                     if (richTextBold.Text != null)
                     {
                         ProcessFiles(richTextBold.Text);
                     }
                     break;
-                case RichTextEmailAddress richTextEmailAddress:
+                case global::Telegram.Td.Api.RichTextEmailAddress richTextEmailAddress:
                     if (richTextEmailAddress.Text != null)
                     {
                         ProcessFiles(richTextEmailAddress.Text);
                     }
                     break;
-                case RichTextFixed richTextFixed:
+                case global::Telegram.Td.Api.RichTextFixed richTextFixed:
                     if (richTextFixed.Text != null)
                     {
                         ProcessFiles(richTextFixed.Text);
                     }
                     break;
-                case RichTextIcon richTextIcon:
+                case global::Telegram.Td.Api.RichTextIcon richTextIcon:
                     if (richTextIcon.Document != null)
                     {
                         ProcessFiles(richTextIcon.Document);
                     }
                     break;
-                case RichTextItalic richTextItalic:
+                case global::Telegram.Td.Api.RichTextItalic richTextItalic:
                     if (richTextItalic.Text != null)
                     {
                         ProcessFiles(richTextItalic.Text);
                     }
                     break;
-                case RichTextMarked richTextMarked:
+                case global::Telegram.Td.Api.RichTextMarked richTextMarked:
                     if (richTextMarked.Text != null)
                     {
                         ProcessFiles(richTextMarked.Text);
                     }
                     break;
-                case RichTextPhoneNumber richTextPhoneNumber:
+                case global::Telegram.Td.Api.RichTextPhoneNumber richTextPhoneNumber:
                     if (richTextPhoneNumber.Text != null)
                     {
                         ProcessFiles(richTextPhoneNumber.Text);
                     }
                     break;
-                case RichTextReference richTextReference:
+                case global::Telegram.Td.Api.RichTextReference richTextReference:
                     if (richTextReference.Text != null)
                     {
                         ProcessFiles(richTextReference.Text);
                     }
                     break;
-                case RichTexts richTexts:
+                case global::Telegram.Td.Api.RichTexts richTexts:
                     foreach (var item in richTexts.Texts)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case RichTextStrikethrough richTextStrikethrough:
+                case global::Telegram.Td.Api.RichTextStrikethrough richTextStrikethrough:
                     if (richTextStrikethrough.Text != null)
                     {
                         ProcessFiles(richTextStrikethrough.Text);
                     }
                     break;
-                case RichTextSubscript richTextSubscript:
+                case global::Telegram.Td.Api.RichTextSubscript richTextSubscript:
                     if (richTextSubscript.Text != null)
                     {
                         ProcessFiles(richTextSubscript.Text);
                     }
                     break;
-                case RichTextSuperscript richTextSuperscript:
+                case global::Telegram.Td.Api.RichTextSuperscript richTextSuperscript:
                     if (richTextSuperscript.Text != null)
                     {
                         ProcessFiles(richTextSuperscript.Text);
                     }
                     break;
-                case RichTextUnderline richTextUnderline:
+                case global::Telegram.Td.Api.RichTextUnderline richTextUnderline:
                     if (richTextUnderline.Text != null)
                     {
                         ProcessFiles(richTextUnderline.Text);
                     }
                     break;
-                case RichTextUrl richTextUrl:
+                case global::Telegram.Td.Api.RichTextUrl richTextUrl:
                     if (richTextUrl.Text != null)
                     {
                         ProcessFiles(richTextUrl.Text);
                     }
                     break;
-                case SavedMessagesTopic savedMessagesTopic:
+                case global::Telegram.Td.Api.SavedMessagesTopic savedMessagesTopic:
                     if (savedMessagesTopic.LastMessage != null)
                     {
                         ProcessFiles(savedMessagesTopic.LastMessage);
                     }
                     break;
-                case SentGiftRegular sentGiftRegular:
+                case global::Telegram.Td.Api.SentGiftRegular sentGiftRegular:
                     if (sentGiftRegular.Gift != null)
                     {
                         ProcessFiles(sentGiftRegular.Gift);
                     }
                     break;
-                case SentGiftUpgraded sentGiftUpgraded:
+                case global::Telegram.Td.Api.SentGiftUpgraded sentGiftUpgraded:
                     if (sentGiftUpgraded.Gift != null)
                     {
                         ProcessFiles(sentGiftUpgraded.Gift);
                     }
                     break;
-                case SharedChat sharedChat:
+                case global::Telegram.Td.Api.SharedChat sharedChat:
                     if (sharedChat.Photo != null)
                     {
                         ProcessFiles(sharedChat.Photo);
                     }
                     break;
-                case SharedUser sharedUser:
+                case global::Telegram.Td.Api.SharedUser sharedUser:
                     if (sharedUser.Photo != null)
                     {
                         ProcessFiles(sharedUser.Photo);
                     }
                     break;
-                case SponsoredMessage sponsoredMessage:
+                case global::Telegram.Td.Api.SponsoredMessage sponsoredMessage:
                     if (sponsoredMessage.Content != null)
                     {
                         ProcessFiles(sponsoredMessage.Content);
@@ -2060,139 +2183,151 @@ namespace Telegram.Services
                         ProcessFiles(sponsoredMessage.Sponsor);
                     }
                     break;
-                case SponsoredMessages sponsoredMessages:
+                case global::Telegram.Td.Api.SponsoredMessages sponsoredMessages:
                     foreach (var item in sponsoredMessages.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StarSubscription starSubscription:
+                case global::Telegram.Td.Api.StarSubscription starSubscription:
                     if (starSubscription.Type != null)
                     {
                         ProcessFiles(starSubscription.Type);
                     }
                     break;
-                case StarSubscriptions starSubscriptions:
+                case global::Telegram.Td.Api.StarSubscriptions starSubscriptions:
                     foreach (var item in starSubscriptions.Subscriptions)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StarSubscriptionTypeBot starSubscriptionTypeBot:
+                case global::Telegram.Td.Api.StarSubscriptionTypeBot starSubscriptionTypeBot:
                     if (starSubscriptionTypeBot.Photo != null)
                     {
                         ProcessFiles(starSubscriptionTypeBot.Photo);
                     }
                     break;
-                case StarTransaction starTransaction:
+                case global::Telegram.Td.Api.StarTransaction starTransaction:
                     if (starTransaction.Type != null)
                     {
                         ProcessFiles(starTransaction.Type);
                     }
                     break;
-                case StarTransactions starTransactions:
+                case global::Telegram.Td.Api.StarTransactions starTransactions:
                     foreach (var item in starTransactions.Transactions)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StarTransactionTypeBotInvoicePurchase starTransactionTypeBotInvoicePurchase:
+                case global::Telegram.Td.Api.StarTransactionTypeBotInvoicePurchase starTransactionTypeBotInvoicePurchase:
                     if (starTransactionTypeBotInvoicePurchase.ProductInfo != null)
                     {
                         ProcessFiles(starTransactionTypeBotInvoicePurchase.ProductInfo);
                     }
                     break;
-                case StarTransactionTypeBotInvoiceSale starTransactionTypeBotInvoiceSale:
+                case global::Telegram.Td.Api.StarTransactionTypeBotInvoiceSale starTransactionTypeBotInvoiceSale:
                     if (starTransactionTypeBotInvoiceSale.ProductInfo != null)
                     {
                         ProcessFiles(starTransactionTypeBotInvoiceSale.ProductInfo);
                     }
                     break;
-                case StarTransactionTypeBotPaidMediaPurchase starTransactionTypeBotPaidMediaPurchase:
+                case global::Telegram.Td.Api.StarTransactionTypeBotPaidMediaPurchase starTransactionTypeBotPaidMediaPurchase:
                     foreach (var item in starTransactionTypeBotPaidMediaPurchase.Media)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StarTransactionTypeBotPaidMediaSale starTransactionTypeBotPaidMediaSale:
+                case global::Telegram.Td.Api.StarTransactionTypeBotPaidMediaSale starTransactionTypeBotPaidMediaSale:
                     foreach (var item in starTransactionTypeBotPaidMediaSale.Media)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StarTransactionTypeBotSubscriptionPurchase starTransactionTypeBotSubscriptionPurchase:
+                case global::Telegram.Td.Api.StarTransactionTypeBotSubscriptionPurchase starTransactionTypeBotSubscriptionPurchase:
                     if (starTransactionTypeBotSubscriptionPurchase.ProductInfo != null)
                     {
                         ProcessFiles(starTransactionTypeBotSubscriptionPurchase.ProductInfo);
                     }
                     break;
-                case StarTransactionTypeBotSubscriptionSale starTransactionTypeBotSubscriptionSale:
+                case global::Telegram.Td.Api.StarTransactionTypeBotSubscriptionSale starTransactionTypeBotSubscriptionSale:
                     if (starTransactionTypeBotSubscriptionSale.ProductInfo != null)
                     {
                         ProcessFiles(starTransactionTypeBotSubscriptionSale.ProductInfo);
                     }
                     break;
-                case StarTransactionTypeChannelPaidMediaPurchase starTransactionTypeChannelPaidMediaPurchase:
+                case global::Telegram.Td.Api.StarTransactionTypeChannelPaidMediaPurchase starTransactionTypeChannelPaidMediaPurchase:
                     foreach (var item in starTransactionTypeChannelPaidMediaPurchase.Media)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StarTransactionTypeChannelPaidMediaSale starTransactionTypeChannelPaidMediaSale:
+                case global::Telegram.Td.Api.StarTransactionTypeChannelPaidMediaSale starTransactionTypeChannelPaidMediaSale:
                     foreach (var item in starTransactionTypeChannelPaidMediaSale.Media)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StarTransactionTypeGiftPurchase starTransactionTypeGiftPurchase:
+                case global::Telegram.Td.Api.StarTransactionTypeGiftOriginalDetailsDrop starTransactionTypeGiftOriginalDetailsDrop:
+                    if (starTransactionTypeGiftOriginalDetailsDrop.Gift != null)
+                    {
+                        ProcessFiles(starTransactionTypeGiftOriginalDetailsDrop.Gift);
+                    }
+                    break;
+                case global::Telegram.Td.Api.StarTransactionTypeGiftPurchase starTransactionTypeGiftPurchase:
                     if (starTransactionTypeGiftPurchase.Gift != null)
                     {
                         ProcessFiles(starTransactionTypeGiftPurchase.Gift);
                     }
                     break;
-                case StarTransactionTypeGiftSale starTransactionTypeGiftSale:
+                case global::Telegram.Td.Api.StarTransactionTypeGiftSale starTransactionTypeGiftSale:
                     if (starTransactionTypeGiftSale.Gift != null)
                     {
                         ProcessFiles(starTransactionTypeGiftSale.Gift);
                     }
                     break;
-                case StarTransactionTypeGiftTransfer starTransactionTypeGiftTransfer:
+                case global::Telegram.Td.Api.StarTransactionTypeGiftTransfer starTransactionTypeGiftTransfer:
                     if (starTransactionTypeGiftTransfer.Gift != null)
                     {
                         ProcessFiles(starTransactionTypeGiftTransfer.Gift);
                     }
                     break;
-                case StarTransactionTypeGiftUpgrade starTransactionTypeGiftUpgrade:
+                case global::Telegram.Td.Api.StarTransactionTypeGiftUpgrade starTransactionTypeGiftUpgrade:
                     if (starTransactionTypeGiftUpgrade.Gift != null)
                     {
                         ProcessFiles(starTransactionTypeGiftUpgrade.Gift);
                     }
                     break;
-                case StarTransactionTypePremiumPurchase starTransactionTypePremiumPurchase:
+                case global::Telegram.Td.Api.StarTransactionTypeGiftUpgradePurchase starTransactionTypeGiftUpgradePurchase:
+                    if (starTransactionTypeGiftUpgradePurchase.Gift != null)
+                    {
+                        ProcessFiles(starTransactionTypeGiftUpgradePurchase.Gift);
+                    }
+                    break;
+                case global::Telegram.Td.Api.StarTransactionTypePremiumPurchase starTransactionTypePremiumPurchase:
                     if (starTransactionTypePremiumPurchase.Sticker != null)
                     {
                         ProcessFiles(starTransactionTypePremiumPurchase.Sticker);
                     }
                     break;
-                case StarTransactionTypeUpgradedGiftPurchase starTransactionTypeUpgradedGiftPurchase:
+                case global::Telegram.Td.Api.StarTransactionTypeUpgradedGiftPurchase starTransactionTypeUpgradedGiftPurchase:
                     if (starTransactionTypeUpgradedGiftPurchase.Gift != null)
                     {
                         ProcessFiles(starTransactionTypeUpgradedGiftPurchase.Gift);
                     }
                     break;
-                case StarTransactionTypeUpgradedGiftSale starTransactionTypeUpgradedGiftSale:
+                case global::Telegram.Td.Api.StarTransactionTypeUpgradedGiftSale starTransactionTypeUpgradedGiftSale:
                     if (starTransactionTypeUpgradedGiftSale.Gift != null)
                     {
                         ProcessFiles(starTransactionTypeUpgradedGiftSale.Gift);
                     }
                     break;
-                case StarTransactionTypeUserDeposit starTransactionTypeUserDeposit:
+                case global::Telegram.Td.Api.StarTransactionTypeUserDeposit starTransactionTypeUserDeposit:
                     if (starTransactionTypeUserDeposit.Sticker != null)
                     {
                         ProcessFiles(starTransactionTypeUserDeposit.Sticker);
                     }
                     break;
-                case Sticker sticker:
+                case global::Telegram.Td.Api.Sticker sticker:
                     if (sticker.FullType != null)
                     {
                         ProcessFiles(sticker.FullType);
@@ -2206,19 +2341,19 @@ namespace Telegram.Services
                         ProcessFiles(sticker.Thumbnail);
                     }
                     break;
-                case StickerFullTypeRegular stickerFullTypeRegular:
+                case global::Telegram.Td.Api.StickerFullTypeRegular stickerFullTypeRegular:
                     if (stickerFullTypeRegular.PremiumAnimation != null)
                     {
                         stickerFullTypeRegular.PremiumAnimation = ProcessFile(stickerFullTypeRegular.PremiumAnimation);
                     }
                     break;
-                case Stickers stickers:
+                case global::Telegram.Td.Api.Stickers stickers:
                     foreach (var item in stickers.StickersValue)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StickerSet stickerSet:
+                case global::Telegram.Td.Api.StickerSet stickerSet:
                     foreach (var item in stickerSet.Stickers)
                     {
                         ProcessFiles(item);
@@ -2228,7 +2363,7 @@ namespace Telegram.Services
                         ProcessFiles(stickerSet.Thumbnail);
                     }
                     break;
-                case StickerSetInfo stickerSetInfo:
+                case global::Telegram.Td.Api.StickerSetInfo stickerSetInfo:
                     foreach (var item in stickerSetInfo.Covers)
                     {
                         ProcessFiles(item);
@@ -2238,31 +2373,47 @@ namespace Telegram.Services
                         ProcessFiles(stickerSetInfo.Thumbnail);
                     }
                     break;
-                case StickerSets stickerSets:
+                case global::Telegram.Td.Api.StickerSets stickerSets:
                     foreach (var item in stickerSets.Sets)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case Stories stories:
+                case global::Telegram.Td.Api.Stories stories:
                     foreach (var item in stories.StoriesValue)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case Story story:
+                case global::Telegram.Td.Api.Story story:
                     if (story.Content != null)
                     {
                         ProcessFiles(story.Content);
                     }
                     break;
-                case StoryContentPhoto storyContentPhoto:
+                case global::Telegram.Td.Api.StoryAlbum storyAlbum:
+                    if (storyAlbum.PhotoIcon != null)
+                    {
+                        ProcessFiles(storyAlbum.PhotoIcon);
+                    }
+                    if (storyAlbum.VideoIcon != null)
+                    {
+                        ProcessFiles(storyAlbum.VideoIcon);
+                    }
+                    break;
+                case global::Telegram.Td.Api.StoryAlbums storyAlbums:
+                    foreach (var item in storyAlbums.Albums)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.StoryContentPhoto storyContentPhoto:
                     if (storyContentPhoto.Photo != null)
                     {
                         ProcessFiles(storyContentPhoto.Photo);
                     }
                     break;
-                case StoryContentVideo storyContentVideo:
+                case global::Telegram.Td.Api.StoryContentVideo storyContentVideo:
                     if (storyContentVideo.AlternativeVideo != null)
                     {
                         ProcessFiles(storyContentVideo.AlternativeVideo);
@@ -2272,31 +2423,31 @@ namespace Telegram.Services
                         ProcessFiles(storyContentVideo.Video);
                     }
                     break;
-                case StoryInteraction storyInteraction:
+                case global::Telegram.Td.Api.StoryInteraction storyInteraction:
                     if (storyInteraction.Type != null)
                     {
                         ProcessFiles(storyInteraction.Type);
                     }
                     break;
-                case StoryInteractions storyInteractions:
+                case global::Telegram.Td.Api.StoryInteractions storyInteractions:
                     foreach (var item in storyInteractions.Interactions)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case StoryInteractionTypeForward storyInteractionTypeForward:
+                case global::Telegram.Td.Api.StoryInteractionTypeForward storyInteractionTypeForward:
                     if (storyInteractionTypeForward.Message != null)
                     {
                         ProcessFiles(storyInteractionTypeForward.Message);
                     }
                     break;
-                case StoryInteractionTypeRepost storyInteractionTypeRepost:
+                case global::Telegram.Td.Api.StoryInteractionTypeRepost storyInteractionTypeRepost:
                     if (storyInteractionTypeRepost.Story != null)
                     {
                         ProcessFiles(storyInteractionTypeRepost.Story);
                     }
                     break;
-                case StoryVideo storyVideo:
+                case global::Telegram.Td.Api.StoryVideo storyVideo:
                     if (storyVideo.Thumbnail != null)
                     {
                         ProcessFiles(storyVideo.Thumbnail);
@@ -2306,259 +2457,301 @@ namespace Telegram.Services
                         storyVideo.Video = ProcessFile(storyVideo.Video);
                     }
                     break;
-                case SupergroupFullInfo supergroupFullInfo:
+                case global::Telegram.Td.Api.SupergroupFullInfo supergroupFullInfo:
                     if (supergroupFullInfo.Photo != null)
                     {
                         ProcessFiles(supergroupFullInfo.Photo);
                     }
                     break;
-                case ThemeSettings themeSettings:
+                case global::Telegram.Td.Api.ThemeSettings themeSettings:
                     if (themeSettings.Background != null)
                     {
                         ProcessFiles(themeSettings.Background);
                     }
                     break;
-                case Thumbnail thumbnail:
+                case global::Telegram.Td.Api.Thumbnail thumbnail:
                     if (thumbnail.File != null)
                     {
                         thumbnail.File = ProcessFile(thumbnail.File);
                     }
                     break;
-                case TMeUrl tMeUrl:
+                case global::Telegram.Td.Api.TMeUrl tMeUrl:
                     if (tMeUrl.Type != null)
                     {
                         ProcessFiles(tMeUrl.Type);
                     }
                     break;
-                case TMeUrls tMeUrls:
+                case global::Telegram.Td.Api.TMeUrls tMeUrls:
                     foreach (var item in tMeUrls.Urls)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case TMeUrlTypeChatInvite tMeUrlTypeChatInvite:
+                case global::Telegram.Td.Api.TMeUrlTypeChatInvite tMeUrlTypeChatInvite:
                     if (tMeUrlTypeChatInvite.Info != null)
                     {
                         ProcessFiles(tMeUrlTypeChatInvite.Info);
                     }
                     break;
-                case TrendingStickerSets trendingStickerSets:
+                case global::Telegram.Td.Api.TonTransaction tonTransaction:
+                    if (tonTransaction.Type != null)
+                    {
+                        ProcessFiles(tonTransaction.Type);
+                    }
+                    break;
+                case global::Telegram.Td.Api.TonTransactions tonTransactions:
+                    foreach (var item in tonTransactions.Transactions)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.TonTransactionTypeFragmentDeposit tonTransactionTypeFragmentDeposit:
+                    if (tonTransactionTypeFragmentDeposit.Sticker != null)
+                    {
+                        ProcessFiles(tonTransactionTypeFragmentDeposit.Sticker);
+                    }
+                    break;
+                case global::Telegram.Td.Api.TonTransactionTypeUpgradedGiftPurchase tonTransactionTypeUpgradedGiftPurchase:
+                    if (tonTransactionTypeUpgradedGiftPurchase.Gift != null)
+                    {
+                        ProcessFiles(tonTransactionTypeUpgradedGiftPurchase.Gift);
+                    }
+                    break;
+                case global::Telegram.Td.Api.TonTransactionTypeUpgradedGiftSale tonTransactionTypeUpgradedGiftSale:
+                    if (tonTransactionTypeUpgradedGiftSale.Gift != null)
+                    {
+                        ProcessFiles(tonTransactionTypeUpgradedGiftSale.Gift);
+                    }
+                    break;
+                case global::Telegram.Td.Api.TrendingStickerSets trendingStickerSets:
                     foreach (var item in trendingStickerSets.Sets)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case UpdateActiveLiveLocationMessages updateActiveLiveLocationMessages:
+                case global::Telegram.Td.Api.UpdateActiveLiveLocationMessages updateActiveLiveLocationMessages:
                     foreach (var item in updateActiveLiveLocationMessages.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case UpdateActiveNotifications updateActiveNotifications:
+                case global::Telegram.Td.Api.UpdateActiveNotifications updateActiveNotifications:
                     foreach (var item in updateActiveNotifications.Groups)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case UpdateAnimatedEmojiMessageClicked updateAnimatedEmojiMessageClicked:
+                case global::Telegram.Td.Api.UpdateAnimatedEmojiMessageClicked updateAnimatedEmojiMessageClicked:
                     if (updateAnimatedEmojiMessageClicked.Sticker != null)
                     {
                         ProcessFiles(updateAnimatedEmojiMessageClicked.Sticker);
                     }
                     break;
-                case UpdateAttachmentMenuBots updateAttachmentMenuBots:
+                case global::Telegram.Td.Api.UpdateAttachmentMenuBots updateAttachmentMenuBots:
                     foreach (var item in updateAttachmentMenuBots.Bots)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case UpdateBasicGroupFullInfo updateBasicGroupFullInfo:
+                case global::Telegram.Td.Api.UpdateBasicGroupFullInfo updateBasicGroupFullInfo:
                     if (updateBasicGroupFullInfo.BasicGroupFullInfo != null)
                     {
                         ProcessFiles(updateBasicGroupFullInfo.BasicGroupFullInfo);
                     }
                     break;
-                case UpdateBusinessMessageEdited updateBusinessMessageEdited:
+                case global::Telegram.Td.Api.UpdateBusinessMessageEdited updateBusinessMessageEdited:
                     if (updateBusinessMessageEdited.Message != null)
                     {
                         ProcessFiles(updateBusinessMessageEdited.Message);
                     }
                     break;
-                case UpdateChatBackground updateChatBackground:
+                case global::Telegram.Td.Api.UpdateChatBackground updateChatBackground:
                     if (updateChatBackground.Background != null)
                     {
                         ProcessFiles(updateChatBackground.Background);
                     }
                     break;
-                case UpdateChatLastMessage updateChatLastMessage:
+                case global::Telegram.Td.Api.UpdateChatLastMessage updateChatLastMessage:
                     if (updateChatLastMessage.LastMessage != null)
                     {
                         ProcessFiles(updateChatLastMessage.LastMessage);
                     }
                     break;
-                case UpdateChatPhoto updateChatPhoto:
+                case global::Telegram.Td.Api.UpdateChatPhoto updateChatPhoto:
                     if (updateChatPhoto.Photo != null)
                     {
                         ProcessFiles(updateChatPhoto.Photo);
                     }
                     break;
-                case UpdateChatThemes updateChatThemes:
-                    foreach (var item in updateChatThemes.ChatThemes)
+                case global::Telegram.Td.Api.UpdateChatTheme updateChatTheme:
+                    if (updateChatTheme.Theme != null)
                     {
-                        ProcessFiles(item);
+                        ProcessFiles(updateChatTheme.Theme);
                     }
                     break;
-                case UpdateDefaultBackground updateDefaultBackground:
+                case global::Telegram.Td.Api.UpdateDefaultBackground updateDefaultBackground:
                     if (updateDefaultBackground.Background != null)
                     {
                         ProcessFiles(updateDefaultBackground.Background);
                     }
                     break;
-                case UpdateDirectMessagesChatTopic updateDirectMessagesChatTopic:
+                case global::Telegram.Td.Api.UpdateDirectMessagesChatTopic updateDirectMessagesChatTopic:
                     if (updateDirectMessagesChatTopic.Topic != null)
                     {
                         ProcessFiles(updateDirectMessagesChatTopic.Topic);
                     }
                     break;
-                case UpdateFile updateFile:
+                case global::Telegram.Td.Api.UpdateEmojiChatThemes updateEmojiChatThemes:
+                    foreach (var item in updateEmojiChatThemes.ChatThemes)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.UpdateFile updateFile:
                     if (updateFile.File != null)
                     {
                         updateFile.File = ProcessFile(updateFile.File);
                     }
                     break;
-                case UpdateFileAddedToDownloads updateFileAddedToDownloads:
+                case global::Telegram.Td.Api.UpdateFileAddedToDownloads updateFileAddedToDownloads:
                     if (updateFileAddedToDownloads.FileDownload != null)
                     {
                         ProcessFiles(updateFileAddedToDownloads.FileDownload);
                     }
                     break;
-                case UpdateMessageContent updateMessageContent:
+                case global::Telegram.Td.Api.UpdateMessageContent updateMessageContent:
                     if (updateMessageContent.NewContent != null)
                     {
                         ProcessFiles(updateMessageContent.NewContent);
                     }
                     break;
-                case UpdateMessageSendFailed updateMessageSendFailed:
+                case global::Telegram.Td.Api.UpdateMessageSendFailed updateMessageSendFailed:
                     if (updateMessageSendFailed.Message != null)
                     {
                         ProcessFiles(updateMessageSendFailed.Message);
                     }
                     break;
-                case UpdateMessageSendSucceeded updateMessageSendSucceeded:
+                case global::Telegram.Td.Api.UpdateMessageSendSucceeded updateMessageSendSucceeded:
                     if (updateMessageSendSucceeded.Message != null)
                     {
                         ProcessFiles(updateMessageSendSucceeded.Message);
                     }
                     break;
-                case UpdateNewBusinessCallbackQuery updateNewBusinessCallbackQuery:
+                case global::Telegram.Td.Api.UpdateNewBusinessCallbackQuery updateNewBusinessCallbackQuery:
                     if (updateNewBusinessCallbackQuery.Message != null)
                     {
                         ProcessFiles(updateNewBusinessCallbackQuery.Message);
                     }
                     break;
-                case UpdateNewBusinessMessage updateNewBusinessMessage:
+                case global::Telegram.Td.Api.UpdateNewBusinessMessage updateNewBusinessMessage:
                     if (updateNewBusinessMessage.Message != null)
                     {
                         ProcessFiles(updateNewBusinessMessage.Message);
                     }
                     break;
-                case UpdateNewChat updateNewChat:
+                case global::Telegram.Td.Api.UpdateNewChat updateNewChat:
                     if (updateNewChat.Chat != null)
                     {
                         ProcessFiles(updateNewChat.Chat);
                     }
                     break;
-                case UpdateNewMessage updateNewMessage:
+                case global::Telegram.Td.Api.UpdateNewMessage updateNewMessage:
                     if (updateNewMessage.Message != null)
                     {
                         ProcessFiles(updateNewMessage.Message);
                     }
                     break;
-                case UpdateNotification updateNotification:
+                case global::Telegram.Td.Api.UpdateNotification updateNotification:
                     if (updateNotification.Notification != null)
                     {
                         ProcessFiles(updateNotification.Notification);
                     }
                     break;
-                case UpdateNotificationGroup updateNotificationGroup:
+                case global::Telegram.Td.Api.UpdateNotificationGroup updateNotificationGroup:
                     foreach (var item in updateNotificationGroup.AddedNotifications)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case UpdateQuickReplyShortcut updateQuickReplyShortcut:
+                case global::Telegram.Td.Api.UpdateQuickReplyShortcut updateQuickReplyShortcut:
                     if (updateQuickReplyShortcut.Shortcut != null)
                     {
                         ProcessFiles(updateQuickReplyShortcut.Shortcut);
                     }
                     break;
-                case UpdateQuickReplyShortcutMessages updateQuickReplyShortcutMessages:
+                case global::Telegram.Td.Api.UpdateQuickReplyShortcutMessages updateQuickReplyShortcutMessages:
                     foreach (var item in updateQuickReplyShortcutMessages.Messages)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case UpdateSavedMessagesTopic updateSavedMessagesTopic:
+                case global::Telegram.Td.Api.Updates updates:
+                    foreach (var item in updates.UpdatesValue)
+                    {
+                        ProcessFiles(item);
+                    }
+                    break;
+                case global::Telegram.Td.Api.UpdateSavedMessagesTopic updateSavedMessagesTopic:
                     if (updateSavedMessagesTopic.Topic != null)
                     {
                         ProcessFiles(updateSavedMessagesTopic.Topic);
                     }
                     break;
-                case UpdateServiceNotification updateServiceNotification:
+                case global::Telegram.Td.Api.UpdateServiceNotification updateServiceNotification:
                     if (updateServiceNotification.Content != null)
                     {
                         ProcessFiles(updateServiceNotification.Content);
                     }
                     break;
-                case UpdateStickerSet updateStickerSet:
+                case global::Telegram.Td.Api.UpdateStickerSet updateStickerSet:
                     if (updateStickerSet.StickerSet != null)
                     {
                         ProcessFiles(updateStickerSet.StickerSet);
                     }
                     break;
-                case UpdateStory updateStory:
+                case global::Telegram.Td.Api.UpdateStory updateStory:
                     if (updateStory.Story != null)
                     {
                         ProcessFiles(updateStory.Story);
                     }
                     break;
-                case UpdateStoryPostFailed updateStoryPostFailed:
+                case global::Telegram.Td.Api.UpdateStoryPostFailed updateStoryPostFailed:
                     if (updateStoryPostFailed.Story != null)
                     {
                         ProcessFiles(updateStoryPostFailed.Story);
                     }
                     break;
-                case UpdateStoryPostSucceeded updateStoryPostSucceeded:
+                case global::Telegram.Td.Api.UpdateStoryPostSucceeded updateStoryPostSucceeded:
                     if (updateStoryPostSucceeded.Story != null)
                     {
                         ProcessFiles(updateStoryPostSucceeded.Story);
                     }
                     break;
-                case UpdateSupergroupFullInfo updateSupergroupFullInfo:
+                case global::Telegram.Td.Api.UpdateSupergroupFullInfo updateSupergroupFullInfo:
                     if (updateSupergroupFullInfo.SupergroupFullInfo != null)
                     {
                         ProcessFiles(updateSupergroupFullInfo.SupergroupFullInfo);
                     }
                     break;
-                case UpdateTrendingStickerSets updateTrendingStickerSets:
+                case global::Telegram.Td.Api.UpdateTrendingStickerSets updateTrendingStickerSets:
                     if (updateTrendingStickerSets.StickerSets != null)
                     {
                         ProcessFiles(updateTrendingStickerSets.StickerSets);
                     }
                     break;
-                case UpdateUser updateUser:
+                case global::Telegram.Td.Api.UpdateUser updateUser:
                     if (updateUser.User != null)
                     {
                         ProcessFiles(updateUser.User);
                     }
                     break;
-                case UpdateUserFullInfo updateUserFullInfo:
+                case global::Telegram.Td.Api.UpdateUserFullInfo updateUserFullInfo:
                     if (updateUserFullInfo.UserFullInfo != null)
                     {
                         ProcessFiles(updateUserFullInfo.UserFullInfo);
                     }
                     break;
-                case UpgradedGift upgradedGift:
+                case global::Telegram.Td.Api.UpgradedGift upgradedGift:
                     if (upgradedGift.Model != null)
                     {
                         ProcessFiles(upgradedGift.Model);
@@ -2568,43 +2761,43 @@ namespace Telegram.Services
                         ProcessFiles(upgradedGift.Symbol);
                     }
                     break;
-                case UpgradedGiftModel upgradedGiftModel:
+                case global::Telegram.Td.Api.UpgradedGiftModel upgradedGiftModel:
                     if (upgradedGiftModel.Sticker != null)
                     {
                         ProcessFiles(upgradedGiftModel.Sticker);
                     }
                     break;
-                case UpgradedGiftModelCount upgradedGiftModelCount:
+                case global::Telegram.Td.Api.UpgradedGiftModelCount upgradedGiftModelCount:
                     if (upgradedGiftModelCount.Model != null)
                     {
                         ProcessFiles(upgradedGiftModelCount.Model);
                     }
                     break;
-                case UpgradedGiftSymbol upgradedGiftSymbol:
+                case global::Telegram.Td.Api.UpgradedGiftSymbol upgradedGiftSymbol:
                     if (upgradedGiftSymbol.Sticker != null)
                     {
                         ProcessFiles(upgradedGiftSymbol.Sticker);
                     }
                     break;
-                case UpgradedGiftSymbolCount upgradedGiftSymbolCount:
+                case global::Telegram.Td.Api.UpgradedGiftSymbolCount upgradedGiftSymbolCount:
                     if (upgradedGiftSymbolCount.Symbol != null)
                     {
                         ProcessFiles(upgradedGiftSymbolCount.Symbol);
                     }
                     break;
-                case UpgradeGiftResult upgradeGiftResult:
+                case global::Telegram.Td.Api.UpgradeGiftResult upgradeGiftResult:
                     if (upgradeGiftResult.Gift != null)
                     {
                         ProcessFiles(upgradeGiftResult.Gift);
                     }
                     break;
-                case User user:
+                case global::Telegram.Td.Api.User user:
                     if (user.ProfilePhoto != null)
                     {
                         ProcessFiles(user.ProfilePhoto);
                     }
                     break;
-                case UserFullInfo userFullInfo:
+                case global::Telegram.Td.Api.UserFullInfo userFullInfo:
                     if (userFullInfo.BotInfo != null)
                     {
                         ProcessFiles(userFullInfo.BotInfo);
@@ -2612,6 +2805,10 @@ namespace Telegram.Services
                     if (userFullInfo.BusinessInfo != null)
                     {
                         ProcessFiles(userFullInfo.BusinessInfo);
+                    }
+                    if (userFullInfo.FirstProfileAudio != null)
+                    {
+                        ProcessFiles(userFullInfo.FirstProfileAudio);
                     }
                     if (userFullInfo.PersonalPhoto != null)
                     {
@@ -2626,7 +2823,7 @@ namespace Telegram.Services
                         ProcessFiles(userFullInfo.PublicPhoto);
                     }
                     break;
-                case Video video:
+                case global::Telegram.Td.Api.Video video:
                     if (video.Thumbnail != null)
                     {
                         ProcessFiles(video.Thumbnail);
@@ -2636,19 +2833,19 @@ namespace Telegram.Services
                         video.VideoValue = ProcessFile(video.VideoValue);
                     }
                     break;
-                case VideoMessageAdvertisement videoMessageAdvertisement:
+                case global::Telegram.Td.Api.VideoMessageAdvertisement videoMessageAdvertisement:
                     if (videoMessageAdvertisement.Sponsor != null)
                     {
                         ProcessFiles(videoMessageAdvertisement.Sponsor);
                     }
                     break;
-                case VideoMessageAdvertisements videoMessageAdvertisements:
+                case global::Telegram.Td.Api.VideoMessageAdvertisements videoMessageAdvertisements:
                     foreach (var item in videoMessageAdvertisements.Advertisements)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case VideoNote videoNote:
+                case global::Telegram.Td.Api.VideoNote videoNote:
                     if (videoNote.Thumbnail != null)
                     {
                         ProcessFiles(videoNote.Thumbnail);
@@ -2658,7 +2855,7 @@ namespace Telegram.Services
                         videoNote.Video = ProcessFile(videoNote.Video);
                     }
                     break;
-                case VideoStoryboard videoStoryboard:
+                case global::Telegram.Td.Api.VideoStoryboard videoStoryboard:
                     if (videoStoryboard.MapFile != null)
                     {
                         videoStoryboard.MapFile = ProcessFile(videoStoryboard.MapFile);
@@ -2668,13 +2865,13 @@ namespace Telegram.Services
                         videoStoryboard.StoryboardFile = ProcessFile(videoStoryboard.StoryboardFile);
                     }
                     break;
-                case VoiceNote voiceNote:
+                case global::Telegram.Td.Api.VoiceNote voiceNote:
                     if (voiceNote.Voice != null)
                     {
                         voiceNote.Voice = ProcessFile(voiceNote.Voice);
                     }
                     break;
-                case WebApp webApp:
+                case global::Telegram.Td.Api.WebApp webApp:
                     if (webApp.Animation != null)
                     {
                         ProcessFiles(webApp.Animation);
@@ -2684,16 +2881,17 @@ namespace Telegram.Services
                         ProcessFiles(webApp.Photo);
                     }
                     break;
-                case WebPageInstantView webPageInstantView:
+                case global::Telegram.Td.Api.WebPageInstantView webPageInstantView:
                     foreach (var item in webPageInstantView.PageBlocks)
                     {
                         ProcessFiles(item);
                     }
                     break;
-                case File file:
+                case global::Telegram.Td.Api.File file:
                     ProcessFile(file);
                     break;
             }
         }
     }
 }
+

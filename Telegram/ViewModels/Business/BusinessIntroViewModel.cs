@@ -100,25 +100,25 @@ namespace Telegram.ViewModels.Business
             }
         }
 
-        public override async void Continue()
+        protected override async void ContinueImpl(NavigatingEventArgs args)
         {
-            _completed = true;
-
             var settings = GetSettings();
             if (settings.AreTheSame(_cached))
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
                 return;
             }
 
             var response = await ClientService.SendAsync(new SetBusinessStartPage(settings));
             if (response is Ok)
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
             }
-            else
+            else if (response is Error error)
             {
-                // TODO
+                ShowToast(error);
             }
         }
 

@@ -47,7 +47,7 @@ namespace Telegram.Views.Settings.Popups
 
             Application.Content = string.Format("{0} {1}", session.ApplicationName, session.ApplicationVersion);
 
-            static void Update(BadgeButton button, string value)
+            static void Update(SettingsButton button, string value)
             {
                 if (string.IsNullOrEmpty(value))
                 {

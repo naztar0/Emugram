@@ -6,27 +6,19 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Telegram.Common;
+using Telegram.Controls.Messages.Content;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
+using Telegram.ViewModels;
 using Telegram.Views;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Composition;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 namespace Telegram.Controls
 {
@@ -34,9 +26,8 @@ namespace Telegram.Controls
     {
         private bool _presenterPressed;
         private Vector2 _presenterDelta;
-        private Vector2 _presenterOffset = Vector2.One;
+        private Vector2 _presenterOffset = Vector2.Zero;
         private readonly Visual _presenter;
-
 
         public PlaybackOverlay()
         {
@@ -54,12 +45,19 @@ namespace Telegram.Controls
 
         private void OnConnected(object sender, RoutedEventArgs e)
         {
+            VideoNoteContent.VisibleMessagesChanged += OnVisibleMessagesChanged;
             TypeResolver.Current.Playback.SourceChanged += OnSourceChanged;
         }
 
         private void OnDisconnected(object sender, RoutedEventArgs e)
         {
+            VideoNoteContent.VisibleMessagesChanged -= OnVisibleMessagesChanged;
             TypeResolver.Current.Playback.SourceChanged -= OnSourceChanged;
+        }
+
+        private void OnVisibleMessagesChanged(object sender, EventArgs e)
+        {
+            this.BeginOnUIThread(OnSourceChanged);
         }
 
         private void OnSourceChanged(IPlaybackService sender, object args)
@@ -69,10 +67,24 @@ namespace Telegram.Controls
 
         private void OnSourceChanged()
         {
-            ShowHide(TypeResolver.Current.Playback.CurrentItem?.Content is MessageVideoNote);
+            if (TypeResolver.Current.Playback.CurrentItem is PlaybackItemMessage message && message.Message.Content is MessageVideoNote)
+            {
+                if (message.XamlRoot != XamlRoot || VideoNoteContent.IsMessageVisible(XamlRoot, message.Message))
+                {
+                    ShowHide(false);
+                }
+                else
+                {
+                    ShowHide(true);
+                }
+            }
+            else
+            {
+                ShowHide(false);
+            }
         }
 
-        private bool _collapsed;
+        private bool _collapsed = true;
 
         private void ShowHide(bool show)
         {
@@ -98,41 +110,34 @@ namespace Telegram.Controls
                     : Visibility.Visible;
             };
 
-            var animation = visual.Compositor.CreateScalarKeyFrameAnimation();
-            animation.InsertKeyFrame(show ? 0 : 1, _presenterOffset.Y == 0 ? -Presenter.ActualSize.Y - 48 : Presenter.ActualSize.Y + 64);
-            animation.InsertKeyFrame(show ? 1 : 0, 0);
+            var opacity = visual.Compositor.CreateScalarKeyFrameAnimation();
+            opacity.InsertKeyFrame(0, show ? 0 : 1);
+            opacity.InsertKeyFrame(1, show ? 1 : 0);
 
-            visual.StartAnimation("Translation.Y", animation);
+            var scale = visual.Compositor.CreateVector3KeyFrameAnimation();
+            scale.InsertKeyFrame(0, show ? Vector3.Zero : Vector3.One);
+            scale.InsertKeyFrame(1, show ? Vector3.One : Vector3.Zero);
+
+            visual.CenterPoint = new Vector3(60);
+            visual.Properties.InsertVector3("Translation", new Vector3());
+            visual.StartAnimation("Opacity", opacity);
+            visual.StartAnimation("Scale", scale);
             batch.End();
 
             if (show)
             {
                 _panel = new SwapChainPanel();
-                _panel.SizeChanged += _panel_SizeChanged;
-                _panel.CompositionScaleChanged += _panel_CompositionScaleChanged;
 
                 Presenter.Child = _panel;
-                ((PlaybackService)TypeResolver.Current.Playback).Attach(_panel);
+                TypeResolver.Current.Playback.Attach(_panel);
             }
             else if (_panel != null)
             {
                 Presenter.Child = null;
-                ((PlaybackService)TypeResolver.Current.Playback).Detach(_panel);
+                TypeResolver.Current.Playback.Detach(_panel);
 
-                _panel.SizeChanged -= _panel_SizeChanged;
-                _panel.CompositionScaleChanged -= _panel_CompositionScaleChanged;
                 _panel = null;
             }
-        }
-
-        private void _panel_CompositionScaleChanged(SwapChainPanel sender, object args)
-        {
-            ((PlaybackService)TypeResolver.Current.Playback).UpdateScale();
-        }
-
-        private void _panel_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            ((PlaybackService)TypeResolver.Current.Playback).UpdateSize();
         }
 
         private SwapChainPanel _panel;
@@ -201,40 +206,6 @@ namespace Telegram.Controls
 
             var x1 = Math.Max(0, Math.Min(w, x * w));
             var y1 = Math.Max(0, Math.Min(h, y * h));
-
-            //var x2 = x1;
-            //var y2 = y1;
-
-            //if (Math.Min(x1, w - x2) < Math.Min(y1, h - y2))
-            //{
-            //    if (x1 < w - x2)
-            //    {
-            //        x1 = p;
-            //    }
-            //    else
-            //    {
-            //        x1 = w - p;
-            //    }
-            //}
-            //else
-            //{
-            //    if (y1 < h - y2)
-            //    {
-            //        y1 = p;
-            //    }
-            //    else
-            //    {
-            //        y1 = h - p;
-            //    }
-            //}
-
-            //var bx1 = (w - 240) / 2;
-            //var bx2 = bx1 + 240;
-
-            //if (y2 > h / 2 && ((x1 >= bx1 && x1 <= bx2) || (x2 >= bx1 && x2 <= bx2)))
-            //{
-            //    y1 = h - 72 - p;
-            //}
 
             if (x1 != _presenter.Offset.X || y1 != _presenter.Offset.Y)
             {

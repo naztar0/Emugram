@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Telegram.Collections;
 using Telegram.Td.Api;
 
 namespace Telegram.Services
@@ -27,7 +28,7 @@ namespace Telegram.Services
         private readonly NewDictionary<StoryList, SortedSet<OrderedItem>> _storyList = new(StoryListEqualityComparer.Instance);
         private readonly DefaultDictionary<StoryList, bool> _haveFullStoryList = new(StoryListEqualityComparer.Instance);
 
-        private readonly Dictionary<long, ChatActiveStories> _activeStories = new();
+        private readonly ReaderWriterDictionary<long, ChatActiveStories> _activeStories = new();
 
         private void SetActiveStoriesPositions(ChatActiveStories next, ChatActiveStories prev)
         {

@@ -21,7 +21,7 @@ namespace Telegram.Services.Settings
         private bool? _messages;
         public bool Messages
         {
-            get => _messages ??= GetValueOrDefault("IsTranslateEnabled", false);
+            get => _messages ??= GetValueOrDefault("IsTranslateEnabled", true);
             set => AddOrUpdateValue(ref _messages, "IsTranslateEnabled", value);
         }
 
@@ -50,7 +50,7 @@ namespace Telegram.Services.Settings
             set
             {
                 _doNot = value;
-                AddOrUpdateValue("DoNotTranslate", value?.Count > 0 ? string.Join(';', value) : null);
+                AddOrUpdateValue("DoNotTranslate", value?.Count > 0 ? string.Join(';', value) : string.Empty);
             }
         }
 
@@ -59,7 +59,17 @@ namespace Telegram.Services.Settings
             var value = GetValueOrDefault<string>("DoNotTranslate", null);
             if (value == null)
             {
-                return new HashSet<string>();
+                // Maintain the previous behavior for old users
+                if (SettingsService.Current.Diagnostics.UpdateCount > 1)
+                {
+                    AddOrUpdateValue("DoNotTranslate", string.Empty);
+                    return new HashSet<string>();
+                }
+
+                return new HashSet<string>
+                {
+                    LocaleService.Current.Id
+                };
             }
 
             var split = value.Split(';', StringSplitOptions.RemoveEmptyEntries);

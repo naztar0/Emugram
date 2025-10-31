@@ -73,12 +73,11 @@
                             </controls:HeaderedControl>
 
                             <controls:HeaderedControl>
-                                <controls:BadgeButton Click="Affiliate_Click"
-                                                      Content="{CustomResource UserAffiliateProgramRowTitle}"
-                                                      Badge="{CustomResource UserAffiliateProgramRowText}"
-                                                      Style="{StaticResource GlyphSubbadgeBadgeButtonStyle}"
-                                                      Glyph="&#xE9B5;"
-                                                      IsChevronVisible="True" />
+                                <controls:SettingsButton Click="Affiliate_Click"
+                                                         Content="{CustomResource UserAffiliateProgramRowTitle}"
+                                                         Description="{CustomResource UserAffiliateProgramRowText}"
+                                                         Glyph="&#xE9B5;"
+                                                         IsChevronVisible="True" />
                             </controls:HeaderedControl>
 
                             <TextBlock Text="{CustomResource StarMySubscriptions}"

@@ -23,7 +23,6 @@ using Telegram.Controls.Media;
 using Telegram.Converters;
 using Telegram.Entities;
 using Telegram.Navigation;
-using Telegram.Services;
 using Telegram.Streams;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
@@ -431,7 +430,7 @@ namespace Telegram.Views.Popups
                     username.Text = string.Empty;
                 }
 
-                photo.SetUser(ViewModel.ClientService, user, 32);
+                photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
             }
             else if (args.Item is Sticker sticker)
             {
@@ -1193,7 +1192,7 @@ namespace Telegram.Views.Popups
                 return;
             }
 
-            var focused = FocusManager.GetFocusedElement();
+            var focused = FocusManagerEx.TryGetFocusedElement();
             if (focused is null or (not TextBox and not RichEditBox and not Button and not MenuFlyoutItem))
             {
                 var popups = VisualTreeHelper.GetOpenPopupsForXamlRoot(XamlRoot);

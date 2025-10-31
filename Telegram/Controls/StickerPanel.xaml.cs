@@ -6,6 +6,7 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Telegram.Common;
 using Telegram.Controls.Drawers;
 using Telegram.Navigation;
@@ -117,7 +118,11 @@ namespace Telegram.Controls
                 }
                 else
                 {
-                    Show(Tab0, _prevIndex > index, 0);
+                    if (EmojisRoot.IsLoaded)
+                    {
+                        Show(Tab0, _prevIndex, _prevIndex = index);
+                    }
+
                     EmojisRoot.LoadVisibleItems();
                 }
 
@@ -151,7 +156,11 @@ namespace Telegram.Controls
                 }
                 else
                 {
-                    Show(Tab1, _prevIndex > index, 1);
+                    if (AnimationsRoot.IsLoaded)
+                    {
+                        Show(Tab1, _prevIndex, _prevIndex = index);
+                    }
+
                     AnimationsRoot.LoadVisibleItems();
                 }
 
@@ -186,7 +195,11 @@ namespace Telegram.Controls
                 }
                 else
                 {
-                    Show(Tab2, _prevIndex > index, 2);
+                    if (StickersRoot.IsLoaded)
+                    {
+                        Show(Tab2, _prevIndex, _prevIndex = index);
+                    }
+
                     StickersRoot.LoadVisibleItems();
                 }
 
@@ -194,23 +207,28 @@ namespace Telegram.Controls
                 SettingsService.Current.Stickers.SelectedTab = StickersTab.Stickers;
             }
 
-            _prevIndex = index;
             Navigation.SelectionChanged -= OnSelectionChanged;
             Navigation.SelectedIndex = index;
             Navigation.SelectionChanged += OnSelectionChanged;
         }
 
-        private void Show(UIElement element, bool leftToRight, int index)
+        private void Show(UIElement element, int prevIndex, int index)
         {
-            if (_prevIndex == -1)
+            Settings.Visibility = index != 1
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            if (!PowerSavingPolicy.AreSmoothTransitionsEnabled || prevIndex == index || prevIndex == -1)
             {
                 return;
             }
 
+            var leftToRight = prevIndex > index;
+
             var visualIn = ElementComposition.GetElementVisual(element);
             var offsetIn = visualIn.Compositor.CreateVector3KeyFrameAnimation();
-            offsetIn.InsertKeyFrame(0, new System.Numerics.Vector3(leftToRight ? -48 : 48, 0, 0));
-            offsetIn.InsertKeyFrame(1, new System.Numerics.Vector3());
+            offsetIn.InsertKeyFrame(0, new Vector3(leftToRight ? -48 : 48, 0, 0));
+            offsetIn.InsertKeyFrame(1, new Vector3());
             offsetIn.Duration = Constants.SoftAnimation;
 
             var opacityIn = visualIn.Compositor.CreateScalarKeyFrameAnimation();
@@ -220,10 +238,6 @@ namespace Telegram.Controls
 
             visualIn.StartAnimation("Offset", offsetIn);
             visualIn.StartAnimation("Opacity", opacityIn);
-
-            Settings.Visibility = index != 1
-                ? Visibility.Visible
-                : Visibility.Collapsed;
         }
 
         private void UnloadAtIndex(int index)
@@ -350,7 +364,7 @@ namespace Telegram.Controls
             if (sender is FrameworkElement element)
             {
                 element.Loaded -= EmojisRoot_Loaded;
-                Show(Tab0, _prevIndex > 0, 0);
+                Show(Tab0, _prevIndex, _prevIndex = 0);
             }
         }
 
@@ -359,7 +373,7 @@ namespace Telegram.Controls
             if (sender is FrameworkElement element)
             {
                 element.Loaded -= AnimationsRoot_Loaded;
-                Show(Tab1, _prevIndex > 1, 1);
+                Show(Tab1, _prevIndex, _prevIndex = 1);
             }
         }
 
@@ -368,7 +382,7 @@ namespace Telegram.Controls
             if (sender is FrameworkElement element)
             {
                 element.Loaded -= StickersRoot_Loaded;
-                Show(Tab2, _prevIndex > 2, 2);
+                Show(Tab2, _prevIndex, _prevIndex = 2);
             }
         }
 

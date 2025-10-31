@@ -63,6 +63,7 @@ namespace Telegram.Views.Settings.Password
 
         protected override void OnApplyTemplate()
         {
+            // TODO: Name
             var button = GetTemplateChild("PrimarySplitButton") as Button;
             if (button != null && IsPrimaryButtonSplit)
             {

@@ -29,7 +29,7 @@ namespace Telegram.Controls.Cells.Revenue
                 return;
             }
 
-            Photo.SetChat(clientService, chat, 36);
+            Photo.Source = ProfilePictureSource.Chat(clientService, chat);
             Title.Text = chat.Title;
 
             if (subscription.IsCanceled)

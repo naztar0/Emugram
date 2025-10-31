@@ -28,9 +28,10 @@ namespace Telegram.ViewModels.Settings.Privacy
 
         protected override Task OnNavigatedToAsync(object parameter, NavigationMode mode, NavigationState state)
         {
-            if (ClientService.TryGetUserFull(ClientService.Options.MyId, out UserFullInfo userFull))
+            if (ClientService.TryGetUser(ClientService.Options.MyId, out User user)
+                && ClientService.TryGetUserFull(ClientService.Options.MyId, out UserFullInfo userFull))
             {
-                Delegate?.UpdateUser(null, null, userFull, false, false);
+                Delegate?.UpdateUser(null, user, userFull, false, false);
             }
             else
             {

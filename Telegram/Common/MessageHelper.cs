@@ -590,6 +590,33 @@ namespace Telegram.Common
                 case InternalLinkTypeBotAddToChannel botAddToChannel:
                     NavigateToBotAddToChannel(clientService, navigation, botAddToChannel.BotUsername, botAddToChannel.AdministratorRights);
                     break;
+                case InternalLinkTypeDirectMessagesChat directMessagesChat:
+                    NavigateToDirectMessagesChat(clientService, navigation, directMessagesChat.ChannelUsername);
+                    break;
+                case InternalLinkTypeStoryAlbum storyAlbum:
+                    NavigateToUsername(clientService, navigation, storyAlbum.StoryAlbumOwnerUsername);
+                    break;
+                case InternalLinkTypeGiftCollection giftCollection:
+                    NavigateToUsername(clientService, navigation, giftCollection.GiftOwnerUsername);
+                    break;
+            }
+        }
+
+        private static async void NavigateToDirectMessagesChat(IClientService clientService, INavigationService navigation, string channelUsername)
+        {
+            var response = await clientService.SendAsync(new SearchPublicChat(channelUsername));
+            if (response is Chat chat && clientService.TryGetSupergroup(chat, out Supergroup supergroup))
+            {
+                if (supergroup.IsChannel && supergroup.HasDirectMessagesGroup)
+                {
+                    var fullInfo = clientService.GetSupergroupFull(supergroup.Id);
+                    fullInfo ??= await clientService.SendAsync(new GetSupergroupFullInfo(supergroup.Id)) as SupergroupFullInfo;
+
+                    if (fullInfo != null && fullInfo.DirectMessagesChatId != 0)
+                    {
+                        navigation.NavigateToChat(fullInfo.DirectMessagesChatId);
+                    }
+                }
             }
         }
 
@@ -625,7 +652,7 @@ namespace Telegram.Common
             if (response is UpgradedGift gift)
             {
                 var text = gift.OriginalDetails?.Text ?? string.Empty.AsFormattedText();
-                var receivedGift = new ReceivedGift(string.Empty, null, text, true, false, false, false, false, false, 0, new SentGiftUpgraded(gift), 0, 0, 0, 0, 0, 0);
+                var receivedGift = new ReceivedGift(string.Empty, null, text, true, false, false, false, false, false, 0, new SentGiftUpgraded(gift), Array.Empty<int>(), 0, 0, false, 0, 0, 0, 0, 0, string.Empty);
 
                 navigation.ShowPopup(new ReceivedGiftPopup(clientService, navigation, receivedGift, null, null));
             }
@@ -756,16 +783,13 @@ namespace Telegram.Common
             if (response is Chat chat)
             {
                 var response2 = await clientService.SendAsync(new GetStory(chat.Id, storyId, false));
-                if (response2 is Story item)
+                if (response2 is Story story)
                 {
                     var settings = TypeResolver.Current.Resolve<ISettingsService>(clientService.SessionId);
                     var aggregator = TypeResolver.Current.Resolve<IEventAggregator>(clientService.SessionId);
 
-                    var story = new StoryViewModel(clientService, item);
-
                     var activeStories = new ActiveStoriesViewModel(clientService, settings, aggregator, story);
-                    var viewModel = new StoryListViewModel(clientService, settings, aggregator, activeStories);
-                    viewModel.NavigationService = navigation;
+                    var viewModel = StoryListViewModel.Create(navigation, activeStories);
 
                     var window = new StoriesWindow();
                     window.Update(viewModel, activeStories, StoryOpenOrigin.Card, Rect.Empty, null);
@@ -835,13 +859,15 @@ namespace Telegram.Common
                         _ => 0
                     };
 
+                    var sourceChat = clientService.GetChat(chatId);
+
                     var emulationService = TypeResolver.Current.Resolve<IEmulationService>(clientService.SessionId);
                     var emulationPreset = await emulationService.GetPresetAsync(SettingsService.Current.Emulation.PresetId);
 
                     var responsa = await clientService.SendAsync(new GetWebAppLinkUrl(chatId, botUser.Id, webAppShortName, startParameter, foundWebApp.RequestWriteAccess && popup.IsChecked is true, new WebAppOpenParameters(Theme.Current.Parameters, emulationPreset.ApplicationName, mode)));
                     if (responsa is HttpUrl url)
                     {
-                        navigation.NavigateToWebApp(botUser, url.Url, openMode: mode, sourceLink: new InternalLinkTypeWebApp(botUsername, webAppShortName, startParameter, mode));
+                        navigation.NavigateToWebApp(botUser, url.Url, openMode: mode, sourceChat: sourceChat, sourceLink: new InternalLinkTypeWebApp(botUsername, webAppShortName, startParameter, mode));
                     }
                 }
                 else
@@ -960,46 +986,28 @@ namespace Telegram.Common
             {
                 if (info.Message != null)
                 {
-                    if (info.MessageThreadId != 0)
+                    if (info.TopicId is MessageTopicThread topicThread)
                     {
-                        long messageThreadId;
-                        MessageTopic messageTopic;
-
-                        if (info.Message.TopicId is MessageTopicForum forumTopic && clientService.IsForum(chat))
+                        var thread = await clientService.SendAsync(new GetMessageThread(info.ChatId, topicThread.MessageThreadId));
+                        if (thread is MessageThreadInfo)
                         {
-                            messageThreadId = forumTopic.ForumTopicId;
-                            messageTopic = forumTopic;
+                            navigation.NavigateToChat(chat, info.Message.Id, topic: info.TopicId);
                         }
                         else
                         {
-                            var properties = await clientService.SendAsync(new GetMessageProperties(info.Message.ChatId, info.Message.Id)) as MessageProperties;
-                            if (properties != null && properties.CanGetMessageThread)
-                            {
-                                messageThreadId = info.Message.Id;
-                                messageTopic = new MessageTopicForum(info.MessageThreadId);
-                            }
-                            else
-                            {
-                                messageThreadId = 0;
-                                messageTopic = null;
-                            }
+                            navigation.ShowPopup(Strings.LinkNotFound, Strings.AppName, Strings.OK);
                         }
-
-                        if (messageTopic != null)
+                    }
+                    if (info.TopicId is MessageTopicForum topicForum)
+                    {
+                        var topic = await clientService.SendAsync(new GetForumTopic(chat.Id, topicForum.ForumTopicId)) as ForumTopic;
+                        if (topic != null)
                         {
-                            var thread = await clientService.SendAsync(new GetMessageThread(info.ChatId, messageThreadId));
-                            if (thread is MessageThreadInfo)
-                            {
-                                navigation.NavigateToChat(chat, info.Message.Id, topic: messageTopic);
-                            }
-                            else
-                            {
-                                navigation.ShowPopup(Strings.LinkNotFound, Strings.AppName, Strings.OK);
-                            }
+                            navigation.NavigateToChat(chat, info.Message.Id, topic: info.TopicId);
                         }
                         else
                         {
-                            navigation.NavigateToChat(chat, info.Message.Id);
+                            navigation.ShowPopup(Strings.LinkNotFound, Strings.AppName, Strings.OK);
                         }
                     }
                     else
@@ -1007,13 +1015,9 @@ namespace Telegram.Common
                         navigation.NavigateToChat(chat, info.Message.Id);
                     }
                 }
-                else if (info.MessageThreadId != 0)
-                {
-                    navigation.NavigateToChat(chat, topic: new MessageTopicForum(info.MessageThreadId));
-                }
                 else
                 {
-                    navigation.NavigateToChat(chat);
+                    navigation.NavigateToChat(chat, topic: info.TopicId);
                 }
             }
             else
@@ -1677,16 +1681,15 @@ namespace Telegram.Common
             }
         }
 
-        public static async void Hyperlink_ContextRequested(MenuFlyout flyout, ITranslateService service, Hyperlink hyperlink)
+        public static void Hyperlink_ContextRequested(MenuFlyout flyout, ITranslateService service, Hyperlink hyperlink)
         {
-            var link = GetEntityData(hyperlink);
-            if (link == null)
+            var info = GetHyperlinkInfo(hyperlink);
+            if (info == null)
             {
                 return;
             }
 
-            var type = GetEntityType(hyperlink);
-            if (type is null or TextEntityTypeUrl or TextEntityTypeTextUrl)
+            if (info.Type is null or TextEntityTypeUrl or TextEntityTypeTextUrl)
             {
                 var action = GetEntityAction(hyperlink);
                 if (action != null)
@@ -1695,81 +1698,109 @@ namespace Telegram.Common
                 }
                 else
                 {
-                    flyout.CreateFlyoutItem(() => LinkOpen_Click(hyperlink.XamlRoot, link), Strings.Open, Icons.OpenIn);
+                    flyout.CreateFlyoutItem(() => LinkOpen_Click(hyperlink.XamlRoot, info.Text), Strings.Open, Icons.OpenIn);
                 }
 
-                flyout.CreateFlyoutItem(() => LinkCopy_Click(hyperlink.XamlRoot, link), Strings.CopyLink, Icons.Copy);
+                flyout.CreateFlyoutItem(() => LinkCopy_Click(hyperlink.XamlRoot, info.Text), Strings.CopyLink, Icons.Copy);
             }
-            else if (type is TextEntityTypePhoneNumber)
+            else if (info.Type is TextEntityTypePhoneNumber)
             {
-                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, link), Strings.CopyNumber, Icons.Copy);
+                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, info.Text), Strings.CopyNumber, Icons.Copy);
                 flyout.CreateFlyoutSeparator();
 
-                var profile = new ProfileCell();
-                var button = new Button
-                {
-                    Content = profile,
-                    Style = BootStrapper.Current.Resources["ListEmptyButtonStyle"] as Style,
-                    CornerRadius = new CornerRadius(4),
-                    IsEnabled = false
-                };
+                CreateProfileFlyoutItem(flyout, service.ClientService, hyperlink, new SearchUserByPhoneNumber(info.Text, false));
+            }
+            else if (info.Type is TextEntityTypeMention)
+            {
+                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, info.Text), Strings.CopyUsername, Icons.Copy);
+                flyout.CreateFlyoutSeparator();
 
-                var content = new MenuFlyoutContent
-                {
-                    Content = button,
-                    Height = 48,
-                    Width = 200,
-                    Padding = new Thickness(0)
-                };
-
-                void handler(object sender, RoutedEventArgs e)
-                {
-                    profile.Loaded -= handler;
-                    profile.ShowHideSkeleton(true);
-                }
-
-                profile.Loaded += handler;
-
-                flyout.Items.Add(content);
-
-                var response = await service.ClientService.SendAsync(new SearchUserByPhoneNumber(link, false));
-                if (response is User user)
-                {
-                    button.IsEnabled = true;
-                    button.Click += (s, args) =>
-                    {
-                        flyout.Hide();
-                        WindowContext.GetNavigationService(hyperlink.XamlRoot).NavigateToUser(user.Id);
-                    };
-
-                    profile.Loaded -= handler;
-                    profile.ShowHideSkeleton(false);
-                    profile.UpdateUser(service.ClientService, user, 36, true);
-                    profile.Subtitle = Strings.ViewProfile;
-                }
-                else
-                {
-                    button.Content = new TextBlock
-                    {
-                        Text = Strings.NumberNotOnTelegram,
-                        TextWrapping = TextWrapping.Wrap,
-                        Style = BootStrapper.Current.Resources["InfoCaptionTextBlockStyle"] as Style,
-                        Margin = new Thickness(12, 0, 12, 0)
-                    };
-                    button.HorizontalContentAlignment = HorizontalAlignment.Center;
-                    button.VerticalContentAlignment = VerticalAlignment.Center;
-                }
+                CreateProfileFlyoutItem(flyout, service.ClientService, hyperlink, new SearchPublicChat(info.Text));
             }
             else
             {
-                var text = type switch
+                var text = info.Type switch
                 {
                     TextEntityTypeHashtag or TextEntityTypeCashtag => Strings.CopyHashtag,
                     TextEntityTypeEmailAddress => Strings.CopyMail,
                     _ => Strings.Copy
                 };
 
-                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, link), text, Icons.Copy);
+                flyout.CreateFlyoutItem(() => TextCopy_Click(hyperlink.XamlRoot, info.Text), text, Icons.Copy);
+            }
+        }
+
+        private static async void CreateProfileFlyoutItem(MenuFlyout flyout, IClientService clientService, Hyperlink hyperlink, Function function)
+        {
+            var profile = new ProfileCell();
+            var button = new Button
+            {
+                Content = profile,
+                Style = BootStrapper.Current.Resources["ListEmptyButtonStyle"] as Style,
+                CornerRadius = new CornerRadius(4),
+                IsEnabled = false
+            };
+
+            var content = new MenuFlyoutContent
+            {
+                Content = button,
+                Height = 48,
+                Width = 200,
+                Padding = new Thickness(0)
+            };
+
+            void handler(object sender, RoutedEventArgs e)
+            {
+                profile.Loaded -= handler;
+                profile.ShowHideSkeleton(true);
+            }
+
+            profile.Loaded += handler;
+
+            flyout.Items.Add(content);
+
+            var response = await clientService.SendAsync(function);
+            if (response is User user)
+            {
+                button.IsEnabled = true;
+                button.Click += (s, args) =>
+                {
+                    flyout.Hide();
+                    WindowContext.GetNavigationService(hyperlink.XamlRoot).NavigateToUser(user.Id);
+                };
+
+                profile.Loaded -= handler;
+                profile.ShowHideSkeleton(false);
+                profile.UpdateUser(clientService, user, 36, true);
+                profile.Subtitle = Strings.ViewProfile;
+            }
+            if (response is Chat chat)
+            {
+                button.IsEnabled = true;
+                button.Click += (s, args) =>
+                {
+                    flyout.Hide();
+                    WindowContext.GetNavigationService(hyperlink.XamlRoot).Navigate(typeof(ProfilePage), chat.Id);
+                };
+
+                profile.Loaded -= handler;
+                profile.ShowHideSkeleton(false);
+                profile.UpdateChat(clientService, chat, 36, true);
+                profile.Subtitle = Strings.ViewProfile;
+            }
+            else
+            {
+                button.Content = new TextBlock
+                {
+                    Text = function is SearchPublicChat
+                        ? Strings.UsernameNotOnTelegram
+                        : Strings.NumberNotOnTelegram,
+                    TextWrapping = TextWrapping.Wrap,
+                    Style = BootStrapper.Current.Resources["InfoCaptionTextBlockStyle"] as Style,
+                    Margin = new Thickness(12, 0, 12, 0)
+                };
+                button.HorizontalContentAlignment = HorizontalAlignment.Center;
+                button.VerticalContentAlignment = VerticalAlignment.Center;
             }
         }
 
@@ -1837,39 +1868,18 @@ namespace Telegram.Common
 
 
 
-        public static string GetEntityData(DependencyObject obj)
+        public static TextEntityClickEventArgs GetHyperlinkInfo(DependencyObject obj)
         {
-            return (string)obj.GetValue(EntityDataProperty);
+            return (TextEntityClickEventArgs)obj.GetValue(HyperlinkInfoProperty);
         }
 
-        public static void SetEntityData(DependencyObject obj, string value)
+        public static void SetHyperlinkInfo(DependencyObject obj, TextEntityClickEventArgs value)
         {
-            obj.SetValue(EntityDataProperty, value);
+            obj.SetValue(HyperlinkInfoProperty, value);
         }
 
-        public static readonly DependencyProperty EntityDataProperty =
-            DependencyProperty.RegisterAttached("EntityData", typeof(string), typeof(MessageHelper), new PropertyMetadata(null));
-
-
-
-
-
-        public static TextEntityType GetEntityType(DependencyObject obj)
-        {
-            return (TextEntityType)obj.GetValue(EntityTypeProperty);
-        }
-
-        public static void SetEntityType(DependencyObject obj, TextEntityType value)
-        {
-            obj.SetValue(EntityTypeProperty, value);
-        }
-
-        public static readonly DependencyProperty EntityTypeProperty =
-            DependencyProperty.RegisterAttached("EntityType", typeof(TextEntityType), typeof(MessageHelper), new PropertyMetadata(null));
-
-
-
-
+        public static readonly DependencyProperty HyperlinkInfoProperty =
+            DependencyProperty.RegisterAttached("HyperlinkInfo", typeof(TextEntityClickEventArgs), typeof(MessageHelper), new PropertyMetadata(null));
 
         #endregion
     }

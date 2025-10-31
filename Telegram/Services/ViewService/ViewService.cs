@@ -98,7 +98,7 @@ namespace Telegram.Services
                 catch (Exception ex)
                 {
                     // This can happen, but it's unclear when
-                    Logger.Error(ex);
+                    Logger.Exception(ex);
 
                     // All the remote procedure calls must be wrapped in a try-catch block
                     return Task.FromResult<ViewLifetimeControl>(null);
@@ -116,7 +116,7 @@ namespace Telegram.Services
 
             await CoreApplication.MainView.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
             {
-                if (Window.Current.Content is RootPage root)
+                if (WindowContext.Current.Content is RootPage root)
                 {
                     root.PresentContent(options.Content(null));
                     await ApplicationViewSwitcher.TryShowAsStandaloneAsync(ApplicationView.GetForCurrentView().Id);

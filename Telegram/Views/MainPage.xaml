@@ -22,12 +22,6 @@
         </TransitionCollection>
     </Page.Transitions>
 
-    <Page.Resources>
-        <CollectionViewSource x:Name="NavigationResults"
-                              Source="{x:Bind ViewModel.NavigationItems}"
-                              IsSourceGrouped="True" />
-    </Page.Resources>
-
     <Grid x:Name="LayoutRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -133,8 +127,8 @@
 
             <controls:ChatFoldersNavView x:Name="ChatFoldersSide"
                                          AutomationProperties.Name="{CustomResource Filters}"
-                                         ItemsSource="{x:Bind NavigationResults.View}"
-                                         SelectedItem="{x:Bind ViewModel.SelectedFolder, Mode=OneWay}"
+                                         ItemsSource="{x:Bind ViewModel.Folders}"
+                                         SelectedItem="{x:Bind ViewModel.SelectedFolderView, Mode=OneWay}"
                                          SelectionChanged="ChatFolders_SelectionChanged"
                                          IsItemClickEnabled="True"
                                          ItemClick="ChatFolders_ItemClick"
@@ -255,27 +249,14 @@
                         </Setter>
                     </Style>
                 </controls:ChatFoldersNavView.ItemContainerStyle>
-                <controls:ChatFoldersNavView.GroupStyle>
-                    <GroupStyle>
-                        <GroupStyle.HeaderContainerStyle>
-                            <Style TargetType="ListViewHeaderItem">
-                                <Setter Property="MinHeight"
-                                        Value="0" />
-                                <Setter Property="IsTabStop"
-                                        Value="False" />
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate>
-                                            <Rectangle Fill="{ThemeResource CardStrokeColorDefaultBrush}"
-                                                       Margin="8,4"
-                                                       Height="1" />
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </GroupStyle.HeaderContainerStyle>
-                    </GroupStyle>
-                </controls:ChatFoldersNavView.GroupStyle>
+                <controls:ChatFoldersNavView.ItemContainerTransitions>
+                    <TransitionCollection>
+                        <AddDeleteThemeTransition />
+                        <ContentThemeTransition />
+                        <ReorderThemeTransition />
+                        <RepositionThemeTransition />
+                    </TransitionCollection>
+                </controls:ChatFoldersNavView.ItemContainerTransitions>
             </controls:ChatFoldersNavView>
         </Grid>
 
@@ -299,9 +280,9 @@
                     <Setter Property="Background"
                             Value="Transparent" />
                     <Setter Property="Foreground"
-                            Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                            Value="{ThemeResource TextFillColorPrimaryBrush}" />
                     <Setter Property="BorderBrush"
-                            Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                            Value="{ThemeResource TextFillColorPrimaryBrush}" />
                     <Setter Property="BorderThickness"
                             Value="0" />
                     <Setter Property="Padding"
@@ -396,6 +377,7 @@
         <controls:MasterDetailView x:Name="MasterDetail"
                                    ViewStateChanged="OnStateChanged"
                                    MasterVisibilityChanged="OnMasterVisibilityChanged"
+                                   BannerCollapsed="OnBannerCollapsed"
                                    Grid.Column="1"
                                    Grid.Row="1">
             <controls:MasterDetailView.Banner>
@@ -546,7 +528,7 @@
                                         <controls:ChatFoldersNavView x:Name="ChatFolders"
                                                                      AutomationProperties.Name="{CustomResource Filters}"
                                                                      ItemsSource="{x:Bind ViewModel.Folders}"
-                                                                     SelectedItem="{x:Bind ViewModel.SelectedFolder, Mode=OneWay}"
+                                                                     SelectedItem="{x:Bind ViewModel.SelectedFolderView, Mode=OneWay}"
                                                                      IsItemClickEnabled="True"
                                                                      ItemClick="ChatFolders_ItemClick"
                                                                      SelectionChanged="ChatFolders_SelectionChanged"
@@ -642,7 +624,7 @@
                                                         AutomationProperties.Name="{CustomResource ArchivedChats}"
                                                         Style="{StaticResource ListEmptyButtonStyle}"
                                                         Background="Transparent"
-                                                        Padding="4,2"
+                                                        Margin="4,2"
                                                         CornerRadius="4">
                                                     <cells:ChatCell x:Name="ArchivedChats"
                                                                     Visibility="Collapsed"
@@ -736,15 +718,15 @@
                                        Fill="#2ca5e0"
                                        RadiusX="18"
                                        RadiusY="18" />
-                            <controls:BadgeButton x:Name="UpdateCloud"
-                                                  Click="{x:Bind ViewModel.UpdateApp}"
-                                                  Visibility="{x:Bind ViewModel.IsUpdateAvailable, Mode=OneWay}"
-                                                  Content="{CustomResource UpdateTelegram}"
-                                                  Style="{StaticResource StartButtonStyle}"
-                                                  Padding="16,3,16,5"
-                                                  CornerRadius="18"
-                                                  Margin="0"
-                                                  Height="36" />
+                            <Button x:Name="UpdateCloud"
+                                    Click="{x:Bind ViewModel.UpdateApp}"
+                                    Visibility="{x:Bind ViewModel.IsUpdateAvailable, Mode=OneWay}"
+                                    Content="{CustomResource UpdateTelegram}"
+                                    Style="{StaticResource StartButtonStyle}"
+                                    Padding="16,3,16,5"
+                                    CornerRadius="18"
+                                    Margin="0"
+                                    Height="36" />
                         </Grid>
 
                         <Grid x:Name="ManagePanel"
@@ -839,13 +821,12 @@
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <controls:BadgeButton Style="{StaticResource IconSubbadgeBadgeButtonStyle}" />
+                                <controls:SettingsButton Style="{StaticResource IconSubbadgeBadgeButtonStyle}" />
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
 
-                    <local:SettingsPage x:Name="SettingsView"
-                                        MasterDetail="{x:Bind MasterDetail}" />
+                    <local:SettingsPage x:Name="SettingsView" />
                 </Grid>
 
                 <stories:StoriesStrip x:Name="Stories"

@@ -195,7 +195,7 @@ namespace Telegram
                 return;
             }
 
-            if (SettingsService.Current.Diagnostics.ShowMemoryUsage && Window.Current != null)
+            if (SettingsService.Current.Diagnostics.ShowMemoryUsage && Window.Current?.Content?.XamlRoot != null)
             {
                 _ = MessagePopup.ShowAsync(Window.Current.Content.XamlRoot, args.Exception.ToString(), "Unhandled exception", "OK");
             }
@@ -263,6 +263,10 @@ namespace Telegram
             if (error.StackTrace.Contains("libvlc.dll") || error.StackTrace.Contains("libvlccore.dll"))
             {
                 return new VLCException(error.Message + Environment.NewLine + error.StackTrace, error.StackTrace);
+            }
+            else if (error.StackTrace.Contains("Telegram.Native.Calls.dll"))
+            {
+                return new VoipException(error.Message + Environment.NewLine + error.StackTrace, error.StackTrace);
             }
 
             return new NativeException(error.Message + Environment.NewLine + error.StackTrace, error.StackTrace);
@@ -428,6 +432,14 @@ namespace Telegram
     public partial class VLCException : Exception
     {
         public VLCException(string message, string stackTrace)
+            : base(message + "\n" + stackTrace)
+        {
+        }
+    }
+
+    public partial class VoipException : Exception
+    {
+        public VoipException(string message, string stackTrace)
             : base(message + "\n" + stackTrace)
         {
         }

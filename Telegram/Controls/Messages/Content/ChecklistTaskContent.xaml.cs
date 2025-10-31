@@ -7,8 +7,9 @@
 using Microsoft.UI.Xaml.Controls;
 using System.Numerics;
 using Telegram.Assets.Icons;
+using Telegram.Common;
 using Telegram.Composition;
-using Telegram.Native;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
@@ -31,9 +32,6 @@ namespace Telegram.Controls.Messages.Content
         public ChecklistTaskContent()
         {
             DefaultStyleKey = typeof(ChecklistTaskContent);
-
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
         }
 
         #region InitializeComponent
@@ -75,7 +73,7 @@ namespace Telegram.Controls.Messages.Content
             {
                 PhotoRoot = GetTemplateChild(nameof(PhotoRoot)) as Border;
 
-                var clip = PlaceholderImageHelper.Foreground.GetEllipticalClip(20, 20, 12, -2, 10);
+                var clip = PlaceholderHelper.Foreground.GetEllipticalClip(20, 20, 12, -2, 10);
                 var photo = ElementComposition.GetElementVisual(PhotoRoot);
                 var geometry = photo.Compositor.CreatePathGeometry(clip);
                 photo.Clip = photo.Compositor.CreateGeometricClip(geometry);
@@ -87,12 +85,12 @@ namespace Telegram.Controls.Messages.Content
 
         #endregion
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             _selectionStrokeBrush?.Register();
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _selectionStrokeBrush?.Unregister();
         }
@@ -147,7 +145,7 @@ namespace Telegram.Controls.Messages.Content
 
             if (show && message.ClientService.TryGetUser(task.CompletedByUserId, out User user))
             {
-                Photo.SetUser(message.ClientService, user, 20);
+                Photo.Source = ProfilePictureSource.User(message.ClientService, user);
                 UserText.Text = user.FullName();
             }
 

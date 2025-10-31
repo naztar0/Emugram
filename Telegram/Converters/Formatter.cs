@@ -424,6 +424,51 @@ namespace Telegram.Converters
                 : Strings.LessMinuteAgo;
         }
 
+        public static string ShortRating(double size, bool forceDecimal)
+        {
+            var number = (long)size;
+            if (number >= 1000 * 1000)
+            {
+                var K = string.Empty;
+                var lastDec = 0L;
+
+                while (number / 1000 > 0)
+                {
+                    K += "K";
+                    lastDec = (number % 1000) / 100;
+                    number /= 1000;
+                }
+
+                if (lastDec != 0 || forceDecimal)
+                {
+                    if (K.Length >= 2)
+                    {
+                        return string.Format("{0}.{1}M", number, lastDec);
+                    }
+                    else
+                    {
+                        return string.Format("{0}.{1}{2}", number, lastDec, K);
+                    }
+                }
+
+                if (K.Length >= 2)
+                {
+                    return string.Format("{0}M", number);
+                }
+                else
+                {
+                    return string.Format("{0}{1}", number, K);
+                }
+            }
+
+            return size.ToString("N0");
+        }
+
+        public static string Percent(double percent)
+        {
+            return (percent * 100).ToString("0.##") + "%";
+        }
+
         public static string ShortNumber(long number)
         {
             return ShortNumber(number, false);

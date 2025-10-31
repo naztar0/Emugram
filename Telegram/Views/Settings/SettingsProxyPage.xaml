@@ -49,10 +49,9 @@
                     </controls:HeaderedControl>
 
                     <controls:HeaderedControl>
-                        <controls:BadgeButton Content="{CustomResource AddProxy}"
-                                              Click="{x:Bind ViewModel.Add}"
-                                              Style="{StaticResource GlyphBadgeButtonStyle}"
-                                              Glyph="&#xE710;" />
+                        <controls:SettingsButton Content="{CustomResource AddProxy}"
+                                                 Click="{x:Bind ViewModel.Add}"
+                                                 Glyph="&#xE710;" />
                     </controls:HeaderedControl>
 
                     <TextBlock Visibility="{x:Bind ViewModel.Items.Count, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"

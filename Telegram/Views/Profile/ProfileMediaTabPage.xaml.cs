@@ -8,9 +8,8 @@ using System;
 using System.Numerics;
 using Telegram.Common;
 using Telegram.Composition;
-using Telegram.Controls;
+using Telegram.Controls.Cells;
 using Telegram.Navigation;
-using Telegram.Streams;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.ViewModels.Chats;
@@ -49,54 +48,19 @@ namespace Telegram.Views.Profile
         {
             try
             {
-                if (args.InRecycleQueue)
+                if (args.InRecycleQueue || ViewModel == null)
                 {
                     return;
                 }
-                else if (args.ItemContainer.ContentTemplateRoot is Grid content)
+                else if (args.ItemContainer.ContentTemplateRoot is SharedMediaCell cell)
                 {
-                    var photo = content.Children[0] as ImageView;
-
-                    var particles = content.Children[1] as AnimatedImage;
-                    var overlay = content.Children[2] as Border;
-                    var duration = overlay.Child as TextBlock;
-
                     if (args.Item is MessageWithOwner message)
                     {
-                        if (message.Content is MessagePhoto photoMessage)
-                        {
-                            var small = photoMessage.Photo.GetSmall();
-
-                            photo.SetSource(message.ClientService, small.Photo, photoMessage.Photo.Minithumbnail, blurRadius: photoMessage.HasSpoiler ? 15 : 0);
-                            overlay.Visibility = Visibility.Collapsed;
-
-                            particles.Source = photoMessage.HasSpoiler
-                                ? new ParticlesImageSource()
-                                : null;
-                        }
-                        else if (message.Content is MessageVideo videoMessage)
-                        {
-                            var thumbnail = videoMessage.Cover?.GetThumbnail();
-                            thumbnail ??= videoMessage.Video.Thumbnail;
-
-                            var minithumbnail = videoMessage.Cover?.Minithumbnail;
-                            minithumbnail ??= videoMessage.Video.Minithumbnail;
-
-                            photo.SetSource(message.ClientService, thumbnail?.File, minithumbnail, blurRadius: videoMessage.HasSpoiler ? 15 : 0);
-                            overlay.Visibility = Visibility.Visible;
-
-                            duration.Text = videoMessage.Video.GetDuration();
-
-                            particles.Source = videoMessage.HasSpoiler
-                                ? new ParticlesImageSource()
-                                : null;
-                        }
+                        cell.UpdateMessage(message, true);
                     }
                     else
                     {
-                        photo.Clear();
-                        particles.Source = null;
-                        overlay.Visibility = Visibility.Collapsed;
+                        cell.Hide();
                     }
 
                     args.Handled = true;
@@ -104,7 +68,7 @@ namespace Telegram.Views.Profile
             }
             catch (Exception ex)
             {
-                Logger.Error(ex);
+                Logger.Exception(ex);
             }
         }
 
@@ -120,7 +84,7 @@ namespace Telegram.Views.Profile
 
                 var element = ScrollingHost.ContainerFromItem(e.ClickedItem);
 
-                var viewModel = new ChatGalleryViewModel(ViewModel.ClientService, ViewModel.StorageService, ViewModel.Aggregator, message.ChatId, ViewModel.Topic, message, properties, true);
+                var viewModel = new ChatGalleryViewModel(ViewModel.ClientService, ViewModel.StorageService, ViewModel.Aggregator, message.ChatId, ViewModel.Topic, message, properties, true, ViewModel.Media.Filter);
                 ViewModel.NavigationService.ShowGallery(viewModel, element as SelectorItem);
             }
         }

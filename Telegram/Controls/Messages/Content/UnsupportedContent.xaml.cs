@@ -33,12 +33,12 @@ namespace Telegram.Controls.Messages.Content
 
         #region InitializeComponent
 
-        private BadgeButton Button;
+        private ButtonEx Button;
         private bool _templateApplied;
 
         protected override void OnApplyTemplate()
         {
-            Button = GetTemplateChild(nameof(Button)) as BadgeButton;
+            Button = GetTemplateChild(nameof(Button)) as ButtonEx;
             Button.Content = Strings.UpdateApp.ToUpper();
             Button.Click += Button_Click;
 

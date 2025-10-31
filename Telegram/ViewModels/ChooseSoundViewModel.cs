@@ -157,7 +157,7 @@ namespace Telegram.ViewModels
             }
             else
             {
-                UpdateManager.Unsubscribe(this, ref _soundToken, true);
+                UpdateManager.Unsubscribe(this, ref _soundToken);
             }
         }
 

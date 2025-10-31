@@ -84,7 +84,7 @@ namespace Telegram.ViewModels.Settings
             var defaultTheme = new ChatThemeViewModel(ClientService, "\U0001F3E0", defaultLight, defaultDark, false);
             var themes = ClientService.ChatThemes.Select(x => new ChatThemeViewModel(ClientService, x, false));
 
-            var selectedTheme = themes.FirstOrDefault(x => x.Name == Settings.Appearance.ChatTheme?.Name) ?? defaultTheme;
+            var selectedTheme = themes.FirstOrDefault(x => x.AreTheSame(Settings.Appearance.ChatTheme)) ?? defaultTheme;
             if (selectedTheme != null)
             {
                 selectedTheme.LightSettings.Background = ClientService.GetDefaultBackground(false) ?? defaultLight.Background;
@@ -110,14 +110,19 @@ namespace Telegram.ViewModels.Settings
 
         private void SetChatTheme(ChatThemeViewModel chatTheme)
         {
-            if (chatTheme == null || chatTheme.Name == _selectedChatTheme?.Name)
+            if (chatTheme == null || chatTheme.AreTheSame(_selectedChatTheme?.Type))
             {
                 return;
             }
 
             void SetBackground(Background background, bool forDarkTheme)
             {
-                if (background != null && chatTheme.Name != "\U0001F3E0")
+                if (chatTheme.Type is not ChatThemeEmoji emoji)
+                {
+                    return;
+                }
+
+                if (background != null && emoji.Name != "\U0001F3E0")
                 {
                     ClientService.Send(new SetDefaultBackground(new InputBackgroundRemote(background.Id), background.Type, forDarkTheme));
                 }
@@ -130,7 +135,7 @@ namespace Telegram.ViewModels.Settings
             SetBackground(chatTheme.LightSettings?.Background, false);
             SetBackground(chatTheme.DarkSettings?.Background, true);
 
-            Settings.Appearance.ChatTheme = chatTheme;
+            Settings.Appearance.ChatTheme = chatTheme.ToEmoji();
             Settings.Appearance.UpdateNightMode(updateBackground: false);
 
             _selectedChatTheme = chatTheme;
@@ -476,17 +481,25 @@ namespace Telegram.ViewModels.Settings
 
         public ThemeSettings LightSettings { get; }
 
-        public string Name { get; }
+        public ChatTheme Type { get; }
 
         public bool IsChannel { get; }
 
-        public ChatThemeViewModel(IClientService clientService, ChatTheme chatTheme, bool isChannel)
+        public ChatThemeViewModel(IClientService clientService, EmojiChatTheme chatTheme, bool isChannel)
         {
             ClientService = clientService;
             DarkSettings = Copy(chatTheme.DarkSettings);
             LightSettings = Copy(chatTheme.LightSettings);
-            Name = chatTheme.Name;
-            IsChannel = IsChannel;
+            Type = new ChatThemeEmoji(chatTheme.Name);
+            IsChannel = isChannel;
+        }
+
+        public ChatThemeViewModel(IClientService clientService, GiftChatTheme chatTheme)
+        {
+            ClientService = clientService;
+            DarkSettings = Copy(chatTheme.DarkSettings);
+            LightSettings = Copy(chatTheme.LightSettings);
+            Type = new ChatThemeGift(chatTheme);
         }
 
         private ThemeSettings Copy(ThemeSettings x)
@@ -496,7 +509,7 @@ namespace Telegram.ViewModels.Settings
                 return null;
             }
 
-            return new ThemeSettings(x.AccentColor, x.Background, x.OutgoingMessageFill, x.AnimateOutgoingMessageFill, x.OutgoingMessageAccentColor);
+            return new ThemeSettings(x.BaseTheme, x.AccentColor, x.Background, x.OutgoingMessageFill, x.AnimateOutgoingMessageFill, x.OutgoingMessageAccentColor);
         }
 
         public ChatThemeViewModel(IClientService clientService, string name, ThemeSettings lightSettings, ThemeSettings darkSettings, bool isChannel)
@@ -504,18 +517,18 @@ namespace Telegram.ViewModels.Settings
             ClientService = clientService;
             DarkSettings = darkSettings;
             LightSettings = lightSettings;
-            Name = name;
+            Type = new ChatThemeEmoji(name);
             IsChannel = isChannel;
         }
 
-        public static implicit operator ChatTheme(ChatThemeViewModel chatTheme)
+        public EmojiChatTheme ToEmoji()
         {
-            if (chatTheme == null)
+            if (Type is ChatThemeEmoji emoji)
             {
-                return null;
+                return new EmojiChatTheme(emoji.Name, LightSettings, DarkSettings);
             }
 
-            return new ChatTheme(chatTheme.Name, chatTheme.LightSettings, chatTheme.DarkSettings);
+            return null;
         }
     }
 }

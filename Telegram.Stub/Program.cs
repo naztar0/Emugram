@@ -5,9 +5,12 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
+using Windows.ApplicationModel;
 using Windows.Storage;
 
 namespace Telegram.Stub
@@ -26,8 +29,15 @@ namespace Telegram.Stub
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            AddLoopbackExemption();
+
+            if (args.Contains("/LoopbackExempt"))
+            {
+                return;
+            }
+
             if (_mutex.WaitOne(0, true))
             {
                 Application.ThreadException += OnThreadException;
@@ -39,6 +49,30 @@ namespace Telegram.Stub
 
                 _mutex.ReleaseMutex();
             }
+        }
+
+        private static void AddLoopbackExemption()
+        {
+            var familyName = Package.Current.Id.FamilyName;
+            var info = new ProcessStartInfo
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                FileName = "CheckNetIsolation.exe",
+                WindowStyle = ProcessWindowStyle.Hidden,
+                Arguments = "LoopbackExempt -a -n=" + familyName
+            };
+
+            try
+            {
+                Process process = Process.Start(info);
+                process.WaitForExit();
+                process.Dispose();
+            }
+            catch { }
         }
 
         private static void OnThreadException(object sender, ThreadExceptionEventArgs e)

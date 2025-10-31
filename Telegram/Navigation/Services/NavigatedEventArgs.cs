@@ -6,6 +6,7 @@
 //
 using System;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 
 namespace Telegram.Navigation.Services
@@ -20,9 +21,11 @@ namespace Telegram.Navigation.Services
             SourcePageType = e.SourcePageType;
             Parameter = e.Parameter;
             NavigationMode = e.NavigationMode;
+            NavigationTransitionInfo = e.NavigationTransitionInfo;
         }
 
         public NavigationMode NavigationMode { get; set; }
+        public NavigationTransitionInfo NavigationTransitionInfo { get; set; }
         public Type SourcePageType { get; set; }
         public object Parameter { get; set; }
         public Page Content { get; set; }

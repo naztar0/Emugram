@@ -382,12 +382,6 @@
                                               AutomationProperties.Name="{CustomResource AccDescrSearchByUser}"
                                               ToolTipService.ToolTip="{CustomResource AccDescrSearchByUser}"
                                               FontSize="{StaticResource GlyphMediumFontSize}" />
-                        <controls:GlyphButton Click="FilterByMedia_Click"
-                                              Glyph="&#xEA69;"
-                                              AllowFocusOnInteraction="False"
-                                              FontSize="{StaticResource GlyphMediumFontSize}"
-                                              Visibility="Collapsed"
-                                              Grid.Column="1" />
                         <controls:GlyphButton Click="{x:Bind ViewModel.Dialog.JumpDate}"
                                               Glyph="&#xE787;"
                                               AllowFocusOnInteraction="False"

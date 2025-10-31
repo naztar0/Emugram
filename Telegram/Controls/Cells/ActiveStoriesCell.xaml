@@ -24,9 +24,8 @@
                   Width="48"
                   Height="48">
                 <controls:ProfilePicture x:Name="Photo"
-                                         IsShapeEnabled="False"
-                                         Width="40"
-                                         Height="40" />
+                                         Size="40"
+                                         Shape="Ellipse" />
                 <Grid x:Name="SegmentsRoot">
                     <controls:ActiveStoriesSegments x:Name="SegmentsSmall"
                                                     IsEnabled="False"

@@ -73,17 +73,17 @@ namespace Telegram.Controls
         private ImageRotation _rotation;
         private ImageFlip _flip;
 
-        private Grid m_layoutRoot;
-        private Image m_imageViewer;
+        private Grid LayoutRoot;
+        private Image ImageViewer;
 
-        private FrameworkElement m_imagePresenter;
+        private FrameworkElement ImagePresenter;
         private CompositeTransform m_imagePresenterTransform;
 
-        private Path m_clip;
+        private Path Clip;
         private RectangleGeometry m_outerClip;
         private Geometry m_innerClip;
 
-        private Grid m_thumbsContainer;
+        private Grid ThumbsContainer;
 
         public ImageCropper()
         {
@@ -99,23 +99,24 @@ namespace Telegram.Controls
         {
             base.OnApplyTemplate();
 
-            m_layoutRoot = (Grid)GetTemplateChild("LayoutRoot");
-            m_imageViewer = (Image)GetTemplateChild("ImageViewer");
-            m_imagePresenter = (FrameworkElement)GetTemplateChild("ImagePresenter");
-            m_thumbsContainer = (Grid)GetTemplateChild("ThumbsContainer");
+            LayoutRoot = GetTemplateChild(nameof(LayoutRoot)) as Grid;
+            ImageViewer = GetTemplateChild(nameof(ImageViewer)) as Image;
+            ImagePresenter = GetTemplateChild(nameof(ImagePresenter)) as FrameworkElement;
+            ThumbsContainer = GetTemplateChild(nameof(ThumbsContainer)) as Grid;
 
-            m_clip = (Path)GetTemplateChild("Clip");
+            Clip = GetTemplateChild(nameof(Clip)) as Path;
 
-            if (m_clip != null)
+            if (Clip != null)
             {
                 SetMask(_mask);
             }
 
-            m_imageViewer.SizeChanged += ImageViewer_SizeChanged;
+            ImageViewer.SizeChanged += ImageViewer_SizeChanged;
 
-            m_imagePresenter.RenderTransformOrigin = new Point(0.5, 0.5);
-            m_imagePresenter.RenderTransform = m_imagePresenterTransform = new CompositeTransform();
+            ImagePresenter.RenderTransformOrigin = new Point(0.5, 0.5);
+            ImagePresenter.RenderTransform = m_imagePresenterTransform = new CompositeTransform();
 
+            // TODO: Names
             var leftThumb = (ImageCropperThumb)GetTemplateChild("LeftThumb");
             if (leftThumb != null)
             {
@@ -209,20 +210,20 @@ namespace Telegram.Controls
         {
             m_current = rect;
 
-            if (m_thumbsContainer == null)
+            if (ThumbsContainer == null)
             {
                 return;
             }
 
-            var w = m_imageViewer.ActualWidth;
-            var h = m_imageViewer.ActualHeight;
+            var w = ImageViewer.ActualWidth;
+            var h = ImageViewer.ActualHeight;
 
             if (w == 0 || h == 0)
             {
                 return;
             }
 
-            m_thumbsContainer.Margin = new Thickness(
+            ThumbsContainer.Margin = new Thickness(
                 rect.Left * w,
                 rect.Top * h,
                 w - rect.Right * w,
@@ -248,7 +249,7 @@ namespace Telegram.Controls
             //    }
             //    else
             //    {
-            m_outerClip.Rect = new Rect(0, 0, m_imageViewer.ActualWidth, m_imageViewer.ActualHeight);
+            m_outerClip.Rect = new Rect(0, 0, ImageViewer.ActualWidth, ImageViewer.ActualHeight);
             //m_innerClip.Rect = new Rect(rect.Left * w, rect.Top * h, rect.Width * w, rect.Height * h);
             //    }
             //}
@@ -277,7 +278,7 @@ namespace Telegram.Controls
         {
             ((UIElement)sender).CapturePointer(e.Pointer);
 
-            var pointer = e.GetCurrentPoint(m_layoutRoot);
+            var pointer = e.GetCurrentPoint(LayoutRoot);
             m_pointerPositions[pointer.PointerId] = pointer.Position;
 
             m_current = m_rectangle;
@@ -301,15 +302,15 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetX = (position.X - startPosition.X) / w;
                 var offsetY = (position.Y - startPosition.Y) / h;
 
-                var left = Math.Clamp(m_rectangle.Left + offsetX, 0, 1 - m_rectangle.Width);
-                var top = Math.Clamp(m_rectangle.Top + offsetY, 0, 1 - m_rectangle.Height);
+                var left = Clamp(m_rectangle.Left + offsetX, 0, 1 - m_rectangle.Width);
+                var top = Clamp(m_rectangle.Top + offsetY, 0, 1 - m_rectangle.Height);
                 var width = m_rectangle.Right - left;
                 var height = m_rectangle.Bottom - top;
 
@@ -340,18 +341,18 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minW = 20 / w;
                 var minH = 20 / h;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetX = (position.X - startPosition.X) / w;
                 var offsetY = (position.Y - startPosition.Y) / h;
 
-                var left = Math.Clamp(m_rectangle.Left + offsetX, 0, Math.Max(m_rectangle.Right, minW) - minW);
-                var top = Math.Clamp(m_rectangle.Top + offsetY, 0, Math.Max(m_rectangle.Bottom, minH) - minH);
+                var left = Clamp(m_rectangle.Left + offsetX, 0, Math.Max(m_rectangle.Right, minW) - minW);
+                var top = Clamp(m_rectangle.Top + offsetY, 0, Math.Max(m_rectangle.Bottom, minH) - minH);
                 var width = m_rectangle.Right - left;
                 var height = m_rectangle.Bottom - top;
 
@@ -386,15 +387,15 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minH = 20 / h;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetY = (position.Y - startPosition.Y) / h;
 
-                var top = Math.Clamp(m_rectangle.Top + offsetY, 0, Math.Max(m_rectangle.Bottom, minH) - minH);
+                var top = Clamp(m_rectangle.Top + offsetY, 0, Math.Max(m_rectangle.Bottom, minH) - minH);
                 var height = m_rectangle.Bottom - top;
 
                 var cropScale = m_current.Width * w / (height * h);
@@ -403,7 +404,7 @@ namespace Telegram.Controls
                 var cropWidth = Math.Min(w, height * h * proportionalCropScale) / w;
 
                 m_current.Y = top;
-                m_current.X = Math.Clamp(m_current.X + (m_current.Width - cropWidth) / 2.0, 0, 1 - cropWidth);
+                m_current.X = Clamp(m_current.X + (m_current.Width - cropWidth) / 2.0, 0, 1 - cropWidth);
                 m_current.Width = cropWidth;
                 m_current.Height = cropWidth * w / proportionalCropScale / h;
 
@@ -416,15 +417,15 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minW = 20 / w;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetX = (position.X - startPosition.X) / w;
 
-                var left = Math.Clamp(m_rectangle.Left + offsetX, 0, Math.Max(m_rectangle.Right, minW) - minW);
+                var left = Clamp(m_rectangle.Left + offsetX, 0, Math.Max(m_rectangle.Right, minW) - minW);
                 var width = m_rectangle.Right - left;
 
                 var cropScale = width * w / (m_current.Height * h);
@@ -432,7 +433,7 @@ namespace Telegram.Controls
 
                 var cropHeight = Math.Min(h, width * w / proportionalCropScale) / h;
 
-                m_current.Y = Math.Clamp(m_current.Y + (m_current.Height - cropHeight) / 2.0, 0, 1 - cropHeight);
+                m_current.Y = Clamp(m_current.Y + (m_current.Height - cropHeight) / 2.0, 0, 1 - cropHeight);
                 m_current.X = left;
                 m_current.Width = cropHeight * h * proportionalCropScale / w;
                 m_current.Height = cropHeight;
@@ -446,18 +447,18 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minW = 20 / w;
                 var minH = 20 / h;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetX = (position.X - startPosition.X) / w;
                 var offsetY = (position.Y - startPosition.Y) / h;
 
-                var right = Math.Clamp(m_rectangle.Right + offsetX, m_current.Left + minW, 1);
-                var bottom = Math.Clamp(m_rectangle.Bottom + offsetY, m_current.Top + minH, 1);
+                var right = Clamp(m_rectangle.Right + offsetX, m_current.Left + minW, 1);
+                var bottom = Clamp(m_rectangle.Bottom + offsetY, m_current.Top + minH, 1);
                 var width = right - m_rectangle.Left;
                 var height = bottom - m_rectangle.Top;
 
@@ -488,15 +489,15 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minH = 20 / h;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetY = (position.Y - startPosition.Y) / h;
 
-                var bottom = Math.Clamp(m_rectangle.Bottom + offsetY, m_current.Top + minH, 1);
+                var bottom = Clamp(m_rectangle.Bottom + offsetY, m_current.Top + minH, 1);
                 var height = bottom - m_rectangle.Top;
 
                 var cropScale = m_current.Width * w / (height * h);
@@ -504,7 +505,7 @@ namespace Telegram.Controls
 
                 var cropWidth = Math.Min(w, height * h * proportionalCropScale) / w;
 
-                m_current.X = Math.Clamp(m_current.X + (m_current.Width - cropWidth) / 2.0, 0, 1 - cropWidth);
+                m_current.X = Clamp(m_current.X + (m_current.Width - cropWidth) / 2.0, 0, 1 - cropWidth);
                 m_current.Width = cropWidth;
                 m_current.Height = cropWidth * w / proportionalCropScale / h;
 
@@ -517,15 +518,15 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minW = 20 / w;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetX = (position.X - startPosition.X) / w;
 
-                var right = Math.Clamp(m_rectangle.Right + offsetX, m_current.Left + minW, 1);
+                var right = Clamp(m_rectangle.Right + offsetX, m_current.Left + minW, 1);
                 var width = right - m_rectangle.Left;
 
                 var cropScale = width * w / (m_current.Height * h);
@@ -533,7 +534,7 @@ namespace Telegram.Controls
 
                 var cropHeight = Math.Min(h, width * w / proportionalCropScale) / h;
 
-                m_current.Y = Math.Clamp(m_current.Y + (m_current.Height - cropHeight) / 2.0, 0, 1 - cropHeight);
+                m_current.Y = Clamp(m_current.Y + (m_current.Height - cropHeight) / 2.0, 0, 1 - cropHeight);
                 m_current.Width = cropHeight * h * proportionalCropScale / w;
                 m_current.Height = cropHeight;
 
@@ -546,18 +547,18 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minW = 20 / w;
                 var minH = 20 / h;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetX = (position.X - startPosition.X) / w;
                 var offsetY = (position.Y - startPosition.Y) / h;
 
-                var left = Math.Clamp(m_rectangle.Left + offsetX, 0, Math.Max(m_rectangle.Right, minW) - minW);
-                var bottom = Math.Clamp(m_rectangle.Bottom + offsetY, m_current.Top + minH, 1);
+                var left = Clamp(m_rectangle.Left + offsetX, 0, Math.Max(m_rectangle.Right, minW) - minW);
+                var bottom = Clamp(m_rectangle.Bottom + offsetY, m_current.Top + minH, 1);
                 var width = m_rectangle.Right - left;
                 var height = bottom - m_rectangle.Top;
 
@@ -590,18 +591,18 @@ namespace Telegram.Controls
         {
             if (e.Pointer.IsInContact && m_pointerPositions.TryGetValue(e.Pointer.PointerId, out Point startPosition))
             {
-                var w = m_layoutRoot.ActualWidth;
-                var h = m_layoutRoot.ActualHeight;
+                var w = LayoutRoot.ActualWidth;
+                var h = LayoutRoot.ActualHeight;
 
                 var minW = 20 / w;
                 var minH = 20 / h;
 
-                var position = e.GetCurrentPoint(m_layoutRoot).Position;
+                var position = e.GetCurrentPoint(LayoutRoot).Position;
                 var offsetX = (position.X - startPosition.X) / w;
                 var offsetY = (position.Y - startPosition.Y) / h;
 
-                var right = Math.Clamp(m_rectangle.Right + offsetX, m_current.Left + minW, 1);
-                var top = Math.Clamp(m_rectangle.Top + offsetY, 0, Math.Max(m_rectangle.Bottom, minH) - minH);
+                var right = Clamp(m_rectangle.Right + offsetX, m_current.Left + minW, 1);
+                var top = Clamp(m_rectangle.Top + offsetY, 0, Math.Max(m_rectangle.Bottom, minH) - minH);
                 var width = right - m_rectangle.Left;
                 var height = m_rectangle.Bottom - top;
 
@@ -697,12 +698,12 @@ namespace Telegram.Controls
                 {
                     var cropHeight = m_rectangle.Width * m_imageSize.Width / proportionalCropScale / m_imageSize.Height;
 
-                    m_rectangle.Y = Math.Clamp(m_rectangle.Y + (m_rectangle.Height - cropHeight) / 2.0, 0.0, m_imageSize.Height - cropHeight);
+                    m_rectangle.Y = Clamp(m_rectangle.Y + (m_rectangle.Height - cropHeight) / 2.0, 0.0, m_imageSize.Height - cropHeight);
                     m_rectangle.Height = cropHeight;
                 }
                 else
                 {
-                    m_rectangle.X = Math.Clamp(m_rectangle.X + (m_rectangle.Width - cropWidth) / 2.0, 0.0, m_imageSize.Width - cropWidth);
+                    m_rectangle.X = Clamp(m_rectangle.X + (m_rectangle.Width - cropWidth) / 2.0, 0.0, m_imageSize.Width - cropWidth);
                     m_rectangle.Width = cropWidth;
                 }
             }
@@ -713,17 +714,22 @@ namespace Telegram.Controls
                 {
                     var cropWidth = m_rectangle.Height * m_imageSize.Height * proportionalCropScale / m_imageSize.Width;
 
-                    m_rectangle.X = Math.Clamp(m_rectangle.X + (m_rectangle.Width - cropWidth) / 2.0, 0.0, m_imageSize.Width - cropWidth);
+                    m_rectangle.X = Clamp(m_rectangle.X + (m_rectangle.Width - cropWidth) / 2.0, 0.0, m_imageSize.Width - cropWidth);
                     m_rectangle.Width = cropWidth;
                 }
                 else
                 {
-                    m_rectangle.Y = Math.Clamp(m_rectangle.Y + (m_rectangle.Height - cropHeight) / 2.0, 0.0, m_imageSize.Height - cropHeight);
+                    m_rectangle.Y = Clamp(m_rectangle.Y + (m_rectangle.Height - cropHeight) / 2.0, 0.0, m_imageSize.Height - cropHeight);
                     m_rectangle.Height = cropHeight;
                 }
             }
 
             SetRectangle(m_rectangle, animate);
+        }
+
+        private double Clamp(double value, double min, double max)
+        {
+            return Math.Clamp(value, Math.Min(min, max), Math.Max(min, max));
         }
 
         private double GetProportionsFactor(BitmapProportions proportions, double defaultValue)
@@ -808,7 +814,7 @@ namespace Telegram.Controls
         {
             _mask = mask;
 
-            var clip = m_clip;
+            var clip = Clip;
             if (clip == null)
             {
                 return;
@@ -885,7 +891,7 @@ namespace Telegram.Controls
 
         public void SetSource(StorageFile file, ImageSource source, double width, double height, BitmapProportions proportions = BitmapProportions.Custom, Rect? cropRectangle = null)
         {
-            m_imageViewer.Source = source;
+            ImageViewer.Source = source;
 
             //m_imagePreview = source;
             m_imageSource = file;
@@ -961,18 +967,18 @@ namespace Telegram.Controls
             {
                 case ImageRotation.None:
                 case ImageRotation.Clockwise180Degrees:
-                    m_imagePresenter.Margin = new Thickness(horizontal, vertical, horizontal, vertical);
-                    m_imagePresenter.Width = e.NewSize.Width;
-                    m_imagePresenter.Height = e.NewSize.Height;
+                    ImagePresenter.Margin = new Thickness(horizontal, vertical, horizontal, vertical);
+                    ImagePresenter.Width = e.NewSize.Width;
+                    ImagePresenter.Height = e.NewSize.Height;
                     m_imagePresenterTransform.Rotation = _rotation == ImageRotation.None
                         ? 0
                         : 180;
                     break;
                 case ImageRotation.Clockwise90Degrees:
                 case ImageRotation.Clockwise270Degrees:
-                    m_imagePresenter.Margin = new Thickness(horizontal, vertical, horizontal, vertical);
-                    m_imagePresenter.Width = e.NewSize.Height;
-                    m_imagePresenter.Height = e.NewSize.Width;
+                    ImagePresenter.Margin = new Thickness(horizontal, vertical, horizontal, vertical);
+                    ImagePresenter.Width = e.NewSize.Height;
+                    ImagePresenter.Height = e.NewSize.Width;
                     m_imagePresenterTransform.Rotation = _rotation == ImageRotation.Clockwise90Degrees
                         ? 90
                         : 270;

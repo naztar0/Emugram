@@ -130,8 +130,7 @@
                                 <controls:ProfilePicture x:Name="Photo"
                                                          HorizontalAlignment="Center"
                                                          VerticalAlignment="Center"
-                                                         Width="20"
-                                                         Height="20" />
+                                                         Size="20" />
                             </Grid>
 
                             <TextBlock x:Name="TitleLabel"
@@ -177,7 +176,7 @@
 
                             <Rectangle x:Name="DropVisual"
                                        x:Load="False"
-                                       Stroke="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                                       Stroke="{ThemeResource TextFillColorPrimaryBrush}"
                                        StrokeThickness="2"
                                        RadiusX="4"
                                        RadiusY="4"
@@ -366,7 +365,7 @@
                 BorderBrush="{ThemeResource SettingsItemBorderBrush}"
                 CornerRadius="{ThemeResource NavigationViewContentGridCornerRadius}"
                 BorderThickness="{ThemeResource NavigationViewContentGridBorderThickness}"
-                BackgroundSizing="InnerBorderEdge"
+                BackgroundSizing="OuterBorderEdge"
                 Grid.RowSpan="2" />
         <Border x:Name="VerticalBackgroundRoot"
                 Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
@@ -380,6 +379,7 @@
               Height="{StaticResource NavigationViewTopPaneHeight}"
               Canvas.ZIndex="3">
             <Border BorderBrush="{ThemeResource NavigationViewContentGridBorderBrush}"
+                    CornerRadius="{ThemeResource NavigationViewContentGridCornerRadius}"
                     BorderThickness="0,0,0,1" />
             <Grid x:Name="HeaderLeft"
                   HorizontalAlignment="Left"
@@ -397,8 +397,7 @@
                                                 AutomationProperties.Name="{CustomResource AccDescrProfilePicture}"
                                                 Grid.Column="1">
                     <controls:ProfilePicture x:Name="Photo"
-                                             Width="36"
-                                             Height="36" />
+                                             Size="36" />
                 </controls:ActiveStoriesSegments>
             </Grid>
 
@@ -410,7 +409,7 @@
                                     HorizontalContentAlignment="Stretch"
                                     VerticalContentAlignment="Stretch"
                                     BorderThickness="0"
-                                    CornerRadius="0"
+                                    CornerRadius="{ThemeResource NavigationViewContentGridCornerRadius}"
                                     Padding="60,0,0,0">
                 <Grid Background="Transparent"
                       VerticalAlignment="Center"
@@ -506,6 +505,7 @@
                              ContainerContentChanging="OnContainerContentChanging"
                              DragItemsStarting="OnDragItemsStarting"
                              DragItemsCompleted="OnDragItemsCompleted"
+                             ItemClick="OnItemClick"
                              AllowDrop="True"
                              CanDragItems="True"
                              CanReorderItems="False"

@@ -34,6 +34,8 @@ namespace Telegram.ViewModels.Gallery
 
         public File Thumbnail { get; protected set; }
 
+        public Minithumbnail Minithumbnail { get; protected set; }
+
         public virtual bool IsHls()
         {
             return false;
@@ -72,6 +74,8 @@ namespace Telegram.ViewModels.Gallery
 
         public virtual bool IsPublic { get; protected set; }
         public virtual bool IsPersonal { get; protected set; }
+
+        public bool CanRecognizeText => IsPhoto && !HasProtectedContent;
 
         public virtual InputMessageContent ToInput()
         {

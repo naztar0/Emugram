@@ -27,6 +27,9 @@ namespace Telegram.Views.Popups
 
             Title = Strings.BotShareMessage;
 
+            PrimaryButtonText = Strings.BotShareMessageShare;
+            ButtonsLayout = ContentPopupButtonsLayout.Vertical;
+
             message.IsOutgoing = false;
             clientService.TryGetChatFromUser(clientService.Options.MyId, out Chat chat);
 

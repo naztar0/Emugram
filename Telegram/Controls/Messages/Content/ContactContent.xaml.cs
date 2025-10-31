@@ -69,11 +69,11 @@ namespace Telegram.Controls.Messages.Content
 
             if (message.ClientService.TryGetUser(contact.Contact.UserId, out User user))
             {
-                Photo.SetUser(message.ClientService, user, 48);
+                Photo.Source = ProfilePictureSource.User(message.ClientService, user);
             }
             else
             {
-                Photo.Source = PlaceholderImage.GetNameForUser(contact.Contact.FirstName, contact.Contact.LastName);
+                Photo.Source = ProfilePictureSourceText.GetNameForUser(contact.Contact.FirstName, contact.Contact.LastName);
             }
 
             Title.Text = contact.Contact.GetFullName();

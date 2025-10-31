@@ -264,7 +264,7 @@ namespace Telegram.Controls
             Canvas.SetZIndex(next, 0);
         }
 
-        public void ChangeView(CarouselDirection direction)
+        public void ChangeView(CarouselDirection direction, bool disableAnimation = false)
         {
             _scrolling = Logger.TickCount;
 
@@ -272,12 +272,22 @@ namespace Telegram.Controls
                 ? _tracker.MinPosition
                 : _tracker.MaxPosition;
 
-            var anim = _tracker.Compositor.CreateVector3KeyFrameAnimation();
-            anim.InsertKeyFrame(0, new Vector3(_restingValue, 0, 0));
-            anim.InsertKeyFrame(1, position);
+            if (disableAnimation || !PowerSavingPolicy.AreSmoothTransitionsEnabled)
+            {
+                _viewChanged = CarouselDirection.None;
+                _tracker.TryUpdatePosition(position);
 
-            _viewChanged = direction;
-            _tracker.TryUpdatePositionWithAnimation(anim);
+                ViewChanged?.Invoke(this, new CarouselViewChangedEventArgs(_viewChanged));
+            }
+            else
+            {
+                var anim = _tracker.Compositor.CreateVector3KeyFrameAnimation();
+                anim.InsertKeyFrame(0, new Vector3(_restingValue, 0, 0));
+                anim.InsertKeyFrame(1, position);
+
+                _viewChanged = direction;
+                _tracker.TryUpdatePositionWithAnimation(anim);
+            }
 
             ConfigureAnimations(position.X);
         }

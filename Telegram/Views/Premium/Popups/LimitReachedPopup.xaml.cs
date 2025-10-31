@@ -30,11 +30,13 @@ namespace Telegram.Views.Premium.Popups
     {
         private readonly INavigationService _navigationService;
         private readonly IClientService _clientService;
+        private readonly PremiumLimitType _type;
 
         public LimitReachedPopup(INavigationService navigationService, IClientService clientService, PremiumLimitType type)
         {
             _navigationService = navigationService;
             _clientService = clientService;
+            _type = type;
 
             InitializeComponent();
             InitializeLimit(clientService, type);
@@ -59,7 +61,7 @@ namespace Telegram.Views.Premium.Popups
                 switch (type)
                 {
                     case PremiumLimitTypeChatFolderChosenChatCount:
-                        iconValue = Icons.ChatFilled;
+                        iconValue = Icons.ChatEmptyFilled;
                         freeValue = Strings.LimitReachedChatInFolders;
                         lockedValue = Strings.LimitReachedChatInFoldersLocked;
                         premiumValue = Strings.LimitReachedChatInFoldersPremium;
@@ -180,6 +182,10 @@ namespace Telegram.Views.Premium.Popups
                 {
                     LoadAdminedPublicChannels();
                 }
+                else if (type is PremiumLimitTypeSupergroupCount)
+                {
+                    LoadInactiveSupergroupChats();
+                }
                 else
                 {
                     Header.Visibility = Visibility.Collapsed;
@@ -189,7 +195,36 @@ namespace Telegram.Views.Premium.Popups
 
         private async void LoadAdminedPublicChannels()
         {
+            Header.Text = Strings.YourPublicCommunities;
+            ScrollingHost.SelectionMode = ListViewSelectionMode.None;
+            ScrollingHost.IsItemClickEnabled = true;
+
             var response = await _clientService.SendAsync(new GetCreatedPublicChats());
+            if (response is Telegram.Td.Api.Chats chats)
+            {
+                var result = new List<Chat>();
+
+                foreach (var chat in _clientService.GetChats(chats.ChatIds))
+                {
+                    result.Add(chat);
+                }
+
+                Header.Visibility = Visibility.Visible;
+                ScrollingHost.ItemsSource = result;
+            }
+            else if (response is Error error)
+            {
+                Logger.Error(error.Message);
+            }
+        }
+
+        private async void LoadInactiveSupergroupChats()
+        {
+            Header.Text = Strings.LastActiveCommunities;
+            ScrollingHost.SelectionMode = ListViewSelectionMode.Multiple;
+            ScrollingHost.IsItemClickEnabled = false;
+
+            var response = await _clientService.SendAsync(new GetInactiveSupergroupChats());
             if (response is Telegram.Td.Api.Chats chats)
             {
                 var result = new List<Chat>();
@@ -266,11 +301,6 @@ namespace Telegram.Views.Premium.Popups
         {
         }
 
-        private void PurchaseShadow_Loaded(object sender, RoutedEventArgs e)
-        {
-            VisualUtilities.DropShadow(PurchaseShadow);
-        }
-
         private void Purchase_Click(object sender, RoutedEventArgs e)
         {
             Hide();
@@ -306,14 +336,71 @@ namespace Telegram.Views.Premium.Popups
                     if (supergroup != null)
                     {
                         var subtitle = content.Children[2] as TextBlock;
-                        subtitle.Text = MeUrlPrefixConverter.Convert(_clientService, supergroup.ActiveUsername(), true);
+
+                        if (_type is PremiumLimitTypeCreatedPublicChatCount)
+                        {
+                            subtitle.Text = MeUrlPrefixConverter.Convert(_clientService, supergroup.ActiveUsername(), true);
+                        }
+                        else if (_type is PremiumLimitTypeSupergroupCount)
+                        {
+                            // don't need to use result->dates_, because chat.last_message.date is more reliable
+                            if (chat.LastMessage != null)
+                            {
+                                var currentDate = DateTime.Now.ToTimestamp();
+                                int date = chat.LastMessage.Date;
+                                int daysDif = (currentDate - date) / 86400;
+
+                                String dateFormat;
+                                if (daysDif < 30)
+                                {
+                                    dateFormat = Locale.Declension(Strings.R.Days, daysDif);
+                                }
+                                else if (daysDif < 365)
+                                {
+                                    dateFormat = Locale.Declension(Strings.R.Months, daysDif / 30);
+                                }
+                                else
+                                {
+                                    dateFormat = Locale.Declension(Strings.R.Years, daysDif / 365);
+                                }
+
+                                if (supergroup.IsChannel || supergroup.IsBroadcastGroup)
+                                {
+                                    subtitle.Text = string.Format(Strings.InactiveChannelSignature, dateFormat);
+                                }
+                                else
+                                {
+                                    String members = Locale.Declension(Strings.R.Members, _clientService.GetMembersCount(chat));
+                                    subtitle.Text = string.Format(Strings.InactiveChatSignature, members, dateFormat);
+                                }
+                            }
+                            else if (_clientService.HasActiveUsername(chat, out _))
+                            {
+                                if (supergroup.IsChannel || supergroup.IsBroadcastGroup)
+                                {
+                                    subtitle.Text = Strings.ChannelPublic.ToLower();
+                                }
+                                else
+                                {
+                                    subtitle.Text = Strings.MegaPublic.ToLower();
+                                }
+                            }
+                            else if (supergroup.IsChannel || supergroup.IsBroadcastGroup)
+                            {
+                                subtitle.Text = Strings.ChannelPrivate.ToLower();
+                            }
+                            else
+                            {
+                                subtitle.Text = Strings.MegaPrivate.ToLower();
+                            }
+                        }
                     }
                 }
             }
             else if (args.Phase == 2)
             {
                 var photo = content.Children[0] as ProfilePicture;
-                photo.SetChat(_clientService, chat, 36);
+                photo.Source = ProfilePictureSource.Chat(_clientService, chat);
             }
 
             if (args.Phase < 2)
@@ -376,6 +463,62 @@ namespace Telegram.Views.Premium.Popups
             }
 
             popup.IsOpen = true;
+        }
+
+        private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ScrollingHost.SelectedItems.Count > 0)
+            {
+                PurchaseCommand.Visibility = Visibility.Collapsed;
+                ActionCommand.Visibility = Visibility.Visible;
+
+                ActionCommand.Content = Locale.Declension(Strings.R.LeaveCommunities, ScrollingHost.SelectedItems.Count);
+            }
+            else
+            {
+                PurchaseCommand.Visibility = Visibility.Visible;
+                ActionCommand.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void Action_Click(object sender, RoutedEventArgs e)
+        {
+            string title = Locale.Declension(Strings.R.LeaveCommunities, ScrollingHost.SelectedItems.Count);
+            string message;
+
+            if (ScrollingHost.SelectedItems.Count == 1 && ScrollingHost.SelectedItems[0] is Chat selectedChat)
+            {
+                if (selectedChat.Type is ChatTypeSupergroup { IsChannel: true })
+                {
+                    message = string.Format(Strings.ChannelLeaveAlertWithName, selectedChat.Title);
+                }
+                else
+                {
+                    message = string.Format(Strings.MegaLeaveAlertWithName, selectedChat.Title);
+                }
+            }
+            else
+            {
+                message = Strings.ChatsLeaveAlert;
+            }
+
+            var confirm = await _navigationService.ShowPopupAsync(message, title, Strings.VoipGroupLeave, Strings.Cancel, destructive: true);
+            if (confirm != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
+            foreach (var item in ScrollingHost.SelectedItems)
+            {
+                if (item is not Chat chat)
+                {
+                    continue;
+                }
+
+                _clientService.Send(new LeaveChat(chat.Id));
+            }
+
+            Hide();
         }
     }
 }

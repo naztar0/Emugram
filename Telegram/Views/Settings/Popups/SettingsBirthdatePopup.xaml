@@ -112,6 +112,10 @@
 
         <Grid x:Name="LayoutRoot"
               Height="320">
+            <Grid.Resources>
+                <SolidColorBrush x:Key="ListViewItemBackgroundSelected"
+                                 Color="Transparent" />
+            </Grid.Resources>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" />
@@ -187,5 +191,12 @@
                                  IsLink="True"
                                  Click="PrivacyInfo_Click"
                                  Margin="4,8,-8,0" />
+
+        <Button x:Name="HideYear"
+                Click="HideYear_Click"
+                Content="{CustomResource DateOfBirthHideYear}"
+                Style="{StaticResource AccentTextButtonStyle}"
+                HorizontalAlignment="Stretch"
+                Margin="4,8,4,-16" />
     </StackPanel>
 </controls:ContentPopup>

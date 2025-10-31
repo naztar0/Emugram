@@ -160,9 +160,12 @@
                               Style="{StaticResource SettingsCheckBoxStyle}" />
                 </controls:HeaderedControl>
 
-                <controls:HeaderedControl Footer="{CustomResource LiteSmoothTransitionsInfo}">
+                <controls:HeaderedControl IsFooterLink="True"
+                                          Footer="{x:Bind ConvertAnimationsFooter(ViewModel.AreAnimationsEnabled), Mode=OneWay}"
+                                          Click="HeaderedControl_Click">
                     <CheckBox IsChecked="{x:Bind ViewModel.AreSmoothTransitionsEnabled, Mode=TwoWay}"
-                              Content="{CustomResource LiteSmoothTransitions}"
+                              IsEnabled="{x:Bind ViewModel.AreAnimationsEnabled, Mode=OneWay}"
+                              Content="{CustomResource LiteOptionsAnimationEffects}"
                               Style="{StaticResource SettingsCheckBoxStyle}" />
                 </controls:HeaderedControl>
             </controls:SettingsPanel>

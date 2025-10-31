@@ -104,11 +104,10 @@
                 <controls:HeaderedControl Visibility="{x:Bind ConvertFee(ViewModel.SelectedItem), Mode=OneWay}"
                                           Header="{CustomResource PrivateMessagesExceptionsHeader}"
                                           Footer="{CustomResource PrivateMessagesExceptionsInfo}">
-                    <controls:BadgeButton Content="{CustomResource PrivateMessagesExceptions}"
-                                          Click="{x:Bind ViewModel.AllowUnpaidRules.Always}"
-                                          Badge="{x:Bind ViewModel.AllowUnpaidRules.AllowedBadge, Mode=OneWay}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xF164;" />
+                    <controls:SettingsButton Content="{CustomResource PrivateMessagesExceptions}"
+                                             Click="{x:Bind ViewModel.AllowUnpaidRules.Always}"
+                                             Badge="{x:Bind ViewModel.AllowUnpaidRules.AllowedBadge, Mode=OneWay}"
+                                             Glyph="&#xF164;" />
                 </controls:HeaderedControl>
             </controls:SettingsPanel>
         </ScrollViewer>

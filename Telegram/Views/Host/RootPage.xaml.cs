@@ -347,7 +347,7 @@ namespace Telegram.Views.Host
                 return;
             }
 
-            Photo.SetUser(clientService, user, 48);
+            Photo.Source = ProfilePictureSource.User(clientService, user);
             NameLabel.Text = user.FullName();
 
             if (SettingsService.Current.Diagnostics.HidePhoneNumber)
@@ -600,7 +600,7 @@ namespace Telegram.Views.Host
                 title.Text = user.FullName();
 
                 var photo = content.Children[0] as ProfilePicture;
-                photo.SetUser(session.ClientService, user, 28);
+                photo.Source = ProfilePictureSource.User(session.ClientService, user);
 
                 var identity = content.FindName("Identity") as IdentityIcon;
                 var botVerified = content.FindName("BotVerified") as CustomEmojiIcon;

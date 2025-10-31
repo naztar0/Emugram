@@ -93,11 +93,9 @@ namespace Telegram.Controls
 
         public abstract void Toggle();
 
-        public abstract void Stop();
-
         public abstract void Clear();
 
-        public abstract void AddTime(double value);
+        public abstract void Seek(double value);
 
         protected bool _isReady;
 
@@ -199,7 +197,7 @@ namespace Telegram.Controls
         public event TypedEventHandler<VideoPlayerBase, VideoPlayerLevelsChangedEventArgs> LevelsChanged;
         protected void OnLevelsChanged(IList<VideoPlayerLevel> levels, VideoPlayerLevel currentLevel)
         {
-            Levels = levels;
+            Levels = levels ?? Array.Empty<VideoPlayerLevel>();
             LevelsChanged?.Invoke(this, new VideoPlayerLevelsChangedEventArgs(levels, currentLevel, IsCurrentLevelAuto));
         }
 

@@ -170,10 +170,10 @@ namespace Telegram.Controls.Messages.Content
                 if (regular.Sticker.StickerValue.Local.CanBeDownloaded && !regular.Sticker.StickerValue.Local.IsDownloadingActive)
                 {
                     // Unsubscribe all tokens
-                    UpdateManager.Unsubscribe(this, ref _part2Token, true);
-                    UpdateManager.Unsubscribe(this, ref _part3Token, true);
-                    UpdateManager.Unsubscribe(this, ref _part4Token, true);
-                    UpdateManager.Unsubscribe(this, ref _part5Token, true);
+                    UpdateManager.Unsubscribe(this, ref _part2Token);
+                    UpdateManager.Unsubscribe(this, ref _part3Token);
+                    UpdateManager.Unsubscribe(this, ref _part4Token);
+                    UpdateManager.Unsubscribe(this, ref _part5Token);
 
                     UpdateManager.Subscribe(this, message, regular.Sticker.StickerValue, ref _part1Token, UpdateFile, true);
                     message.ClientService.DownloadFile(regular.Sticker.StickerValue.Id, 1);

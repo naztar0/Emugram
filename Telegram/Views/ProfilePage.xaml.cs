@@ -7,6 +7,7 @@
 using Microsoft.Graphics.Canvas.Geometry;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
@@ -17,7 +18,6 @@ using Telegram.Controls.Media;
 using Telegram.Converters;
 using Telegram.Navigation;
 using Telegram.Navigation.Services;
-using Telegram.Services;
 using Telegram.Streams;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
@@ -34,6 +34,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Hosting;
+using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
@@ -60,6 +61,8 @@ namespace Telegram.Views
                 ShowHideDateHeader(false, true);
             };
 
+            ScrollingHost.AddHandler(PointerWheelChangedEvent, new PointerEventHandler(OnPointerWheelChanged), true);
+
             if (ApiInformation.IsPropertyPresent("Windows.UI.Xaml.UIElement", "Shadow"))
             {
                 var themeShadow = new ThemeShadow();
@@ -85,8 +88,11 @@ namespace Telegram.Views
 
                 void handler(object sender, RoutedEventArgs e)
                 {
+                    _hasBeenScrolled = false;
+                    RootGrid.Unsnap();
+
                     ScrollingHost.Loaded -= handler;
-                    ChangeView(listViewPosition.ScrollPosition, true);
+                    ScrollingHost.ChangeView(null, listViewPosition.ScrollPosition, null, true);
                 }
 
                 ScrollingHost.Loaded += handler;
@@ -142,7 +148,7 @@ namespace Telegram.Views
 
             if (ViewModel.SelectedItem is ProfileTabItem tab)
             {
-                MediaFrame.Navigate(tab.Type, tab.Parameter, new SuppressNavigationTransitionInfo());
+                MediaFrame.Navigate(tab.PageType, tab.Parameter, new SuppressNavigationTransitionInfo());
             }
 
             InitializeScrolling();
@@ -184,6 +190,12 @@ namespace Telegram.Views
             ViewModel.PropertyChanged -= OnPropertyChanged;
             ViewModel.Delegate = null;
 
+            if (_notifyCollectionChanged != null)
+            {
+                _notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
+                _notifyCollectionChanged = null;
+            }
+
             if (MediaFrame.Content is ProfileSavedMessagesTabPage savedMessagesPage)
             {
                 var args = new NavigatingEventArgs
@@ -211,7 +223,7 @@ namespace Telegram.Views
         {
             if (e.PropertyName.Equals("SharedCount") && ViewModel.SelectedItem is ProfileTabItem tab)
             {
-                MediaFrame.Navigate(tab.Type, null, new SuppressNavigationTransitionInfo());
+                MediaFrame.Navigate(tab.PageType, null, new SuppressNavigationTransitionInfo());
             }
         }
 
@@ -302,7 +314,7 @@ namespace Telegram.Views
             ProfileHeader.UpdateChatGifts(chat);
 
             // TODO: this should be optimized, not the best approach at all
-            var item = ViewModel?.Items.FirstOrDefault(x => x.Type == typeof(ProfileGiftsTabPage));
+            var item = ViewModel?.Items.FirstOrDefault(x => x.PageType == typeof(ProfileGiftsTabPage));
             if (item != null)
             {
                 var container = Navigation.ContainerFromItem(item) as SelectorItem;
@@ -312,33 +324,38 @@ namespace Telegram.Views
                 {
                     return;
                 }
-                else if (grid.Children.Count == 4)
-                {
-                    return;
-                }
 
-                for (int i = 0; i < Math.Min(3, ViewModel.GiftsTab.Items.Count); i++)
-                {
-                    var gift = ViewModel.GiftsTab.Items[i] as ReceivedGift;
-                    var animated = new AnimatedImage
-                    {
-                        Source = DelayedFileSource.FromSticker(ViewModel.ClientService, gift.GetSticker()),
-                        Width = 20,
-                        Height = 20,
-                        FrameSize = new Windows.Foundation.Size(20, 20),
-                        DecodeFrameType = Windows.UI.Xaml.Media.Imaging.DecodePixelType.Logical,
-                        IsViewportAware = true,
-                        LoopCount = 3,
-                        Margin = new Thickness(4, 0, 0, 0),
-                    };
-
-                    Grid.SetColumn(animated, grid.Children.Count);
-                    grid.Children.Add(animated);
-                }
+                UpdateChatGifts(chat, grid);
 
                 container.Content = grid;
                 container.ContentTemplate = null;
+            }
+        }
 
+        private void UpdateChatGifts(Chat chat, Grid grid)
+        {
+            if (grid.Children.Count == 4)
+            {
+                return;
+            }
+
+            for (int i = 0; i < Math.Min(3, ViewModel.GiftsTab.Items.Count); i++)
+            {
+                var gift = ViewModel.GiftsTab.Items[i] as ReceivedGift;
+                var animated = new AnimatedImage
+                {
+                    Source = DelayedFileSource.FromSticker(ViewModel.ClientService, gift.GetSticker()),
+                    Width = 20,
+                    Height = 20,
+                    FrameSize = new Windows.Foundation.Size(20, 20),
+                    DecodeFrameType = Windows.UI.Xaml.Media.Imaging.DecodePixelType.Logical,
+                    IsViewportAware = true,
+                    LoopCount = 3,
+                    Margin = new Thickness(4, 0, 0, 0),
+                };
+
+                Grid.SetColumn(animated, grid.Children.Count);
+                grid.Children.Add(animated);
             }
         }
 
@@ -402,6 +419,12 @@ namespace Telegram.Views
 
         private void OnNavigating(object sender, NavigatingCancelEventArgs e)
         {
+            if (_notifyCollectionChanged != null)
+            {
+                _notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
+                _notifyCollectionChanged = null;
+            }
+
             if (MediaFrame.Content is ProfileSavedMessagesTabPage savedMessagesPage)
             {
                 var args = new NavigatingEventArgs
@@ -442,6 +465,12 @@ namespace Telegram.Views
                 savedMessagesPage.ViewModel.Dispatcher = ViewModel.Dispatcher;
                 savedMessagesPage.ViewModel.NavigationService = ViewModel.NavigationService;
                 _ = savedMessagesPage.ViewModel.NavigatedToAsync(e.Parameter, e.NavigationMode, new Telegram.Navigation.Services.NavigationState());
+
+                if (_fromItemClick)
+                {
+                    _fromItemClick = false;
+                    RootGrid.Unsnap();
+                }
                 return;
             }
             else if (_backgroundUpdated)
@@ -478,15 +507,17 @@ namespace Telegram.Views
                     tabPage.DataContext = ViewModel.PinnedStoriesTab;
                 }
             }
+            else if (e.Content is ProfileGiftsTabPage)
+            {
+                tabPage.DataContext = ViewModel.GiftsTab;
+            }
 
             if (tabPage.ScrollingHost.ItemsSource != null)
             {
                 LoadMore(tabPage.ScrollingHost);
             }
-            else
-            {
-                tabPage.ScrollingHost.RegisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, OnItemsSourceChanged, ref _itemsSourceToken);
-            }
+
+            tabPage.ScrollingHost.RegisterPropertyChangedCallback(ItemsControl.ItemsSourceProperty, OnItemsSourceChanged, ref _itemsSourceToken);
 
             if (e.Content is not ProfileStoriesTabPage)
             {
@@ -496,9 +527,11 @@ namespace Telegram.Views
             if (_fromItemClick)
             {
                 _fromItemClick = false;
-                ScrollToContent();
+                RootGrid.Unsnap();
             }
         }
+
+        private INotifyCollectionChanged _notifyCollectionChanged;
 
         private void OnItemsSourceChanged(DependencyObject sender, DependencyProperty dp)
         {
@@ -507,7 +540,40 @@ namespace Telegram.Views
                 return;
             }
 
+            if (_notifyCollectionChanged != null)
+            {
+                _notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
+            }
+
+            _notifyCollectionChanged = scrollingHost.ItemsSource as INotifyCollectionChanged;
+
+            if (_notifyCollectionChanged != null)
+            {
+                _notifyCollectionChanged.CollectionChanged += OnCollectionChanged;
+            }
+
+            _hasBeenScrolled = false;
+            RootGrid.Unsnap();
+
             LoadMore(scrollingHost);
+        }
+
+        private void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                if (_hasBeenScrolled)
+                {
+                    ScrollToContent(true);
+                }
+
+                if (MediaFrame.Content is not ProfileTabPage tabPage || tabPage.ScrollingHost is not ListViewBase scrollingHost)
+                {
+                    return;
+                }
+
+                LoadMore(scrollingHost);
+            }
         }
 
         private void ProfileHeader_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -641,33 +707,34 @@ namespace Telegram.Views
         private double _initialFinalOffset;
         private double _initialPreviousOffset;
 
+        private bool _hasBeenScrolled;
+
         private void OnDirectManipulationStarted(object sender, object e)
         {
             _initialDirectManipulation = true;
+            _hasBeenScrolled = true;
         }
 
         private void OnDirectManipulationCompleted(object sender, object e)
         {
             _initialDirectManipulation = false;
+            _hasBeenScrolled = false;
+        }
+
+        private void OnPointerWheelChanged(object sender, PointerRoutedEventArgs e)
+        {
+            _hasBeenScrolled = true;
         }
 
         private void OnViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
         {
-            if (_programmaticChange || ViewModel.IsSavedMessages)
+            if (ViewModel.IsSavedMessages || !_hasBeenScrolled)
             {
                 return;
             }
 
             if (e.IsInertial && e.NextView.VerticalOffset.AlmostEquals(e.FinalView.VerticalOffset, 1e-02))
             {
-                if (e.FinalView.VerticalOffset.AlmostEquals(RootGrid.HeaderHeight, 0.5))
-                {
-                    if (RootGrid.Update(-1, false))
-                    {
-                        Logger.Info("Unsnap");
-                    }
-                }
-
                 _initialViewChanging = true;
                 return;
             }
@@ -724,7 +791,7 @@ namespace Telegram.Views
                     : ProfileHeader.HeaderHeight - 48
                     : contentOffset;
 
-                if (RootGrid.Update(direction == PanelScrollingDirection.Forward ? snap : 0, !_initialDirectManipulation))
+                if (RootGrid.Snap(direction == PanelScrollingDirection.Forward ? snap : 0, !_initialDirectManipulation))
                 {
                     if (direction == PanelScrollingDirection.Forward)
                     {
@@ -741,7 +808,7 @@ namespace Telegram.Views
                 var diff = e.FinalView.VerticalOffset - (ProfileHeader.ActualSize.Y - 48);
                 var threshold = _initialDirectManipulation ? 24 : 32;
 
-                if (RootGrid.Update(diff >= -1 && diff <= threshold ? Math.Max(ProfileHeader.ActualSize.Y - 24, 48 + 10) : -1, false))
+                if (RootGrid.Snap(diff >= -1 && diff <= threshold ? Math.Max(ProfileHeader.ActualSize.Y - 24, 48 + 10) : -1, false))
                 {
                     if (diff >= 0 && diff <= threshold)
                     {
@@ -757,12 +824,18 @@ namespace Telegram.Views
 
         private void OnViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
-            UpdateBackButton();
-
-            if (!e.IsIntermediate)
+            if (ScrollingHost.VerticalOffset == 0 && !e.IsIntermediate && !_hasBeenScrolled)
             {
-                _programmaticChange = false;
+                ScrollToContent(true);
+                return;
             }
+
+            if (!e.IsIntermediate && RootGrid.Unsnap())
+            {
+                Logger.Info("Unsnap");
+            }
+
+            UpdateBackButton();
 
             if (ProfileHeader.Visibility == Visibility.Visible && !ViewModel.IsSavedMessages)
             {
@@ -920,14 +993,13 @@ namespace Telegram.Views
         }
 
         private bool _fromItemClick;
-        private bool _programmaticChange;
 
         private void Navigation_ItemClick(object sender, ItemClickEventArgs e)
         {
             if (Navigation.SelectedItem == e.ClickedItem)
             {
                 _fromItemClick = false;
-                ScrollToContent();
+                ScrollToContent(false);
             }
             else
             {
@@ -935,25 +1007,22 @@ namespace Telegram.Views
             }
         }
 
-        private void ScrollToContent()
+        private void ScrollToContent(bool disableAnimation)
         {
-            ChangeView(ViewModel.IsSavedMessages ? 0 : ProfileHeader.ActualHeight - 48 + 24, false);
-        }
+            _hasBeenScrolled = false;
+            RootGrid.Unsnap();
 
-        private async void ChangeView(double verticalOffset, bool disableAnimation)
-        {
-            _programmaticChange = true;
-            await ScrollingHost.ChangeViewAsync(null, verticalOffset, disableAnimation, false);
-            _programmaticChange = false;
+            Logger.Info(disableAnimation + ", " + ScrollingHost.ScrollableHeight);
+            ScrollingHost.ChangeView(null, ViewModel.IsSavedMessages ? 0 : Math.Round(ProfileHeader.ActualSize.Y - 24), null, disableAnimation);
         }
 
         private int _prevSelectedIndex = -1;
 
         private void Navigation_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (Navigation.SelectedItem is ProfileTabItem page && (page.Parameter != null || page.Type != MediaFrame.Content?.GetType()))
+            if (Navigation.SelectedItem is ProfileTabItem page && (page.Parameter != null || page.PageType != MediaFrame.Content?.GetType()))
             {
-                Logger.Info(page.Type);
+                Logger.Info(page.PageType);
 
                 NavigationTransitionInfo transition = _prevSelectedIndex == -1
                     ? new SuppressNavigationTransitionInfo()
@@ -964,8 +1033,11 @@ namespace Telegram.Views
                             : SlideNavigationTransitionEffect.FromLeft
                     };
 
+                _hasBeenScrolled = false;
+                RootGrid.Unsnap();
+
                 _prevSelectedIndex = Navigation.SelectedIndex;
-                MediaFrame.Navigate(page.Type, page.Parameter, transition);
+                MediaFrame.Navigate(page.PageType, page.Parameter, transition);
             }
         }
 
@@ -1022,11 +1094,11 @@ namespace Telegram.Views
                 photos.Click += MediaShowPhotos_Click;
                 videos.Click += MediaShowVideos_Click;
 
-                if (SettingsService.Current.Diagnostics.SparseMessagesDebug)
-                {
-                    flyout.Items.Add(zoomIn);
-                    flyout.Items.Add(zoomOut);
-                }
+                //if (SettingsService.Current.Diagnostics.SparseMessagesDebug)
+                //{
+                //    flyout.Items.Add(zoomIn);
+                //    flyout.Items.Add(zoomOut);
+                //}
 
                 if (ViewModel.Media.UseDataSource && ViewModel.Media.DataSource.HasPositions)
                 {
@@ -1056,7 +1128,13 @@ namespace Telegram.Views
                 var limited = new MenuFlyoutItem
                 {
                     Text = Strings.Gift2FilterLimited,
-                    Icon = ViewModel.GiftsTab.ExcludeLimited ? null : MenuFlyoutHelper.CreateIcon(Icons.Checkmark)
+                    Icon = ViewModel.GiftsTab.ExcludeNonUpgradable ? null : MenuFlyoutHelper.CreateIcon(Icons.Checkmark)
+                };
+
+                var upgradable = new MenuFlyoutItem
+                {
+                    Text = Strings.Gift2FilterUpgradable,
+                    Icon = ViewModel.GiftsTab.ExcludeUpgradable ? null : MenuFlyoutHelper.CreateIcon(Icons.Checkmark)
                 };
 
                 var unique = new MenuFlyoutItem
@@ -1065,26 +1143,28 @@ namespace Telegram.Views
                     Icon = ViewModel.GiftsTab.ExcludeUpgraded ? null : MenuFlyoutHelper.CreateIcon(Icons.Checkmark)
                 };
 
-                async void UpdateFilters(Action action)
+                void UpdateFilters(Action action)
                 {
-                    _programmaticChange = true;
+                    _hasBeenScrolled = false;
+                    RootGrid.Unsnap();
+
                     action();
-                    await ScrollingHost.WaitForViewChangedAsync(false);
-                    _programmaticChange = false;
                 }
 
                 sort.Click += (s, args) => UpdateFilters(() => ViewModel.GiftsTab.SortByPrice = !ViewModel.GiftsTab.SortByPrice);
                 unlimited.Click += (s, args) => UpdateFilters(() => ViewModel.GiftsTab.ExcludeUnlimited = !ViewModel.GiftsTab.ExcludeUnlimited);
-                limited.Click += (s, args) => UpdateFilters(() => ViewModel.GiftsTab.ExcludeLimited = !ViewModel.GiftsTab.ExcludeLimited);
+                limited.Click += (s, args) => UpdateFilters(() => ViewModel.GiftsTab.ExcludeNonUpgradable = !ViewModel.GiftsTab.ExcludeNonUpgradable);
+                upgradable.Click += (s, args) => UpdateFilters(() => ViewModel.GiftsTab.ExcludeUpgradable = !ViewModel.GiftsTab.ExcludeUpgradable);
                 unique.Click += (s, args) => UpdateFilters(() => ViewModel.GiftsTab.ExcludeUpgraded = !ViewModel.GiftsTab.ExcludeUpgraded);
 
                 flyout.Items.Add(sort);
                 flyout.CreateFlyoutSeparator();
                 flyout.Items.Add(unlimited);
                 flyout.Items.Add(limited);
+                flyout.Items.Add(upgradable);
                 flyout.Items.Add(unique);
 
-                if (ViewModel.ClientService.IsSavedMessages(ViewModel.Chat) || ViewModel.ClientService.TryGetSupergroup(ViewModel.Chat, out Supergroup supergroup) && supergroup.CanPostMessages())
+                if (ViewModel.GiftsTab.IsOwned)
                 {
                     var displayed = new MenuFlyoutItem
                     {
@@ -1144,6 +1224,9 @@ namespace Telegram.Views
 
                     int x = closest.Position % panel.MaximumRowsOrColumns;
                     int y = closest.Position / panel.MaximumRowsOrColumns;
+
+                    _hasBeenScrolled = false;
+                    RootGrid.Unsnap();
 
                     ScrollingHost.ChangeView(null, (ViewModel.IsSavedMessages ? ProfileHeader.ActualHeight - 48 + 24 : 0) + (y * panel.ItemHeight), null, false);
                 }
@@ -1231,7 +1314,7 @@ namespace Telegram.Views
 
         private void Navigation_PrepareContainerForItem(SelectorItem sender, object args)
         {
-            if (args is ProfileTabItem item && item.Type == typeof(ProfileGiftsTabPage))
+            if (args is ProfileTabItem item && item.PageType == typeof(ProfileGiftsTabPage))
             {
                 var textBlock = new TextBlock
                 {
@@ -1245,8 +1328,24 @@ namespace Telegram.Views
                 grid.ColumnDefinitions.Add(1, GridUnitType.Auto);
                 grid.ColumnDefinitions.Add(1, GridUnitType.Auto);
                 grid.Children.Add(textBlock);
+
+                UpdateChatGifts(ViewModel.Chat, grid);
+
                 sender.Content = grid;
                 sender.ContentTemplate = null;
+            }
+        }
+
+        private void Navigation_ItemContextRequested(UIElement sender, ContextRequestedEventArgs args)
+        {
+            var tabItem = Navigation.ItemFromContainer(sender) as ProfileTabItem;
+            if (tabItem.CanSetAsMain && (ViewModel.MyProfile || (ViewModel.Chat.Type is ChatTypeSupergroup{ IsChannel: true } && ViewModel.Chat.CanChangeInfo(ViewModel.ClientService))))
+            {
+                var flyout = new MenuFlyout();
+
+                // TODO: icon is missing
+                flyout.CreateFlyoutItem(ViewModel.SetMainTab, tabItem.Type, Strings.ProfileTabSetAsMain);
+                flyout.ShowAt(sender, args);
             }
         }
     }
@@ -1286,7 +1385,12 @@ namespace Telegram.Views
 
         public float HeaderHeight => _headerHeight;
 
-        public bool Update(float headerHeight, bool snapToTop)
+        public bool Unsnap()
+        {
+            return Snap(-1, false);
+        }
+
+        public bool Snap(float headerHeight, bool snapToTop)
         {
             if (_headerHeight == headerHeight && _snapToTop == snapToTop)
             {

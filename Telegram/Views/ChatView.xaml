@@ -9,6 +9,7 @@
                         xmlns:chats="using:Telegram.Controls.Chats"
                         xmlns:messages="using:Telegram.Controls.Messages"
                         xmlns:local="using:Telegram.Views"
+                        xmlns:media="using:Telegram.Controls.Media"
                         xmlns:views="using:Telegram.Controls.Views"
                         xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
                         mc:Ignorable="d"
@@ -216,7 +217,7 @@
         <DataTemplate x:Name="ServiceMessagePhotoTemplate">
             <messages:MessageService x:Name="Service"
                                      Click="ServiceMessage_Click"
-                                     Margin="0,4,0,0"
+                                     Margin="0,8,0,0"
                                      Padding="12,2,12,0"
                                      Width="216">
                 <StackPanel>
@@ -227,8 +228,7 @@
                                                     Height="120"
                                                     Margin="0,10,0,12">
                         <controls:ProfilePicture x:Name="Photo"
-                                                 Width="120"
-                                                 Height="120" />
+                                                 Size="120" />
                     </controls:ActiveStoriesSegments>
 
                     <controls:FormattedTextBlock x:Name="Text"
@@ -258,10 +258,113 @@
             </messages:MessageService>
         </DataTemplate>
 
+        <DataTemplate x:Name="ServiceMessageBirthdateTemplate">
+            <messages:MessageService x:Name="Service"
+                                     Click="ServiceMessage_Click"
+                                     Margin="0,8,0,0"
+                                     Padding="12,2,12,0"
+                                     Width="216">
+                <StackPanel>
+                    <controls:AnimatedImage x:Name="Animation"
+                                            Source="ms-appx:///Assets/Animations/Birthdate.tgs"
+                                            Width="80"
+                                            Height="80"
+                                            FrameSize="80,80"
+                                            DecodeFrameType="Logical"
+                                            IsViewportAware="True"
+                                            LoopCount="1"
+                                            Margin="0,8,0,12" />
+
+                    <controls:FormattedTextBlock x:Name="Text"
+                                                 Foreground="White"
+                                                 TextAlignment="Center"
+                                                 Style="{StaticResource CaptionFormattedTextBlockStyle}"
+                                                 FontFamily="{StaticResource EmojiThemeFontFamilyWithSymbols}"
+                                                 AutoFontSize="False"
+                                                 IsTextSelectionEnabled="False"
+                                                 HyperlinkStyle="None"
+                                                 HyperlinkForeground="#FFFFFF"
+                                                 HyperlinkFontWeight="SemiBold"
+                                                 Padding="0,0,0,0"
+                                                 Margin="0,0,0,8" />
+
+                    <Grid x:Name="DateRoot"
+                          Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="DateDayTitle"
+                                   Text="{CustomResource DateDay}"
+                                   Foreground="#BBFFFFFF"
+                                   TextAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   TextWrapping="NoWrap" />
+
+                        <TextBlock x:Name="DateMonthTitle"
+                                   Text="{CustomResource DateMonth}"
+                                   Foreground="#BBFFFFFF"
+                                   TextAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   TextWrapping="NoWrap" />
+
+                        <TextBlock x:Name="DateYearTitle"
+                                   Text="{CustomResource DateYear}"
+                                   Foreground="#BBFFFFFF"
+                                   TextAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   TextWrapping="NoWrap" />
+
+                        <TextBlock x:Name="DateDayValue"
+                                   Foreground="#DDFFFFFF"
+                                   TextAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   TextWrapping="NoWrap"
+                                   FontWeight="SemiBold"
+                                   Grid.Row="1" />
+
+                        <TextBlock x:Name="DateMonthValue"
+                                   Foreground="#DDFFFFFF"
+                                   TextAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   TextWrapping="NoWrap"
+                                   FontWeight="SemiBold"
+                                   Grid.Row="1" />
+
+                        <TextBlock x:Name="DateYearValue"
+                                   Foreground="#DDFFFFFF"
+                                   TextAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   TextWrapping="NoWrap"
+                                   FontWeight="SemiBold"
+                                   Grid.Row="1" />
+
+                    </Grid>
+
+                    <Border x:Name="View"
+                            Background="{ThemeResource MessageServiceBackgroundBrush}"
+                            CornerRadius="12"
+                            HorizontalAlignment="Center"
+                            Padding="12,4,12,4"
+                            Margin="0,0,0,12">
+                        <TextBlock Text="{CustomResource SuggestedDateOfBirthView}"
+                                   Foreground="#FFFFFF"
+                                   TextAlignment="Center"
+                                   Style="{StaticResource CaptionTextBlockStyle}" />
+                    </Border>
+                </StackPanel>
+            </messages:MessageService>
+        </DataTemplate>
+
         <DataTemplate x:Name="ServiceMessageBackgroundTemplate">
             <messages:MessageService x:Name="Service"
                                      Click="ServiceMessage_Click"
-                                     Margin="0,4,0,0"
+                                     Margin="0,8,0,0"
                                      Padding="12,2,12,0"
                                      Width="216">
                 <StackPanel>
@@ -303,7 +406,7 @@
         <DataTemplate x:Name="ServiceMessageGiftCodeTemplate">
             <messages:MessageService x:Name="Service"
                                      Click="ServiceMessage_Click"
-                                     Margin="0,4,0,0"
+                                     Margin="0,8,0,0"
                                      Padding="12,2,12,0"
                                      Width="216">
                 <StackPanel>
@@ -374,7 +477,7 @@
                 </Button.Template>
                 <StackPanel>
                     <messages:MessageService Click="ServiceMessage_Click"
-                                             Margin="0,4,0,0"
+                                             Margin="0,8,0,0"
                                              Padding="12,2,12,0"
                                              MaxWidth="480">
                         <controls:FormattedTextBlock x:Name="Text"
@@ -414,6 +517,20 @@
                                            FontFamily="{StaticResource EmojiThemeFontFamilyWithSymbols}"
                                            FontSize="16" />
 
+                                <Border x:Name="Publisher"
+                                        Background="{ThemeResource MessageServiceBackgroundBrush}"
+                                        CornerRadius="12"
+                                        HorizontalAlignment="Center"
+                                        Padding="8,2,8,3"
+                                        Margin="0,4,0,4"
+                                        Visibility="Collapsed">
+                                    <TextBlock x:Name="PublisherLabel"
+                                               Foreground="#DDFFFFFF"
+                                               TextAlignment="Center"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               TextWrapping="NoWrap" />
+                                </Border>
+
                                 <controls:FormattedTextBlock x:Name="Subtitle"
                                                              Foreground="#FFFFFF"
                                                              TextAlignment="Center"
@@ -426,15 +543,15 @@
 
                                 <Border x:Name="View"
                                         Background="{ThemeResource MessageServiceBackgroundBrush}"
-                                        CornerRadius="12"
+                                        CornerRadius="14"
                                         HorizontalAlignment="Center"
-                                        Padding="12,4,12,4"
+                                        Padding="12,3,12,5"
                                         Margin="0,0,0,12">
                                     <TextBlock x:Name="ViewLabel"
                                                Text="{CustomResource BoostingReceivedGiftOpenBtn}"
                                                Foreground="#FFFFFF"
                                                TextAlignment="Center"
-                                               Style="{StaticResource CaptionTextBlockStyle}" />
+                                               Style="{StaticResource BaseTextBlockStyle}" />
                                 </Border>
                             </StackPanel>
                         </messages:MessageService>
@@ -488,7 +605,7 @@
                 </Button.Template>
                 <StackPanel>
                     <messages:MessageService Click="ServiceMessage_Click"
-                                             Margin="0,4,0,0"
+                                             Margin="0,8,0,0"
                                              Padding="12,2,12,0"
                                              MaxWidth="480">
                         <controls:FormattedTextBlock x:Name="Text"
@@ -512,6 +629,7 @@
 
                         <controls:PatternBackground x:Name="Pattern"
                                                     Margin="4,8,4,4"
+                                                    Padding="0,12,0,8"
                                                     CornerRadius="12"
                                                     Width="208">
                             <controls:PatternBackground.Footer>
@@ -560,9 +678,9 @@
 
                                     <Border x:Name="View"
                                             Background="{ThemeResource MessageServiceBackgroundBrush}"
-                                            CornerRadius="12"
+                                            CornerRadius="14"
                                             HorizontalAlignment="Center"
-                                            Padding="12,4,12,4"
+                                            Padding="12,3,12,5"
                                             Margin="0,8,0,12"
                                             Grid.ColumnSpan="2"
                                             Grid.Row="3">
@@ -570,7 +688,7 @@
                                                    Text="{CustomResource Gift2UniqueView}"
                                                    Foreground="#FFFFFF"
                                                    TextAlignment="Center"
-                                                   Style="{StaticResource CaptionTextBlockStyle}" />
+                                                   Style="{StaticResource BaseTextBlockStyle}" />
                                     </Border>
                                 </Grid>
                             </controls:PatternBackground.Footer>
@@ -580,8 +698,7 @@
                                                     FrameSize="120,120"
                                                     DecodeFrameType="Logical"
                                                     IsViewportAware="True"
-                                                    LoopCount="1"
-                                                    Margin="0,12,0,8" />
+                                                    LoopCount="1" />
                             <!--<StackPanel>
 
                                 <TextBlock x:Name="Title"
@@ -604,15 +721,15 @@
 
                                 <Border x:Name="View"
                                         Background="{ThemeResource MessageServiceBackgroundBrush}"
-                                        CornerRadius="12"
+                                        CornerRadius="14"
                                         HorizontalAlignment="Center"
-                                        Padding="12,4,12,4"
+                                        Padding="12,3,12,5"
                                         Margin="0,0,0,12">
                                     <TextBlock x:Name="ViewLabel"
                                                Text="{CustomResource BoostingReceivedGiftOpenBtn}"
                                                Foreground="#FFFFFF"
                                                TextAlignment="Center"
-                                               Style="{StaticResource CaptionTextBlockStyle}" />
+                                               Style="{StaticResource BaseTextBlockStyle}" />
                                 </Border>
                             </StackPanel>-->
                         </controls:PatternBackground>
@@ -623,8 +740,19 @@
                               Margin="0,6,2,0"
                               Width="72"
                               Height="72">
-                            <Path Data="M69.6569 41.1569L30.8431 2.34315C29.3429 0.842855 27.308 0 25.1863 0H2.82843C1.04662 0 0.154286 2.15429 1.41422 3.41422L68.5858 70.5858C69.8457 71.8457 72 70.9534 72 69.1716V46.8137C72 44.692 71.1571 42.6571 69.6569 41.1569Z"
-                                  Fill="{StaticResource MessageServiceBackgroundBrush}" />
+                            <Path Data="M69.6569 41.1569L30.8431 2.34315C29.3429 0.842855 27.308 0 25.1863 0H2.82843C1.04662 0 0.154286 2.15429 1.41422 3.41422L68.5858 70.5858C69.8457 71.8457 72 70.9534 72 69.1716V46.8137C72 44.692 71.1571 42.6571 69.6569 41.1569Z">
+                                <Path.Fill>
+                                    <LinearGradientBrush StartPoint="0,0"
+                                                         EndPoint="1,1">
+                                        <GradientStop x:Name="RibbonTop"
+                                                      Color="#6ED2FF"
+                                                      Offset="0" />
+                                        <GradientStop x:Name="RibbonBottom"
+                                                      Color="#35A5FC"
+                                                      Offset="1" />
+                                    </LinearGradientBrush>
+                                </Path.Fill>
+                            </Path>
 
                             <Border Width="72"
                                     VerticalAlignment="Center"
@@ -647,11 +775,12 @@
 
         <DataTemplate x:Name="ServiceMessageTemplate">
             <messages:MessageService Click="ServiceMessage_Click"
-                                     Margin="0,4,0,0"
+                                     Margin="0,8,0,0"
                                      Padding="12,2,12,0"
                                      MaxWidth="480">
                 <controls:FormattedTextBlock x:Name="Text"
                                              Foreground="#FFFFFF"
+                                             IconForeground="#FFFFFF"
                                              TextAlignment="Center"
                                              Style="{StaticResource CaptionFormattedTextBlockStyle}"
                                              FontFamily="{StaticResource EmojiThemeFontFamilyWithSymbols}"
@@ -668,7 +797,7 @@
             <messages:MessageService IsTabStop="False"
                                      HorizontalAlignment="Stretch"
                                      CornerRadius="0"
-                                     Margin="0,4,0,0"
+                                     Margin="0,8,0,0"
                                      Padding="0">
                 <messages:MessageService.Template>
                     <ControlTemplate TargetType="messages:MessageService">
@@ -694,11 +823,109 @@
             </messages:MessageService>
         </DataTemplate>
 
+        <DataTemplate x:Name="ServiceMessageNewThreadTemplate">
+            <messages:MessageService HorizontalAlignment="Stretch">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalContentAlignment="Stretch"
+                                          VerticalContentAlignment="Stretch" />
+                    </ControlTemplate>
+                </Button.Template>
+                <StackPanel>
+                    <messages:MessageService Click="ContinueLastThread_Click"
+                                             Margin="0,8,0,0"
+                                             Padding="0"
+                                             MaxWidth="480">
+                        <Grid Padding="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{CustomResource BotForumContinueChat}"
+                                       Foreground="#FFFFFF"
+                                       MaxLines="1"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       FontFamily="{ThemeResource EmojiThemeFontFamilyWithSymbols}"
+                                       MaxWidth="240"
+                                       Margin="12,2,0,4" />
+
+                            <TextBlock Text="&#xEAB9;"
+                                       Foreground="#FFFFFF"
+                                       FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                       FontSize="12"
+                                       Margin="2,0,6,0"
+                                       VerticalAlignment="Center"
+                                       Width="12"
+                                       Grid.Column="1" />
+                        </Grid>
+
+                    </messages:MessageService>
+
+                    <messages:DashedLine StrokeThickness="2"
+                                         StrokeDashArray="1 2"
+                                         StrokeDashCap="Round"
+                                         Stroke="{ThemeResource MessageServiceBackgroundBrush}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,4,0,0" />
+
+                    <Grid Width="200">
+                        <messages:MessageService x:Name="Service"
+                                                 Click="NewThread_Click"
+                                                 Margin="0,4,0,0"
+                                                 Padding="12,2,12,0"
+                                                 Width="200">
+                            <StackPanel>
+                                <Border Background="{ThemeResource MessageServiceBackgroundBrush}"
+                                        HorizontalAlignment="Center"
+                                        Width="72"
+                                        Height="72"
+                                        CornerRadius="60"
+                                        Margin="0,12">
+                                    <TextBlock Text="&#xEAE7;"
+                                               FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                               FontSize="32"
+                                               Foreground="#FFFFFF"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+
+                                <TextBlock x:Name="Title"
+                                           Foreground="#FFFFFF"
+                                           Text="{CustomResource BotForumAskForStartNewChatTitle}"
+                                           TextAlignment="Center"
+                                           Style="{StaticResource SubtitleTextBlockStyle}"
+                                           FontFamily="{StaticResource EmojiThemeFontFamilyWithSymbols}"
+                                           FontSize="16" />
+
+                                <TextBlock x:Name="Subtitle"
+                                           Foreground="#FFFFFF"
+                                           Text="{CustomResource BotForumAskForStartNewChat}"
+                                           TextAlignment="Center"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           FontFamily="{StaticResource EmojiThemeFontFamilyWithSymbols}"
+                                           Padding="0,0,0,4" />
+
+                                <TextBlock x:Name="ViewLabel"
+                                           Text="&#xEA16;"
+                                           Foreground="#DDFFFFFF"
+                                           TextAlignment="Center"
+                                           FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                           FontSize="16"
+                                           Margin="0,0,0,8" />
+                            </StackPanel>
+                        </messages:MessageService>
+                    </Grid>
+                </StackPanel>
+            </messages:MessageService>
+        </DataTemplate>
+
         <DataTemplate x:Name="ServiceMessageUnreadTemplate">
             <messages:MessageService AutomationProperties.Name="{CustomResource UnreadMessages}"
                                      HorizontalAlignment="Stretch"
                                      CornerRadius="0"
-                                     Margin="0,4,0,0"
+                                     Margin="0,8,0,0"
                                      Padding="0">
                 <Grid>
                     <TextBlock Text="{CustomResource UnreadMessages}"
@@ -724,7 +951,7 @@
                                      HorizontalAlignment="Stretch"
                                      HorizontalContentAlignment="Center"
                                      VerticalContentAlignment="Stretch"
-                                     Margin="0,4,0,0"
+                                     Margin="0,8,0,0"
                                      Padding="0">
                 <messages:MessageService.Template>
                     <ControlTemplate TargetType="messages:MessageService">
@@ -826,8 +1053,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <controls:ProfilePicture x:Name="Photo"
-                                             Width="16"
-                                             Height="16"
+                                             Size="16"
                                              Margin="4,0,4,0"
                                              VerticalAlignment="Center" />
                     <controls:IdentityIcon x:Name="TypeIcon"
@@ -996,8 +1222,7 @@
                                                 AutomationProperties.Name="{CustomResource AccDescrProfilePicture}"
                                                 Grid.Column="1">
                     <controls:ProfilePicture x:Name="Photo"
-                                             Width="36"
-                                             Height="36" />
+                                             Size="36" />
                 </controls:ActiveStoriesSegments>
 
                 <controls:CustomEmojiIcon x:Name="Icon"
@@ -1177,50 +1402,44 @@
                         MinHeight="{ThemeResource TelegramToolBarHeight}" />
             </Grid>
 
-            <StackPanel x:Name="ClipperOuter"
-                        SizeChanged="ClipperOuter_SizeChanged"
-                        VerticalAlignment="Top"
-                        Canvas.ZIndex="2"
-                        Grid.Row="2">
-                <StackPanel x:Name="ClipperGroupCall">
-                    <chats:ChatGroupCallHeader x:Name="GroupCall"
-                                               JoinClick="{x:Bind ViewModel.JoinGroupCall}"
-                                               Visibility="Collapsed"
-                                               Canvas.ZIndex="1" />
-                    <StackPanel x:Name="ClipperJoinRequests">
-                        <chats:ChatJoinRequestsHeader x:Name="JoinRequests"
-                                                      Click="{x:Bind ViewModel.ShowJoinRequests}"
-                                                      Visibility="Collapsed"
-                                                      Canvas.ZIndex="1" />
-                        <StackPanel x:Name="ClipperActionBar">
-                            <chats:ChatActionBarView x:Name="ActionBar"
-                                                     Visibility="Collapsed"
-                                                     Canvas.ZIndex="1" />
-                            <StackPanel x:Name="ClipperTranslate">
-                                <chats:ChatTranslateBar x:Name="TranslateHeader"
-                                                        Visibility="Collapsed"
-                                                        Canvas.ZIndex="1" />
-                                <StackPanel x:Name="ClipperConnected">
-                                    <chats:ChatConnectedBotHeader x:Name="ConnectedBot"
-                                                                  Visibility="Collapsed"
-                                                                  Canvas.ZIndex="1" />
-                                    <StackPanel x:Name="ClipperPinned">
-                                        <chats:ChatPinnedMessage x:Name="PinnedMessage"
-                                                                 Click="Reply_Click"
-                                                                 Visibility="Collapsed"
-                                                                 Canvas.ZIndex="1" />
+            <controls:SlidePanel x:Name="ClipperOuter"
+                                 SizeChanged="ClipperOuter_SizeChanged"
+                                 VerticalAlignment="Top"
+                                 Canvas.ZIndex="2"
+                                 Grid.Row="2">
+                <Border x:Name="ClipperOuterPadding" />
+                <chats:ChatGroupCallHeader x:Name="GroupCall"
+                                           JoinClick="{x:Bind ViewModel.JoinGroupCall}"
+                                           Visibility="Collapsed"
+                                           Canvas.ZIndex="1" />
+                <chats:ChatJoinRequestsHeader x:Name="JoinRequests"
+                                              Click="{x:Bind ViewModel.ShowJoinRequests}"
+                                              Visibility="Collapsed"
+                                              Canvas.ZIndex="1" />
+                <chats:ChatActionBarView x:Name="ActionBar"
+                                         Visibility="Collapsed"
+                                         Canvas.ZIndex="1" />
+                <chats:ChatTranslateBar x:Name="TranslateHeader"
+                                        Visibility="Collapsed"
+                                        Canvas.ZIndex="1" />
+                <chats:ChatConnectedBotHeader x:Name="ConnectedBot"
+                                              Visibility="Collapsed"
+                                              Canvas.ZIndex="1" />
+                <chats:ChatPinnedMessage x:Name="PinnedMessage"
+                                         Click="Reply_Click"
+                                         Visibility="Collapsed"
+                                         Canvas.ZIndex="1" />
 
-                                        <StackPanel x:Name="ClipperAccountInfo">
-                                            <chats:ChatAccountInfoHeader x:Name="AccountInfoHeader"
-                                                                         Visibility="Collapsed"
-                                                                         Canvas.ZIndex="1" />
+                <chats:ChatAccountInfoHeader x:Name="AccountInfoHeader"
+                                             Visibility="Collapsed"
+                                             Canvas.ZIndex="1" />
 
-                                            <Grid x:Name="Clipper">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto" />
-                                                    <RowDefinition Height="Auto" />
-                                                </Grid.RowDefinitions>
-                                                <!--
+                <Grid x:Name="Clipper">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <!--
                             48: header
                             40: music player
                             40: active call
@@ -1228,113 +1447,105 @@
                             40: join request
                             32: translate
                             -->
-                                                <Border x:Name="ClipperBackground"
-                                                        Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
-                                                        Margin="-64,-248,0,0" />
+                    <Border x:Name="ClipperBackground"
+                            Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
+                            Margin="-64,-248,0,0" />
 
-                                                <chats:ChatSponsoredHeader x:Name="Sponsored"
-                                                                           Visibility="Collapsed" />
+                    <chats:ChatSponsoredHeader x:Name="Sponsored"
+                                               Visibility="Collapsed" />
 
-                                                <Grid x:Name="CallbackQueryAnswerPanel"
-                                                      Visibility="{x:Bind ViewModel.InformativeMessage, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}"
-                                                      Background="{ThemeResource PageSubHeaderBackgroundBrush}"
-                                                      MinHeight="{ThemeResource AppBarThemeCompactHeight}">
-                                                    <messages:MessageReply x:Name="CallbackQueryAnswer"
-                                                                           VerticalAlignment="Stretch"
-                                                                           Padding="12,6"
-                                                                           IsHitTestVisible="False" />
-                                                </Grid>
+                    <Grid x:Name="CallbackQueryAnswerPanel"
+                          Visibility="{x:Bind ViewModel.InformativeMessage, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}"
+                          Background="{ThemeResource PageSubHeaderBackgroundBrush}"
+                          MinHeight="{ThemeResource AppBarThemeCompactHeight}">
+                        <messages:MessageReply x:Name="CallbackQueryAnswer"
+                                               VerticalAlignment="Stretch"
+                                               Padding="12,6"
+                                               IsHitTestVisible="False" />
+                    </Grid>
+                </Grid>
 
-                                                <StackPanel x:Name="DateHeaderRelative"
-                                                            SizeChanged="DateHeaderPanel_SizeChanged"
-                                                            Grid.Row="1">
-                                                    <Border x:Name="DateHeaderPanel"
-                                                            Visibility="Collapsed"
-                                                            HorizontalAlignment="Center"
-                                                            Padding="0,4,0,0"
-                                                            Canvas.ZIndex="1">
-                                                        <messages:MessageService x:Name="DateHeader"
-                                                                                 Click="Date_Click">
-                                                            <TextBlock x:Name="DateHeaderLabel"
-                                                                       Text="31 dicembre 2017"
-                                                                       Foreground="White"
-                                                                       TextAlignment="Center"
-                                                                       FontFamily="{ThemeResource EmojiThemeFontFamily}"
-                                                                       Style="{StaticResource CaptionTextBlockStyle}" />
-                                                        </messages:MessageService>
-                                                    </Border>
-                                                    <Border x:Name="ForumTopicHeaderPanel"
-                                                            Visibility="Collapsed"
-                                                            HorizontalAlignment="Center"
-                                                            Padding="0,4,0,0">
-                                                        <messages:MessageService x:Name="ForumTopicHeader"
-                                                                                 SizeChanged="ForumTopic_SizeChanged"
-                                                                                 Click="ForumTopic_Click"
-                                                                                 Padding="0">
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto" />
-                                                                    <ColumnDefinition />
-                                                                    <ColumnDefinition Width="Auto" />
-                                                                </Grid.ColumnDefinitions>
-                                                                <controls:ProfilePicture x:Name="ForumTopicHeaderPhoto"
-                                                                                         Width="16"
-                                                                                         Height="16"
-                                                                                         Margin="4,0,4,0"
-                                                                                         VerticalAlignment="Center" />
-                                                                <controls:IdentityIcon x:Name="ForumTopicHeaderTypeIcon"
-                                                                                       FontFamily="{StaticResource SymbolThemeFontFamily}"
-                                                                                       Foreground="#FFFFFF"
-                                                                                       VerticalAlignment="Center"
-                                                                                       FontSize="16"
-                                                                                       Margin="8,0,4,0" />
-                                                                <Grid x:Name="ForumTopicHeaderIconRoot"
-                                                                      Margin="8,0,4,0"
-                                                                      Width="20"
-                                                                      Height="20"
-                                                                      VerticalAlignment="Center">
-                                                                    <Path x:Name="ForumTopicHeaderIconPath"
-                                                                          Data="M18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10L2.00738 10.3463L2.03275 10.7283C2.12433 11.7422 2.4066 12.7186 2.86169 13.6153L2.925 13.735L2.01493 17.3787L2.00114 17.4624L2.00131 17.5438C2.02622 17.8369 2.31127 18.0625 2.62109 17.9851L6.266 17.075L6.38669 17.1393C7.49591 17.7018 8.72679 18 10 18C14.4183 18 18 14.4183 18 10Z" />
-                                                                    <TextBlock x:Name="ForumTopicHeaderIconText"
-                                                                               TextAlignment="Center"
-                                                                               Foreground="#FFFFFF"
-                                                                               FontSize="12"
-                                                                               FontWeight="SemiBold"
-                                                                               HorizontalAlignment="Left"
-                                                                               Margin="2,2,0,0"
-                                                                               Width="16" />
-                                                                </Grid>
-                                                                <TextBlock x:Name="ForumTopicHeaderLabel"
-                                                                           Foreground="#FFFFFF"
-                                                                           MaxLines="1"
-                                                                           TextWrapping="NoWrap"
-                                                                           TextTrimming="CharacterEllipsis"
-                                                                           Style="{StaticResource CaptionTextBlockStyle}"
-                                                                           FontFamily="{ThemeResource EmojiThemeFontFamilyWithSymbols}"
-                                                                           MaxWidth="240"
-                                                                           Margin="0,2,0,4"
-                                                                           Grid.Column="1" />
+                <StackPanel x:Name="DateHeaderRelative"
+                            SizeChanged="DateHeaderPanel_SizeChanged"
+                            Grid.Row="1">
+                    <Border x:Name="DateHeaderPanel"
+                            Visibility="Collapsed"
+                            HorizontalAlignment="Center"
+                            Padding="0,8,0,0"
+                            Canvas.ZIndex="1">
+                        <messages:MessageService x:Name="DateHeader"
+                                                 Click="Date_Click">
+                            <TextBlock x:Name="DateHeaderLabel"
+                                       Text="31 dicembre 2017"
+                                       Foreground="White"
+                                       TextAlignment="Center"
+                                       FontFamily="{ThemeResource EmojiThemeFontFamily}"
+                                       Style="{StaticResource CaptionTextBlockStyle}" />
+                        </messages:MessageService>
+                    </Border>
+                    <Border x:Name="ForumTopicHeaderPanel"
+                            Visibility="Collapsed"
+                            HorizontalAlignment="Center"
+                            Padding="0,8,0,0">
+                        <messages:MessageService x:Name="ForumTopicHeader"
+                                                 SizeChanged="ForumTopic_SizeChanged"
+                                                 Click="ForumTopic_Click"
+                                                 Padding="0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <controls:ProfilePicture x:Name="ForumTopicHeaderPhoto"
+                                                         Size="16"
+                                                         Margin="4,0,4,0"
+                                                         VerticalAlignment="Center" />
+                                <controls:IdentityIcon x:Name="ForumTopicHeaderTypeIcon"
+                                                       FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                                       Foreground="#FFFFFF"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="16"
+                                                       Margin="8,0,4,0" />
+                                <Grid x:Name="ForumTopicHeaderIconRoot"
+                                      Margin="8,0,4,0"
+                                      Width="20"
+                                      Height="20"
+                                      VerticalAlignment="Center">
+                                    <Path x:Name="ForumTopicHeaderIconPath"
+                                          Data="M18 10C18 5.58172 14.4183 2 10 2C5.58172 2 2 5.58172 2 10L2.00738 10.3463L2.03275 10.7283C2.12433 11.7422 2.4066 12.7186 2.86169 13.6153L2.925 13.735L2.01493 17.3787L2.00114 17.4624L2.00131 17.5438C2.02622 17.8369 2.31127 18.0625 2.62109 17.9851L6.266 17.075L6.38669 17.1393C7.49591 17.7018 8.72679 18 10 18C14.4183 18 18 14.4183 18 10Z" />
+                                    <TextBlock x:Name="ForumTopicHeaderIconText"
+                                               TextAlignment="Center"
+                                               Foreground="#FFFFFF"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               HorizontalAlignment="Left"
+                                               Margin="2,2,0,0"
+                                               Width="16" />
+                                </Grid>
+                                <TextBlock x:Name="ForumTopicHeaderLabel"
+                                           Foreground="#FFFFFF"
+                                           MaxLines="1"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           FontFamily="{ThemeResource EmojiThemeFontFamilyWithSymbols}"
+                                           MaxWidth="240"
+                                           Margin="0,2,0,4"
+                                           Grid.Column="1" />
 
-                                                                <TextBlock Text="&#xEAB9;"
-                                                                           Foreground="#FFFFFF"
-                                                                           FontFamily="{StaticResource SymbolThemeFontFamily}"
-                                                                           FontSize="12"
-                                                                           Margin="2,0,6,0"
-                                                                           VerticalAlignment="Center"
-                                                                           Grid.Column="2" />
-                                                            </Grid>
-                                                        </messages:MessageService>
-                                                    </Border>
-                                                </StackPanel>
-                                            </Grid>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </StackPanel>
+                                <TextBlock Text="&#xEAB9;"
+                                           Foreground="#FFFFFF"
+                                           FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                           FontSize="12"
+                                           Margin="2,0,6,0"
+                                           VerticalAlignment="Center"
+                                           Grid.Column="2" />
+                            </Grid>
+                        </messages:MessageService>
+                    </Border>
                 </StackPanel>
-            </StackPanel>
+            </controls:SlidePanel>
 
             <Grid x:Name="ContentPanel"
                   SizeChanged="ContentPanel_SizeChanged"
@@ -1359,7 +1570,8 @@
                         </ListView.Header>
                         <ListView.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <ItemsStackPanel Loading="ItemsStackPanel_Loading"
+                                <ItemsStackPanel Loading="ItemsPanelRoot_Loading"
+                                                 LayoutUpdated="ItemsPanelRoot_LayoutUpdated"
                                                  SizeChanged="OnViewSizeChanged"
                                                  ItemsUpdatingScrollMode="KeepItemsInView"
                                                  VerticalAlignment="Bottom" />
@@ -1378,7 +1590,7 @@
                                 <Setter Property="Background"
                                         Value="Transparent" />
                                 <Setter Property="Foreground"
-                                        Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                                        Value="{ThemeResource TextFillColorPrimaryBrush}" />
                                 <Setter Property="TabNavigation"
                                         Value="Local" />
                                 <Setter Property="IsHoldingEnabled"
@@ -1398,6 +1610,42 @@
                             </Style>
                         </ListView.ItemContainerStyle>
                     </chats:ChatHistoryView>
+
+                    <Grid x:Name="MessagesStickyPhoto"
+                          VerticalAlignment="Stretch"
+                          MaxWidth="1024"
+                          Padding="12,0">
+                        <HyperlinkButton x:Name="StickyPhotoRootAbove"
+                                         Click="StickyPhotoAbove_Click"
+                                         ContextRequested="StickyPhotoAbove_ContextRequested"
+                                         Style="{StaticResource EmptyHyperlinkButtonStyle}"
+                                         IsTabStop="False"
+                                         HorizontalAlignment="Left"
+                                         VerticalAlignment="Bottom"
+                                         Width="30"
+                                         Height="30"
+                                         Margin="0,0,0,8">
+                            <controls:ProfilePicture x:Name="StickyPhotoAbove"
+                                                     Size="30"
+                                                     Shape="Ellipse"
+                                                     IsCachingEnabled="True" />
+                        </HyperlinkButton>
+                        <HyperlinkButton x:Name="StickyPhotoRootBelow"
+                                         Click="StickyPhotoBelow_Click"
+                                         ContextRequested="StickyPhotoBelow_ContextRequested"
+                                         Style="{StaticResource EmptyHyperlinkButtonStyle}"
+                                         IsTabStop="False"
+                                         HorizontalAlignment="Left"
+                                         VerticalAlignment="Bottom"
+                                         Width="30"
+                                         Height="30"
+                                         Margin="0,0,0,8">
+                            <controls:ProfilePicture x:Name="StickyPhotoBelow"
+                                                     Size="30"
+                                                     Shape="Ellipse"
+                                                     IsCachingEnabled="True" />
+                        </HyperlinkButton>
+                    </Grid>
                 </Grid>
                 <Grid x:Name="MessagesOverlay">
                     <StackPanel x:Name="EmptyChatRoot"
@@ -1503,40 +1751,62 @@
                       SizeChanged="InlinePanel_SizeChanged"
                       VerticalAlignment="Bottom"
                       Visibility="{x:Bind ViewModel.Search, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter=invert}"
-                      Margin="12,0,12,-12"
-                      CornerRadius="8,8,0,0">
-                    <controls:InlineBotResultsView x:Name="ListInline"
-                                                   x:Load="{x:Bind ViewModel.IsInlineBotResultsVisible, Mode=OneWay}"
-                                                   Loaded="InlineBotResults_Loaded"
-                                                   ItemClick="InlineBotResults_ItemClick"
-                                                   VerticalAlignment="Bottom" />
-                    <controls:OrientableListView x:Name="ListAutocomplete"
-                                                 Visibility="Collapsed"
-                                                 Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
-                                                 ItemTemplateSelector="{StaticResource AutocompleteTemplate}"
-                                                 ChoosingItemContainer="Autocomplete_ChoosingItemContainer"
-                                                 ContainerContentChanging="Autocomplete_ContainerContentChanging"
-                                                 AllowFocusOnInteraction="False"
-                                                 IsItemClickEnabled="True"
-                                                 ItemClick="Autocomplete_ItemClick"
-                                                 VerticalAlignment="Bottom"
-                                                 Style="{StaticResource ZoomableListViewStyle}"
-                                                 Padding="0,0,0,12">
-                        <GridView.ItemContainerStyle>
-                            <Style TargetType="GridViewItem"
-                                   BasedOn="{StaticResource ZoomableListViewItemStyle}">
-                                <Setter Property="MinWidth"
-                                        Value="0" />
-                                <Setter Property="Padding"
-                                        Value="0" />
-                            </Style>
-                        </GridView.ItemContainerStyle>
-                        <GridView.ItemContainerTransitions>
-                            <TransitionCollection />
-                        </GridView.ItemContainerTransitions>
-                    </controls:OrientableListView>
+                      Margin="12,0,12,-12">
+                    <!-- TODO: the nesting is terrible but it's due to XAML bug with Shadow and Translation -->
+                    <Border x:Name="InlineCaster" />
+                    <Grid x:Name="InlineGrid">
+                        <Border x:Name="InlineBackground"
+                                Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
+                                Visibility="Collapsed" />
+                        <controls:InlineBotResultsView x:Name="ListInline"
+                                                       x:Load="False"
+                                                       ItemClick="InlineBotResults_ItemClick"
+                                                       VerticalAlignment="Bottom" />
+                        <controls:OrientableListView x:Name="ListAutocomplete"
+                                                     Visibility="Collapsed"
+                                                     ItemTemplateSelector="{StaticResource AutocompleteTemplate}"
+                                                     ChoosingItemContainer="Autocomplete_ChoosingItemContainer"
+                                                     ContainerContentChanging="Autocomplete_ContainerContentChanging"
+                                                     AllowFocusOnInteraction="False"
+                                                     IsItemClickEnabled="True"
+                                                     ItemClick="Autocomplete_ItemClick"
+                                                     VerticalAlignment="Bottom"
+                                                     Style="{StaticResource ZoomableListViewStyle}"
+                                                     Padding="0,0,0,12">
+                            <GridView.ItemContainerStyle>
+                                <Style TargetType="GridViewItem"
+                                       BasedOn="{StaticResource ZoomableListViewItemStyle}">
+                                    <Setter Property="MinWidth"
+                                            Value="0" />
+                                    <Setter Property="Padding"
+                                            Value="0" />
+                                </Style>
+                            </GridView.ItemContainerStyle>
+                            <GridView.ItemContainerTransitions>
+                                <TransitionCollection />
+                            </GridView.ItemContainerTransitions>
+                        </controls:OrientableListView>
+                        <Rectangle x:Name="InlineShadow"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,0,-24"
+                                   Height="48"
+                                   RadiusX="24"
+                                   RadiusY="24" />
+                    </Grid>
                 </Grid>
             </Grid>
+
+            <Border x:Name="LinearCaster"
+                    IsHitTestVisible="False"
+                    Height="64"
+                    Margin="0,-8,0,0"
+                    VerticalAlignment="Bottom"
+                    Grid.Row="3"
+                    Grid.RowSpan="2">
+                <Border.Background>
+                    <media:LinearGaussianBrush />
+                </Border.Background>
+            </Border>
 
             <ScrollViewer x:Name="ReplyMarkupPanel"
                           MaxHeight="260"
@@ -1550,7 +1820,7 @@
                 <controls:ReplyMarkupPanel x:Name="ReplyMarkup"
                                            AllowFocusOnInteraction="False"
                                            ButtonClick="ReplyMarkup_ButtonClick"
-                                           Margin="8,0,8,4" />
+                                           Margin="4,0,4,4" />
             </ScrollViewer>
 
             <controls:StickerPanel x:Name="StickersPanel"
@@ -1568,17 +1838,19 @@
 
             <Grid x:Name="Footer"
                   Grid.Row="3">
+                <Rectangle x:Name="ShadowCaster"
+                           RadiusX="24"
+                           RadiusY="24" />
+
                 <ContentControl x:Name="TextArea"
                                 IsTabStop="False"
                                 HorizontalContentAlignment="Stretch"
-                                VerticalContentAlignment="Stretch"
-                                Margin="12,0,12,8"
-                                Grid.Row="3">
+                                VerticalContentAlignment="Stretch">
                     <Grid x:Name="TextRoot"
                           Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
                           MinHeight="{StaticResource TelegramToolBarHeight}"
                           SizeChanged="TextArea_SizeChanged"
-                          CornerRadius="15">
+                          CornerRadius="24">
                         <Grid x:Name="TextMain"
                               VerticalAlignment="Bottom">
                             <Grid.RowDefinitions>
@@ -1655,8 +1927,7 @@
                                              Margin="8,8,0,8"
                                              Grid.Row="1">
                                 <controls:ProfilePicture x:Name="PhotoAlias"
-                                                         Width="32"
-                                                         Height="32" />
+                                                         Size="32" />
                             </HyperlinkButton>
 
                             <Border x:Name="TextFieldPanel"
@@ -1708,10 +1979,12 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
 
                                     <!-- Button to access scheduled messages -->
-                                    <Border x:Name="btnScheduled">
+                                    <Border x:Name="btnScheduled"
+                                            Margin="0,0,-8,0">
                                         <controls:GlyphButton x:Name="ButtonScheduled"
                                                               Glyph="&#xE9DA;"
                                                               Click="{x:Bind ViewModel.ShowScheduled}"
@@ -1728,6 +2001,7 @@
                                                                        VerticalAlignment="Bottom"
                                                                        Glyph="&#xE9DF;"
                                                                        CheckedGlyph="&#xE9DE;"
+                                                                       Margin="0,0,-8,0"
                                                                        Grid.Column="1">
                                         <controls:AnimatedIconToggleButton.Source>
                                             <icons:MuteUnmute />
@@ -1740,11 +2014,13 @@
                                                           Click="{x:Bind ViewModel.SetTimer}"
                                                           FontSize="{StaticResource GlyphLargeFontSize}"
                                                           VerticalAlignment="Bottom"
+                                                          Margin="0,0,-8,0"
                                                           Grid.Column="1" />
 
                                     <!-- Button to use bot commands, bots/groups only -->
                                     <Border x:Name="btnCommands"
                                             VerticalAlignment="Bottom"
+                                            Margin="0,0,-8,0"
                                             Grid.Column="2">
                                         <controls:GlyphButton x:Name="ButtonCommands"
                                                               Click="Commands_Click"
@@ -1755,13 +2031,13 @@
                                                               FontSize="{StaticResource GlyphLargeFontSize}"
                                                               VerticalAlignment="Bottom"
                                                               AutomationProperties.Name="{CustomResource AccDescrBotCommands}"
-                                                              ToolTipService.ToolTip="{CustomResource AccDescrBotCommands}"
-                                                              Grid.Column="1" />
+                                                              ToolTipService.ToolTip="{CustomResource AccDescrBotCommands}" />
                                     </Border>
 
                                     <!-- Button to use bot keyboard, bots/groups only -->
                                     <Border x:Name="btnMarkup"
                                             VerticalAlignment="Bottom"
+                                            Margin="0,0,-8,0"
                                             Grid.Column="2">
                                         <controls:AnimatedGlyphButton x:Name="ButtonMarkup"
                                                                       Click="Markup_Click"
@@ -1771,8 +2047,22 @@
                                                                       FontSize="{StaticResource GlyphLargeFontSize}"
                                                                       VerticalAlignment="Bottom"
                                                                       AutomationProperties.Name="{CustomResource AccDescrBotKeyboard}"
-                                                                      ToolTipService.ToolTip="{CustomResource AccDescrBotKeyboard}"
-                                                                      Grid.Column="1" />
+                                                                      ToolTipService.ToolTip="{CustomResource AccDescrBotKeyboard}" />
+                                    </Border>
+
+                                    <Border x:Name="btnSuggest"
+                                            VerticalAlignment="Bottom"
+                                            Margin="0,0,-8,0"
+                                            Grid.Column="3">
+                                        <controls:GlyphButton x:Name="ButtonSuggest"
+                                                              Click="Suggest_Click"
+                                                              AllowFocusOnInteraction="False"
+                                                              Glyph="&#xEACE;"
+                                                              FontFamily="{StaticResource TelegramThemeFontFamily}"
+                                                              FontSize="{StaticResource GlyphLargeFontSize}"
+                                                              VerticalAlignment="Bottom"
+                                                              AutomationProperties.Name="{CustomResource AccDescrSuggestPost}"
+                                                              ToolTipService.ToolTip="{CustomResource AccDescrSuggestPost}" />
                                     </Border>
                                 </Grid>
 
@@ -1783,6 +2073,7 @@
                                                          AllowFocusOnInteraction="False"
                                                          VerticalAlignment="Bottom"
                                                          AutomationProperties.Name="{CustomResource AccDescrEmojiButton}"
+                                                         Margin="0,0,-8,0"
                                                          Grid.Column="1" />
                                 <!--ToolTipService.ToolTip="{CustomResource AccDescrEmojiButton}"-->
 
@@ -1809,7 +2100,7 @@
                                                           ContextRequested="Send_ContextRequested"
                                                           VerticalAlignment="Bottom"
                                                           Click="btnSendMessage_Click"
-                                                          Glyph="&#xE919;"
+                                                          Glyph="&#xEAE8;"
                                                           AllowFocusOnInteraction="False"
                                                           AutomationProperties.Name="{CustomResource Send}"
                                                           ToolTipService.ToolTip="{CustomResource Send}" />
@@ -1869,7 +2160,7 @@
                                                           Glyph="&#xE9F4;"
                                                           AllowFocusOnInteraction="False"
                                                           Foreground="{ThemeResource TelegramBackgroundAccentBrush}"
-                                                          FontSize="24"
+                                                          FontSize="32"
                                                           AutomationProperties.Name="{CustomResource Done}"
                                                           ToolTipService.ToolTip="{CustomResource Done}" />
 
@@ -1891,14 +2182,10 @@
                                      StartTyping="ChatRecord_StartTyping"
                                      CancelTyping="ChatRecord_CancelTyping"
                                      ControlledButton="{x:Bind btnVoiceMessage}"
-                                     Margin="12,0,12,8"
-                                     Visibility="Collapsed"
-                                     Grid.Row="3" />
+                                     Visibility="Collapsed" />
 
                 <Grid x:Name="ChatFooter"
-                      Margin="12,0,12,8"
-                      CornerRadius="15"
-                      Grid.Row="3">
+                      CornerRadius="24">
                     <chats:ChatBottomButton x:Name="ButtonAction"
                                             LosingFocus="ButtonAction_LosingFocus"
                                             Click="{x:Bind ViewModel.Action}"
@@ -1929,9 +2216,7 @@
                       Background="{ThemeResource PageSubHeaderBackgroundBrush2}"
                       VerticalAlignment="Bottom"
                       Visibility="Collapsed"
-                      Margin="12,0,12,8"
-                      CornerRadius="15"
-                      Grid.Row="3">
+                      CornerRadius="24">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
@@ -1982,15 +2267,6 @@
                                           Grid.Column="4" />
                 </Grid>
             </Grid>
-
-            <!--<Border x:Name="TextAreaBorder"
-                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                Margin="12,0,12,8"
-                CornerRadius="15"
-                Grid.Row="3" />-->
-
-            <!--<controls:UndoView x:Name="Undo" VerticalAlignment="Bottom" Margin="0,0,0,-48" Grid.RowSpan="4"/>-->
         </Grid>
 
         <controls:GlyphToggleButton x:Name="ForumModeButton"

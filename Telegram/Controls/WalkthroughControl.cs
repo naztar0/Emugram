@@ -24,7 +24,7 @@ namespace Telegram.Controls
 
         protected override void OnApplyTemplate()
         {
-            Header = GetTemplateChild("Header") as AnimatedImage;
+            Header = GetTemplateChild(nameof(Header)) as AnimatedImage;
             Action = GetTemplateChild(nameof(Action)) as Button;
             Action.Click += ButtonClick;
 

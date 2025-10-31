@@ -23,7 +23,7 @@ using Windows.UI.Xaml.Controls;
 
 namespace Telegram.Controls.Views
 {
-    public delegate void SendWithChat(Chat chat, Action<MessageSendOptions, long> action);
+    public delegate void SendWithChat(Chat chat, Action<MessageSendOptions, MessageTopic> action);
 
     public sealed partial class SendMessagesView : UserControl
     {
@@ -153,17 +153,17 @@ namespace Telegram.Controls.Views
         {
             foreach (var chat in chats)
             {
-                action(chat, (options, messageThreadId) =>
+                action(chat, (options, topic) =>
                 {
                     foreach (var item in content)
                     {
                         if (item is InputMessageContent input)
                         {
-                            _clientService.Send(new SendMessage(chat.Id, messageThreadId, null, options, null, input), Track);
+                            _clientService.Send(new SendMessage(chat.Id, topic, null, options, null, input), Track);
                         }
                         else if (item is List<InputMessageContent> album)
                         {
-                            _clientService.Send(new SendMessageAlbum(chat.Id, messageThreadId, null, options, album), Track);
+                            _clientService.Send(new SendMessageAlbum(chat.Id, topic, null, options, album), Track);
                         }
                     }
                 });

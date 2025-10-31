@@ -4,6 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using System;
 using Telegram.Common;
 using Telegram.Controls;
 using Telegram.Controls.Cells;
@@ -13,6 +14,7 @@ using Telegram.ViewModels;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Navigation;
 
 namespace Telegram.Views.Profile
 {
@@ -23,6 +25,20 @@ namespace Telegram.Views.Profile
         public ProfileMembersTabPage()
         {
             InitializeComponent();
+        }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            if (ViewModel.ClientService.TryGetSupergroup(ViewModel.Chat, out Supergroup supergroup))
+            {
+                AddNew.Content = supergroup.IsChannel ? Strings.AddSubscriber : Strings.AddMember;
+                AddNewPanel.Visibility = supergroup.CanInviteUsers() ? Visibility.Visible : Visibility.Collapsed;
+            }
+            else if (ViewModel.ClientService.TryGetBasicGroup(ViewModel.Chat, out BasicGroup basicGroup))
+            {
+                AddNew.Content = Strings.AddMember;
+                AddNewPanel.Visibility = basicGroup.CanInviteUsers() ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
 
         private void ListView_ItemClick(object sender, ItemClickEventArgs e)
@@ -156,13 +172,20 @@ namespace Telegram.Views.Profile
 
         private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.InRecycleQueue)
+            try
             {
-                return;
+                if (args.InRecycleQueue || ViewModel == null)
+                {
+                    return;
+                }
+                else if (args.ItemContainer.ContentTemplateRoot is ProfileCell content)
+                {
+                    content.UpdateChatSharedMembers(ViewModel.ClientService, args, OnContainerContentChanging);
+                }
             }
-            else if (args.ItemContainer.ContentTemplateRoot is ProfileCell content)
+            catch (Exception ex)
             {
-                content.UpdateChatSharedMembers(ViewModel.ClientService, args, OnContainerContentChanging);
+                Logger.Exception(ex);
             }
         }
 

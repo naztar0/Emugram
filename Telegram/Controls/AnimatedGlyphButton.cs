@@ -15,8 +15,8 @@ namespace Telegram.Controls
 {
     public partial class AnimatedGlyphButton : Button
     {
-        private TextBlock _label1;
-        private TextBlock _label2;
+        private TextBlock ContentPresenter1;
+        private TextBlock ContentPresenter2;
 
         private Visual _visual1;
         private Visual _visual2;
@@ -41,19 +41,21 @@ namespace Telegram.Controls
                 return;
             }
 
-            _label1 = _label = GetTemplateChild("ContentPresenter1") as TextBlock;
-            _label2 = GetTemplateChild("ContentPresenter2") as TextBlock;
+            ContentPresenter1 = GetTemplateChild(nameof(ContentPresenter1)) as TextBlock;
+            ContentPresenter2 = GetTemplateChild(nameof(ContentPresenter2)) as TextBlock;
 
-            _visual1 = _visual = ElementComposition.GetElementVisual(_label1);
-            _visual2 = ElementComposition.GetElementVisual(_label2);
+            _label = ContentPresenter1;
 
-            _label2.Text = string.Empty;
+            _visual1 = _visual = ElementComposition.GetElementVisual(ContentPresenter1);
+            _visual2 = ElementComposition.GetElementVisual(ContentPresenter2);
+
+            ContentPresenter2.Text = string.Empty;
 
             _visual2.Opacity = 0;
             _visual2.Scale = new Vector3();
             _visual2.CenterPoint = new Vector3(10);
 
-            _label1.Text = Glyph ?? string.Empty;
+            ContentPresenter1.Text = Glyph ?? string.Empty;
 
             _visual1.Opacity = 1;
             _visual1.Scale = new Vector3(1);
@@ -103,8 +105,8 @@ namespace Telegram.Controls
             var visualShow = _visual == _visual1 ? _visual2 : _visual1;
             var visualHide = _visual == _visual1 ? _visual1 : _visual2;
 
-            var labelShow = _visual == _visual1 ? _label2 : _label1;
-            var labelHide = _visual == _visual1 ? _label1 : _label2;
+            var labelShow = _visual == _visual1 ? ContentPresenter2 : ContentPresenter1;
+            var labelHide = _visual == _visual1 ? ContentPresenter1 : ContentPresenter2;
 
             var hide1 = _visual.Compositor.CreateVector3KeyFrameAnimation();
             hide1.InsertKeyFrame(0, new Vector3(1));

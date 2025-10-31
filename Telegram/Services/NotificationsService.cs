@@ -721,6 +721,10 @@ namespace Telegram.Services
             {
                 launch = string.Format(CultureInfo.InvariantCulture, "{0}&amp;feedback_chat_topic_id={1}", launch, messageTopicDirectMessagesChat.DirectMessagesChatTopicId);
             }
+            else if (message.TopicId is MessageTopicThread messageTopicThread)
+            {
+                launch = string.Format(CultureInfo.InvariantCulture, "{0}&amp;thread_id={1}", launch, messageTopicThread.MessageThreadId);
+            }
 
             return launch;
         }
@@ -754,8 +758,8 @@ namespace Telegram.Services
 
                     // TODO: topic id
 
-                    var replyToMessage = data.TryGetValue("msg_id", out string msg_id) && long.TryParse(msg_id, out long messageId) ? new InputMessageReplyToMessage(messageId, null) : null;
-                    var response = await _clientService.SendAsync(new SendMessage(chat.Id, 0, replyToMessage, new MessageSendOptions(0, false, true, false, false, 0, false, null, 0, 0, false), null, new InputMessageText(formatted, null, false)));
+                    var replyToMessage = data.TryGetValue("msg_id", out string msg_id) && long.TryParse(msg_id, out long messageId) ? new InputMessageReplyToMessage(messageId, null, 0) : null;
+                    var response = await _clientService.SendAsync(new SendMessage(chat.Id, null, replyToMessage, new MessageSendOptions(null, false, true, false, false, 0, false, null, 0, 0, false), null, new InputMessageText(formatted, null, false)));
 
                     if (chat.Type is ChatTypePrivate && chat.LastMessage != null)
                     {
@@ -893,7 +897,7 @@ namespace Telegram.Services
                 settings.UseDefaultMuteFor = useDefault;
                 settings.MuteFor = value;
 
-                _clientService.Send(new SetForumTopicNotificationSettings(chat.Id, topic.Info.MessageThreadId, settings));
+                _clientService.Send(new SetForumTopicNotificationSettings(chat.Id, topic.Info.ForumTopicId, settings));
 
                 if (xamlRoot == null)
                 {

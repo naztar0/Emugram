@@ -136,8 +136,8 @@
         </GridView>
 
         <Grid Grid.Row="2">
-            <controls:BadgeButton x:Name="Badge"
-                                  Click="Badge_Click">
+            <controls:SettingsButton x:Name="Badge"
+                                     Click="Badge_Click">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
@@ -154,7 +154,7 @@
                                            Margin="4,0,0,0"
                                            Grid.Column="1" />
                 </Grid>
-            </controls:BadgeButton>
+            </controls:SettingsButton>
             <controls:AnimatedImage x:Name="Animated"
                                     FrameSize="20,20"
                                     DecodeFrameType="Logical"

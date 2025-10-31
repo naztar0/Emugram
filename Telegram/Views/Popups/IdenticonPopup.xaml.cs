@@ -24,8 +24,6 @@ namespace Telegram.Views.Popups
             InitializeComponent();
             Title = Strings.EncryptionKey;
 
-            PrimaryButtonText = Strings.Close;
-
             if (chat.Type is ChatTypeSecret secret)
             {
                 var service = TypeResolver.Current.Resolve<IClientService>(sessionId);

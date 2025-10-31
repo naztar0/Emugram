@@ -105,7 +105,7 @@ namespace Telegram.Controls
                 host.PopupClosed();
             }
 
-            WindowContext.Current.UpdateTitleBar();
+            window.UpdateTitleBar();
         }
 
         public async Task<ContentDialogResult> ShowAsync(XamlRoot xamlRoot)
@@ -299,8 +299,8 @@ namespace Telegram.Controls
 
         protected override void OnApplyTemplate()
         {
-            Container = (Border)GetTemplateChild("Container");
-            BackgroundElement = (Border)GetTemplateChild("BackgroundElement");
+            Container = GetTemplateChild(nameof(Container)) as Border;
+            BackgroundElement = GetTemplateChild(nameof(BackgroundElement)) as Border;
 
             if (_applicationView != null)
             {

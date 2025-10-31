@@ -13,6 +13,8 @@ using Telegram.Common;
 using Telegram.Composition;
 using Telegram.Controls.Chats;
 using Telegram.Controls.Messages.Content;
+using Telegram.Controls.Messages.Service;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
@@ -32,6 +34,7 @@ namespace Telegram.Controls.Messages
 {
     public sealed partial class MessageSelector : ToggleButtonEx
     {
+        private Border Header;
         private Border Icon;
         private ContentPresenter Presenter;
 
@@ -46,9 +49,6 @@ namespace Telegram.Controls.Messages
         {
             DefaultStyleKey = typeof(MessageSelector);
 
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
-
             AddHandler(PointerPressedEvent, new PointerEventHandler(OnPointerPressed), true);
         }
 
@@ -59,14 +59,11 @@ namespace Telegram.Controls.Messages
             Content = child;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             if (!_hasInitialLoadedEventFired && RootGrid != null && (SettingsService.Current.SwipeToReply || SettingsService.Current.SwipeToShare))
             {
                 _hasInitialLoadedEventFired = true;
-
-                _hitTest = ElementComposition.GetElementVisual(this);
-                _visual = ElementComposition.GetElementVisual(RootGrid);
 
                 _compositor = _hitTest.Compositor;
                 _container ??= _compositor.CreateContainerVisual();
@@ -93,7 +90,7 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             if (_trackerOwner != null)
             {
@@ -101,11 +98,6 @@ namespace Telegram.Controls.Messages
                 _trackerOwner.InertiaStateEntered -= OnInertiaStateEntered;
                 _trackerOwner.InteractingStateEntered -= OnInteractingStateEntered;
                 _trackerOwner.IdleStateEntered -= OnIdleStateEntered;
-            }
-
-            if (_message != null)
-            {
-                Recycle();
             }
         }
 
@@ -184,6 +176,10 @@ namespace Telegram.Controls.Messages
             Presenter = GetTemplateChild(nameof(Presenter)) as ContentPresenter;
             ElementCompositionPreview.SetIsTranslationEnabled(Presenter, true);
 
+            Header = GetTemplateChild(nameof(Header)) as Border;
+
+            _hitTest = ElementComposition.GetElementVisual(this);
+            _visual = ElementComposition.GetElementVisual(Presenter);
             _templateApplied = true;
 
             if (_message?.Delegate != null)
@@ -259,6 +255,28 @@ namespace Telegram.Controls.Messages
             message.UpdateSelectionCallback(UpdateSelection);
 
             UpdateSelectionEnabled(selectionEnabled, false);
+            UpdateMessageSuggestedPostInfo(message);
+        }
+
+        private bool _hasSuggestedPostInfo;
+
+        public void UpdateMessageSuggestedPostInfo(MessageViewModel message)
+        {
+            if (message == null || !_templateApplied)
+            {
+                return;
+            }
+
+            if (message.SuggestedPostInfo != null)
+            {
+                _hasSuggestedPostInfo = true;
+                Header.Child = new SuggestedPostInfoCell(message);
+            }
+            else if (_hasSuggestedPostInfo)
+            {
+                _hasSuggestedPostInfo = false;
+                Header.Child = null;
+            }
         }
 
         private bool _selectionEnabled;
@@ -468,6 +486,8 @@ namespace Telegram.Controls.Messages
 
         #region Moved from ChatHistoryViewItem
 
+        public Visual ContentVisual => _visual;
+
         private Visual _hitTest;
         private Visual _visual;
         private Compositor _compositor;
@@ -567,14 +587,20 @@ namespace Telegram.Controls.Messages
 
         public async void PrepareForItemOverride(MessageViewModel message, bool canReply)
         {
-            var properties = await message.ClientService.SendAsync(new GetMessageProperties(message.ChatId, message.Id)) as MessageProperties;
-            if (properties == null)
-            {
-                return;
-            }
+            bool share = false;
+            bool reply = false;
 
-            var share = SettingsService.Current.SwipeToShare && properties.CanBeForwarded;
-            var reply = SettingsService.Current.SwipeToReply && (properties.CanBeReplied || properties.CanBeRepliedInAnotherChat);
+            if (message.SendingState == null)
+            {
+                var properties = await message.ClientService.SendAsync(new GetMessageProperties(message.ChatId, message.Id)) as MessageProperties;
+                if (properties == null)
+                {
+                    return;
+                }
+
+                share = SettingsService.Current.SwipeToShare && properties.CanBeForwarded;
+                reply = SettingsService.Current.SwipeToReply && (properties.CanBeReplied || properties.CanBeRepliedInAnotherChat);
+            }
 
             if (_tracker != null)
             {
@@ -695,7 +721,7 @@ namespace Telegram.Controls.Messages
 
             if (IsDisconnected)
             {
-                OnUnloaded(null, null);
+                OnUnloaded();
             }
             else
             {

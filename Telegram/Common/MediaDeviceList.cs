@@ -66,6 +66,15 @@ namespace Telegram.Common
                 _watcher.Removed -= OnRemoved;
 
                 _watcher.Stop();
+
+                if (_class == MediaDeviceClass.AudioInput)
+                {
+                    MediaDevice.DefaultAudioCaptureDeviceChanged += OnDefaultAudioCaptureDeviceChanged;
+                }
+                else if (_class == MediaDeviceClass.AudioOutput)
+                {
+                    MediaDevice.DefaultAudioRenderDeviceChanged += OnDefaultAudioRenderDeviceChanged;
+                }
             }
             catch
             {
@@ -75,7 +84,7 @@ namespace Telegram.Common
 
         private void OnDefaultAudioCaptureDeviceChanged(object sender, DefaultAudioCaptureDeviceChangedEventArgs args)
         {
-            if (args.Role == AudioDeviceRole.Communications)
+            if (args.Role == AudioDeviceRole.Default)
             {
                 OnDefaultDeviceChanged(args.Id);
             }
@@ -83,7 +92,7 @@ namespace Telegram.Common
 
         private void OnDefaultAudioRenderDeviceChanged(object sender, DefaultAudioRenderDeviceChangedEventArgs args)
         {
-            if (args.Role == AudioDeviceRole.Communications)
+            if (args.Role == AudioDeviceRole.Default)
             {
                 OnDefaultDeviceChanged(args.Id);
             }
@@ -196,8 +205,8 @@ namespace Telegram.Common
             {
                 return deviceClass switch
                 {
-                    MediaDeviceClass.AudioInput => new MediaDeviceId(MediaDevice.GetDefaultAudioCaptureId(AudioDeviceRole.Communications), true),
-                    MediaDeviceClass.AudioOutput => new MediaDeviceId(MediaDevice.GetDefaultAudioRenderId(AudioDeviceRole.Communications), true),
+                    MediaDeviceClass.AudioInput => new MediaDeviceId(MediaDevice.GetDefaultAudioCaptureId(AudioDeviceRole.Default), true),
+                    MediaDeviceClass.AudioOutput => new MediaDeviceId(MediaDevice.GetDefaultAudioRenderId(AudioDeviceRole.Default), true),
                     _ => new MediaDeviceId(Constants.DefaultDeviceId, true)
                 };
             }

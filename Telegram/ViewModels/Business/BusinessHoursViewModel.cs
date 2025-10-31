@@ -348,7 +348,7 @@ namespace Telegram.ViewModels.Business
             }
         }
 
-        public override void Continue()
+        protected override void ContinueImpl(NavigatingEventArgs args)
         {
             throw new NotImplementedException();
         }

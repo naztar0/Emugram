@@ -48,7 +48,7 @@ namespace Telegram.ViewModels
 
         private async Task<ContentDialogResult> ShowPaidMessageConfirmationAsync(int messageCount, long starCount)
         {
-            Settings.Chats.TryGet(Chat.Id, 0, Services.ChatSetting.PaidMessageStarCount, out long savedMessageStarCount);
+            Settings.Chats.TryGet(Chat.Id, null, Services.ChatSetting.PaidMessageStarCount, out long savedMessageStarCount);
 
             if (starCount != 0 && starCount != savedMessageStarCount)
             {
@@ -79,7 +79,7 @@ namespace Telegram.ViewModels
                 var confirm = await ShowPopupAsync(popup);
                 if (confirm == ContentDialogResult.Primary && popup.IsChecked is true)
                 {
-                    Settings.Chats[Chat.Id, 0, Services.ChatSetting.PaidMessageStarCount] = starCount;
+                    Settings.Chats[Chat.Id, null, Services.ChatSetting.PaidMessageStarCount] = starCount;
                 }
 
                 return confirm;
@@ -91,9 +91,9 @@ namespace Telegram.ViewModels
         public override async Task<MessageSendOptions> PickMessageSendOptionsAsync(int messageCount = 1, SchedulingState schedule = SchedulingState.Auto, bool? disableNotification = null, bool reorder = false)
         {
             var chat = _chat;
-            if (chat == null || ComposerHeader?.EditingMessage != null)
+            if (chat == null || ComposerHeader?.Editing != null)
             {
-                return new MessageSendOptions(0, false, false, false, false, 0, false, null, 0, 0, false);
+                return new MessageSendOptions(ComposerHeader?.SuggestedPostInfo, false, false, false, false, 0, false, null, 0, 0, false);
             }
 
             var paidMessageStarCount = 0L;
@@ -127,18 +127,14 @@ namespace Telegram.ViewModels
                 var popup = new ScheduleMessagePopup(user, ClientService.IsSavedMessages(chat));
 
                 var confirm = await ShowPopupAsync(popup);
-                if (confirm != ContentDialogResult.Primary)
-                {
-                    return null;
-                }
 
-                if (popup.IsUntilOnline)
+                if (popup.SchedulingState != null)
                 {
-                    schedulingState = new MessageSchedulingStateSendWhenOnline();
+                    schedulingState = popup.SchedulingState;
                 }
                 else
                 {
-                    schedulingState = new MessageSchedulingStateSendAtDate(popup.Value.ToTimestamp());
+                    return null;
                 }
             }
             else if (schedule == SchedulingState.WhenOnline)
@@ -146,7 +142,7 @@ namespace Telegram.ViewModels
                 schedulingState = new MessageSchedulingStateSendWhenOnline();
             }
 
-            return new MessageSendOptions(0, disableNotification ?? false, false, false, false, messageCount * paidMessageStarCount, Settings.Stickers.DynamicPackOrder && reorder, schedulingState, 0, 0, false);
+            return new MessageSendOptions(ComposerHeader?.SuggestedPostInfo, disableNotification ?? false, false, false, false, messageCount * paidMessageStarCount, Settings.Stickers.DynamicPackOrder && reorder, schedulingState, 0, 0, false);
         }
 
         protected override void ContinueSendMessage(MessageSendOptions options)
@@ -204,7 +200,7 @@ namespace Telegram.ViewModels
                         photo.IsScreenshot = true;
 
                         var header = _composerHeader;
-                        if (header?.EditingMessage != null)
+                        if (header?.Editing != null)
                         {
                             await EditMediaAsync(photo, true);
                         }
@@ -240,7 +236,15 @@ namespace Telegram.ViewModels
                         files.Add(file);
                     }
 
-                    SendFileExecute(files);
+                    var header = _composerHeader;
+                    if (header?.Editing != null && files.Count > 0)
+                    {
+                        await EditMediaAsync(files[0], header.Editing.Message?.Content is not MessageDocument and not MessageAudio);
+                    }
+                    else
+                    {
+                        SendFileExecute(files);
+                    }
                 }
                 else if (package.AvailableFormats.Contains(StandardDataFormats.WebLink))
                 {
@@ -296,7 +300,7 @@ namespace Telegram.ViewModels
         public async void EditDocument()
         {
             var header = _composerHeader;
-            if (header?.EditingMessage == null)
+            if (header?.Editing == null)
             {
                 return;
             }
@@ -322,7 +326,7 @@ namespace Telegram.ViewModels
         public async void EditMedia()
         {
             var header = _composerHeader;
-            if (header?.EditingMessage == null)
+            if (header?.Editing == null)
             {
                 return;
             }
@@ -348,12 +352,12 @@ namespace Telegram.ViewModels
         public async void EditCurrent()
         {
             var header = _composerHeader;
-            if (header?.EditingMessage == null)
+            if (header?.Editing == null)
             {
                 return;
             }
 
-            var file = header.EditingMessage.GetFile();
+            var file = header.Editing.Message.GetFile();
             if (file == null || !file.Local.IsDownloadingCompleted)
             {
                 return;
@@ -386,7 +390,7 @@ namespace Telegram.ViewModels
             }
 
             var header = _composerHeader;
-            if (header?.EditingMessage == null)
+            if (header?.Editing == null)
             {
                 return;
             }
@@ -398,7 +402,7 @@ namespace Telegram.ViewModels
 
             var items = new[] { storage };
             var popup = new SendFilesPopup(this, items, mediaSelected, permissions, false, false, false, true);
-            popup.ShowCaptionAboveMedia = header.EditingMessage.ShowCaptionAboveMedia();
+            popup.ShowCaptionAboveMedia = header.Editing.Message.ShowCaptionAboveMedia();
             popup.Caption = formattedText
                 .Substring(0, ClientService.Options.MessageCaptionLengthMax);
 
@@ -440,7 +444,11 @@ namespace Telegram.ViewModels
             var factory = await request;
             if (factory is InputMessageContent input)
             {
-                header.EditingMessageMedia = input;
+                if (header.Editing != null)
+                {
+                    header.Editing = new MessageComposerEditing(header.Editing.Message, input);
+                }
+
                 await BeforeSendMessageAsync(popup.Caption, linkPreview);
             }
         }

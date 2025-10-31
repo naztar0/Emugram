@@ -69,7 +69,7 @@ namespace Telegram.Views.Popups
         public QrCodePopup(IClientService clientService, INavigationService navigationService, ISettingsService settingsService, User user)
             : this(clientService, navigationService, settingsService)
         {
-            Photo.SetUser(clientService, user, 96);
+            Photo.Source = ProfilePictureSource.User(clientService, user);
 
             if (user.HasActiveUsername(out string username))
             {
@@ -87,14 +87,14 @@ namespace Telegram.Views.Popups
         {
             if (_clientService.TryGetSupergroup(chat, out Supergroup supergroup) && supergroup.HasActiveUsername(out string username))
             {
-                Photo.SetChat(clientService, chat, 96);
+                Photo.Source = ProfilePictureSource.Chat(clientService, chat);
 
                 Username.Text = string.Format("@{0}", username.ToUpper());
                 InitializeCode(username);
             }
             else if (_clientService.TryGetUser(chat, out User user))
             {
-                Photo.SetUser(clientService, user, 96);
+                Photo.Source = ProfilePictureSource.User(clientService, user);
 
                 if (user.HasActiveUsername(out username))
                 {
@@ -147,7 +147,7 @@ namespace Telegram.Views.Popups
 
             var items = new[] { defaultTheme }.Union(themes).ToList();
 
-            _selectedTheme = themes.FirstOrDefault(x => x.Name == settingsService.Appearance.ChatTheme?.Name) ?? defaultTheme;
+            _selectedTheme = themes.FirstOrDefault(x => x.AreTheSame(settingsService.Appearance.ChatTheme)) ?? defaultTheme;
 
             ScrollingHost.ItemsSource = items;
             ScrollingHost.SelectedItem = _selectedTheme;
@@ -247,8 +247,11 @@ namespace Telegram.Views.Popups
 
                 Preview.UpdateSource(_clientService, settings.Background, false);
 
-                Code.Background = backgrounds[theme.Name].ToBrush();
-                Username.Foreground = backgrounds[theme.Name].ToBrush();
+                if (theme.Type is ChatThemeEmoji emoji)
+                {
+                    Code.Background = backgrounds[emoji.Name].ToBrush();
+                    Username.Foreground = backgrounds[emoji.Name].ToBrush();
+                }
             }
         }
 

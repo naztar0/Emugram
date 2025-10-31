@@ -85,12 +85,12 @@ namespace Telegram.ViewModels.Supergroups
                 var confirm = await ShowPopupAsync(Strings.MessageSuggestionsUnsavedChanges, Strings.UnsavedChanges, Strings.ChatThemeSaveDialogApply, Strings.ChatThemeSaveDialogDiscard);
                 if (confirm == ContentDialogResult.Primary)
                 {
-                    Continue();
+                    ContinueImpl(args);
                 }
                 else if (confirm == ContentDialogResult.Secondary)
                 {
                     _completed = true;
-                    NavigationService.GoBack();
+                    NavigationService.GoBack(args);
                 }
             }
         }
@@ -109,25 +109,30 @@ namespace Telegram.ViewModels.Supergroups
             return false;
         }
 
-        public async void Continue()
+        public void Continue()
         {
-            _completed = true;
+            ContinueImpl(null);
+        }
 
+        private async void ContinueImpl(NavigatingEventArgs args)
+        {
             var settings = GetSettings();
             if (settings.AreTheSame(_cached))
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
                 return;
             }
 
             var response = await ClientService.SendAsync(settings);
             if (response is Ok)
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
             }
-            else
+            else if (response is Error error)
             {
-                // TODO
+                ShowToast(error);
             }
         }
 

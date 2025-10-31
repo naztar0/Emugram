@@ -59,11 +59,7 @@ namespace Telegram.ViewModels
                 var cache = ClientService.GetUserFull(item.Id);
 
                 Delegate?.UpdateUser(null, item, cache, false, false);
-
-                if (cache == null)
-                {
-                    ClientService.Send(new GetUserFullInfo(item.Id));
-                }
+                ClientService.Send(new GetUserFullInfo(item.Id));
             }
 
             return Task.CompletedTask;

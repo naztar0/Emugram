@@ -13,6 +13,7 @@ using Telegram.Td;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Hosting;
+using Windows.UI.Xaml.Input;
 
 namespace Telegram.Views.Popups
 {
@@ -172,6 +173,15 @@ namespace Telegram.Views.Popups
             }
 
             ShowHideNoResult(_diff.Count == 0);
+        }
+
+        private void SearchField_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Enter && _diff.Count > 0)
+            {
+                SelectedItem = _diff[0].Id;
+                Hide(ContentDialogResult.Primary);
+            }
         }
 
         private bool _noResultCollapsed = true;

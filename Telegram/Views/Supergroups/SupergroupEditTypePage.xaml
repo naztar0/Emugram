@@ -114,10 +114,9 @@
                                              Text="{CustomResource UsernamesChannelHelp}" />
 
                     <controls:HeaderedControl Footer="{CustomResource ManageInviteLinksHelp}">
-                        <controls:BadgeButton Click="{x:Bind ViewModel.InviteLinks}"
-                                              Content="{CustomResource ManageInviteLinks}"
-                                              Style="{StaticResource GlyphBadgeButtonStyle}"
-                                              Glyph="&#xE9F8;" />
+                        <controls:SettingsButton Click="{x:Bind ViewModel.InviteLinks}"
+                                                 Content="{CustomResource ManageInviteLinks}"
+                                                 Glyph="&#xE9F8;" />
                     </controls:HeaderedControl>
 
                     <controls:HeaderedControl x:Name="JoinToSendMessages"

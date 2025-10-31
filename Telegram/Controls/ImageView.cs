@@ -383,7 +383,7 @@ namespace Telegram.Controls
             _blurRadius = 0;
 
             Source = null;
-            UpdateManager.Unsubscribe(this, ref _fileToken, true);
+            UpdateManager.Unsubscribe(this, ref _fileToken);
         }
 
         #region Bitmap
@@ -396,7 +396,7 @@ namespace Telegram.Controls
 
         private long _fileToken;
 
-        public void SetSource(IClientService clientService, File file, int width = 0, int height = 0, int blurRadius = 0)
+        public void SetSource(IClientService clientService, File file, int width = 0, int height = 0, int blurRadius = 0, bool clear = true)
         {
             _clientService = clientService;
             _file = file;
@@ -404,10 +404,10 @@ namespace Telegram.Controls
             _height = height;
             _blurRadius = blurRadius;
 
-            Source = GetSource(clientService, file, null, width, height, blurRadius, true);
+            Source = GetSource(clientService, file, null, width, height, blurRadius, true, clear);
         }
 
-        public void SetSource(IClientService clientService, File file, Minithumbnail minithumbnail, int width = 0, int height = 0, int blurRadius = 0)
+        public void SetSource(IClientService clientService, File file, Minithumbnail minithumbnail, int width = 0, int height = 0, int blurRadius = 0, bool clear = true)
         {
             _clientService = clientService;
             _file = file;
@@ -415,10 +415,10 @@ namespace Telegram.Controls
             _height = height;
             _blurRadius = blurRadius;
 
-            Source = GetSource(clientService, file, minithumbnail, width, height, blurRadius, true);
+            Source = GetSource(clientService, file, minithumbnail, width, height, blurRadius, true, clear);
         }
 
-        private ImageSource GetSource(IClientService clientService, File file, Minithumbnail minithumbnail, int width, int height, int blurRadius, bool download)
+        private ImageSource GetSource(IClientService clientService, File file, Minithumbnail minithumbnail, int width, int height, int blurRadius, bool download, bool clear)
         {
             if (file == null)
             {
@@ -428,7 +428,7 @@ namespace Telegram.Controls
             {
                 if (blurRadius > 0)
                 {
-                    var source = new BitmapImage();
+                    var source = new SoftwareBitmapSource();
                     PlaceholderHelper.GetBlurred(source, file.Local.Path, blurRadius);
                     return source;
                 }
@@ -446,9 +446,14 @@ namespace Telegram.Controls
 
                 if (minithumbnail != null)
                 {
-                    var source = new BitmapImage();
+                    var source = new SoftwareBitmapSource();
                     PlaceholderHelper.GetBlurred(source, minithumbnail.Data, 3);
                     return source;
+                }
+
+                if (!clear)
+                {
+                    return Source;
                 }
             }
 
@@ -457,7 +462,7 @@ namespace Telegram.Controls
 
         private void UpdateSource(object target, File file)
         {
-            Source = GetSource(_clientService, _file, null, _width, _height, _blurRadius, false);
+            Source = GetSource(_clientService, _file, null, _width, _height, _blurRadius, false, true);
         }
 
         #endregion
@@ -483,7 +488,7 @@ namespace Telegram.Controls
             var response = await clientService.SendAsync(new GetMapThumbnailFile(location, 15, scaledWidth, scaledHeight, 1, chatId));
             if (response is File file && _latitude == location.Latitude && _longitude == location.Longitude)
             {
-                SetSource(clientService, file, width, height);
+                SetSource(clientService, file, width, height, clear: false);
             }
         }
 

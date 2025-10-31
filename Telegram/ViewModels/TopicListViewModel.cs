@@ -56,8 +56,6 @@ namespace Telegram.ViewModels
                 Items = new DirectMessagesChatTopicsCollection(clientService, aggregator, this, null);
             }
 
-            SearchFilters = new MvxObservableCollection<ISearchChatsFilter>();
-
             ChatsMarkCommand = new RelayCommand(ChatsMarkExecute);
             ChatsNotifyCommand = new RelayCommand(ChatsNotifyExecute);
             ChatsDeleteCommand = new RelayCommand(ChatsDeleteExecute);
@@ -109,8 +107,6 @@ namespace Telegram.ViewModels
 
         public bool IsLastSliceLoaded { get; set; }
 
-        public MvxObservableCollection<ISearchChatsFilter> SearchFilters { get; private set; }
-
         #region Open
 
         public void OpenTopic(ForumTopic topic)
@@ -158,17 +154,17 @@ namespace Telegram.ViewModels
             {
                 if (topic.LastMessage != null)
                 {
-                    ClientService.ViewMessages(topic.Info.ChatId, topic.Info.MessageThreadId, new[] { topic.LastMessage.Id }, new MessageSourceForumTopicHistory(), true);
+                    ClientService.ViewMessages(topic.Info.ChatId, topic.ToId(), new[] { topic.LastMessage.Id }, new MessageSourceForumTopicHistory(), true);
                 }
 
                 if (topic.UnreadMentionCount > 0)
                 {
-                    ClientService.Send(new ReadAllMessageThreadMentions(topic.Info.ChatId, topic.Info.MessageThreadId));
+                    ClientService.Send(new ReadAllForumTopicMentions(topic.Info.ChatId, topic.Info.ForumTopicId));
                 }
 
                 if (topic.UnreadReactionCount > 0)
                 {
-                    ClientService.Send(new ReadAllMessageThreadReactions(topic.Info.ChatId, topic.Info.MessageThreadId));
+                    ClientService.Send(new ReadAllForumTopicReactions(topic.Info.ChatId, topic.Info.ForumTopicId));
                 }
             }
         }
@@ -230,7 +226,7 @@ namespace Telegram.ViewModels
         {
             if (Chat is Chat chat)
             {
-                ClientService.Send(new ToggleForumTopicIsClosed(chat.Id, topic.Info.MessageThreadId, !topic.Info.IsClosed));
+                ClientService.Send(new ToggleForumTopicIsClosed(chat.Id, topic.Info.ForumTopicId, !topic.Info.IsClosed));
             }
         }
 
@@ -271,7 +267,7 @@ namespace Telegram.ViewModels
             if (confirm == ContentDialogResult.Primary)
             {
                 // TODO: Handle the case where topics can't be deleted because user isn't admin
-                ClientService.Send(new DeleteForumTopic(Chat.Id, topic.Info.MessageThreadId));
+                ClientService.Send(new DeleteForumTopic(Chat.Id, topic.Info.ForumTopicId));
             }
         }
 
@@ -463,9 +459,9 @@ namespace Telegram.ViewModels
 
         private void Handle(UpdateChatAction update)
         {
-            if (update.ChatId == Chat?.Id && update.MessageThreadId != 0)
+            if (update.ChatId == Chat?.Id && update.TopicId is MessageTopicForum topicForum)
             {
-                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.MessageThreadId, (cell, topic) => cell.UpdateForumTopicActions(topic, ClientService.GetChatActions(update.ChatId, update.MessageThreadId))));
+                BeginOnUIThread(() => Delegate?.HandleForumTopic(topicForum.ForumTopicId, (cell, topic) => cell.UpdateForumTopicActions(topic, ClientService.GetChatActions(update.ChatId, update.TopicId))));
             }
         }
 
@@ -473,7 +469,7 @@ namespace Telegram.ViewModels
         {
             if (update.Info.ChatId == Chat?.Id)
             {
-                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.Info.MessageThreadId, (cell, topic) => cell.UpdateForumTopicInfo(topic)));
+                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.Info.ForumTopicId, (cell, topic) => cell.UpdateForumTopicInfo(topic)));
             }
         }
 
@@ -481,7 +477,7 @@ namespace Telegram.ViewModels
         {
             if (update.ChatId == Chat?.Id)
             {
-                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.MessageThreadId, (cell, topic) => cell.UpdateForumTopicReadInbox(topic)));
+                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.ForumTopicId, (cell, topic) => cell.UpdateForumTopicReadInbox(topic)));
             }
         }
 
@@ -489,7 +485,7 @@ namespace Telegram.ViewModels
         {
             if (update.ChatId == Chat?.Id)
             {
-                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.MessageThreadId, (cell, topic) => cell.UpdateForumTopicReadOutbox(topic)));
+                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.ForumTopicId, (cell, topic) => cell.UpdateForumTopicReadOutbox(topic)));
             }
         }
 
@@ -497,7 +493,7 @@ namespace Telegram.ViewModels
         {
             if (update.ChatId == Chat?.Id)
             {
-                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.MessageThreadId, (cell, topic) => cell.UpdateForumTopicUnreadMentionCount(topic)));
+                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.ForumTopicId, (cell, topic) => cell.UpdateForumTopicUnreadMentionCount(topic)));
             }
         }
 
@@ -505,7 +501,7 @@ namespace Telegram.ViewModels
         {
             if (update.ChatId == Chat?.Id)
             {
-                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.MessageThreadId, (cell, topic) => cell.UpdateForumTopicUnreadMentionCount(topic)));
+                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.ForumTopicId, (cell, topic) => cell.UpdateForumTopicUnreadMentionCount(topic)));
             }
         }
 
@@ -513,7 +509,7 @@ namespace Telegram.ViewModels
         {
             if (update.ChatId == Chat?.Id)
             {
-                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.MessageThreadId, (cell, topic) => cell.UpdateForumTopicNotificationSettings(topic)));
+                BeginOnUIThread(() => Delegate?.HandleForumTopic(update.ForumTopicId, (cell, topic) => cell.UpdateForumTopicNotificationSettings(topic)));
             }
         }
 
@@ -578,7 +574,7 @@ namespace Telegram.ViewModels
             var confirm = await ShowPopupAsync(popup);
             if (confirm == ContentDialogResult.Primary)
             {
-                var response = await ClientService.SendAsync(new CreateForumTopic(chat.Id, popup.SelectedName, popup.SelectedIcon));
+                var response = await ClientService.SendAsync(new CreateForumTopic(chat.Id, popup.SelectedName, false, popup.SelectedIcon));
                 if (response is ForumTopicInfo info)
                 {
                     NavigationService.NavigateToChat(chat, topic: new MessageTopicForum(info.ForumTopicId), force: false, clearBackStack: true);
@@ -601,7 +597,7 @@ namespace Telegram.ViewModels
             private readonly IEventAggregator _aggregator;
 
             private CancellationTokenSource _token = new();
-            private readonly HashSet<long> _topics = new();
+            private readonly HashSet<int> _topics = new();
 
             private readonly TopicListViewModel _viewModel;
 
@@ -609,7 +605,7 @@ namespace Telegram.ViewModels
 
             private bool _hasMoreItems = true;
 
-            private long _lastTopicId;
+            private int _lastTopicId;
             private long _lastOrder;
 
             public Chat Chat => _chat;
@@ -626,7 +622,7 @@ namespace Telegram.ViewModels
                 _hasMoreItems = false;
 #endif
 
-                _ = LoadMoreItemsAsync(0);
+                //_ = LoadMoreItemsAsync(0);
             }
 
             public Task ReloadAsync(Chat chat)
@@ -684,12 +680,12 @@ namespace Telegram.ViewModels
                 }
 
                 var response = await _clientService.GetForumTopicsAsync(_chat.Id, Count, 20);
-                if (response is Topics topics && !token.IsCancellationRequested)
+                if (response is ForumTopics2 topics && !token.IsCancellationRequested)
                 {
                     if (_viewModel != null && !_viewModel._chatList && Count == 0)
                     {
-                        topics.TopicIds = new List<long>(topics.TopicIds);
-                        topics.TopicIds.Insert(0, long.MaxValue);
+                        topics.TopicIds = new List<int>(topics.TopicIds);
+                        topics.TopicIds.Insert(0, int.MaxValue);
                     }
 
                     foreach (var topic in _clientService.GetForumTopics(_chat.Id, topics.TopicIds))
@@ -701,15 +697,15 @@ namespace Telegram.ViewModels
                             var next = NextIndexOf(topic, order);
                             if (next >= 0)
                             {
-                                if (_topics.Contains(topic.Info.MessageThreadId))
+                                if (_topics.Contains(topic.Info.ForumTopicId))
                                 {
                                     Remove(topic);
                                 }
 
-                                _topics.Add(topic.Info.MessageThreadId);
+                                _topics.Add(topic.Info.ForumTopicId);
                                 Insert(Math.Min(Count, next), topic);
 
-                                if ((_viewModel?.SelectedItem == null && topic.Info.MessageThreadId == 0) || _viewModel?.SelectedItem?.IsForum(topic.Info.MessageThreadId) is true)
+                                if ((_viewModel?.SelectedItem == null && topic.Info.ForumTopicId == 0) || _viewModel?.SelectedItem?.IsForum(topic.Info.ForumTopicId) is true)
                                 {
                                     _viewModel?.Delegate?.SetSelectedItem(topic);
                                 }
@@ -717,7 +713,7 @@ namespace Telegram.ViewModels
                                 totalCount++;
                             }
 
-                            _lastTopicId = topic.Info.MessageThreadId;
+                            _lastTopicId = topic.Info.ForumTopicId;
                             _lastOrder = order;
                         }
                     }
@@ -762,7 +758,7 @@ namespace Telegram.ViewModels
             {
                 if (update.ChatId == _chat.Id)
                 {
-                    Handle(update.MessageThreadId, update.Order);
+                    Handle(update.ForumTopicId, update.Order);
                 }
             }
 
@@ -770,7 +766,7 @@ namespace Telegram.ViewModels
             {
                 if (update.ChatId == _chat.Id)
                 {
-                    Handle(update.MessageThreadId, update.Order, true);
+                    Handle(update.ForumTopicId, update.Order, true);
                 }
             }
 
@@ -779,16 +775,16 @@ namespace Telegram.ViewModels
             //    Handle(update.ChatId, update.Positions, true);
             //}
 
-            public void Handle(long chatId, long order, bool lastMessage = false)
+            public void Handle(int forumTopicId, long order, bool lastMessage = false)
             {
-                var topic = GetTopic(chatId);
+                var topic = GetTopic(forumTopicId);
 
                 Handle(topic, order, lastMessage);
             }
 
-            public void Handle(long chatId, long order)
+            public void Handle(int forumTopicId, long order)
             {
-                var chat = GetTopic(chatId);
+                var chat = GetTopic(forumTopicId);
                 if (chat != null)
                 {
                     Handle(chat, order, false);
@@ -806,29 +802,29 @@ namespace Telegram.ViewModels
 
             private void UpdateForumTopicOrder(ForumTopic topic, long order, bool lastMessage)
             {
-                if (order > 0 && (order > _lastOrder || (order == _lastOrder && topic.Info.MessageThreadId >= _lastTopicId)))
+                if (order > 0 && (order > _lastOrder || (order == _lastOrder && topic.Info.ForumTopicId >= _lastTopicId)))
                 {
                     var next = NextIndexOf(topic, order);
                     if (next >= 0)
                     {
-                        if (_topics.Contains(topic.Info.MessageThreadId))
+                        if (_topics.Contains(topic.Info.ForumTopicId))
                         {
                             Remove(topic);
                         }
                         else
                         {
-                            _topics.Add(topic.Info.MessageThreadId);
+                            _topics.Add(topic.Info.ForumTopicId);
                         }
 
                         Insert(Math.Min(Count, next), topic);
 
                         if (next == Count - 1)
                         {
-                            _lastTopicId = topic.Info.MessageThreadId;
+                            _lastTopicId = topic.Info.ForumTopicId;
                             _lastOrder = order;
                         }
 
-                        if (_viewModel.SelectedItem.IsForum(topic.Info.MessageThreadId))
+                        if (_viewModel.SelectedItem.IsForum(topic.Info.ForumTopicId))
                         {
                             _viewModel.Delegate?.SetSelectedItem(topic);
                         }
@@ -844,9 +840,9 @@ namespace Telegram.ViewModels
                         _viewModel.Delegate?.UpdateForumTopicLastMessage(topic);
                     }
                 }
-                else if (_topics.Contains(topic.Info.MessageThreadId))
+                else if (_topics.Contains(topic.Info.ForumTopicId))
                 {
-                    _topics.Remove(topic.Info.MessageThreadId);
+                    _topics.Remove(topic.Info.ForumTopicId);
                     Remove(topic);
 
                     if (_viewModel.SelectedItems.Contains(topic))
@@ -872,13 +868,13 @@ namespace Telegram.ViewModels
                 for (int i = 0; i < Count; i++)
                 {
                     var item = this[i];
-                    if (item.Info.MessageThreadId == topic.Info.MessageThreadId)
+                    if (item.Info.ForumTopicId == topic.Info.ForumTopicId)
                     {
                         prev = i;
                         continue;
                     }
 
-                    if (order > item.Order || order == item.Order && topic.Info.MessageThreadId >= item.Info.MessageThreadId)
+                    if (order > item.Order || order == item.Order && topic.Info.ForumTopicId >= item.Info.ForumTopicId)
                     {
                         return next == prev ? -1 : next;
                     }
@@ -889,7 +885,7 @@ namespace Telegram.ViewModels
                 return Count;
             }
 
-            public ForumTopic GetTopic(long messageThreadId)
+            public ForumTopic GetTopic(int forumTopicId)
             {
                 //if (_viewModels.ContainsKey(chatId))
                 //{
@@ -903,12 +899,12 @@ namespace Telegram.ViewModels
                 //    return item;
                 //}
 
-                if (messageThreadId == 0 && _viewModel != null && !_viewModel._chatList && Items.Count > 0)
+                if (forumTopicId == 0 && _viewModel != null && !_viewModel._chatList && Items.Count > 0)
                 {
                     return Items[0];
                 }
 
-                return _clientService.GetForumTopic(_chat.Id, messageThreadId);
+                return _clientService.GetForumTopic(_chat.Id, forumTopicId);
             }
 
             public object GetItem(MessageTopic topic)

@@ -40,6 +40,7 @@ namespace Telegram.Controls
         ExpiredStory,
         Forward,
         Gif,
+        Gift,
         Info,
         JoinRequested,
         LinkCopied,

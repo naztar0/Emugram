@@ -11,6 +11,23 @@ namespace Telegram.Native
         RightToLeft
     };
 
+    [flags]
+    enum TextStyle
+    {
+        None = 0,
+        Bold = 1,
+        Italic = 2,
+        Monospace = 4,
+        Strikethrough = 8,
+        Underline = 16,
+        Spoiler = 32,
+        Mention = 64,
+        Url = 128,
+        Emoji = 256,
+        Quote = 512,
+    };
+
+
     [default_interface]
     runtimeclass NativeUtils
     {
@@ -23,8 +40,8 @@ namespace Telegram.Native
 
         static Int32 GetLastInputTime();
 
-        static Windows.UI.Xaml.Core.Direct.IXamlDirectObject AddRunToCollection(Windows.UI.Xaml.Core.Direct.XamlDirect direct, Windows.UI.Xaml.Core.Direct.IXamlDirectObject inlines, String text, Windows.UI.Xaml.FlowDirection direction, Boolean italic, Windows.UI.Text.TextDecorations decorations, Windows.UI.Xaml.Media.FontFamily fontFamily, Double fontSize, Boolean transparent);
-        static Windows.UI.Xaml.Core.Direct.IXamlDirectObject AddRunToCollection(Windows.UI.Xaml.Core.Direct.XamlDirect direct, Windows.UI.Xaml.Core.Direct.IXamlDirectObject inlines, String text, Int32 offset, Int32 length, Windows.UI.Xaml.FlowDirection direction, Boolean italic, Windows.UI.Text.TextDecorations decorations, Windows.UI.Xaml.Media.FontFamily fontFamily, Double fontSize, Boolean transparent);
+        static Windows.UI.Xaml.Core.Direct.IXamlDirectObject AddRunToCollection(Windows.UI.Xaml.Core.Direct.XamlDirect direct, Windows.UI.Xaml.Core.Direct.IXamlDirectObject inlines, String text, Windows.UI.Xaml.FlowDirection direction, TextStyle style, Windows.UI.Xaml.Media.FontFamily fontFamily, Double fontSize, Boolean transparent);
+        static Windows.UI.Xaml.Core.Direct.IXamlDirectObject AddRunToCollection(Windows.UI.Xaml.Core.Direct.XamlDirect direct, Windows.UI.Xaml.Core.Direct.IXamlDirectObject inlines, String text, Int32 offset, Int32 length, Windows.UI.Xaml.FlowDirection direction, TextStyle style, Windows.UI.Xaml.Media.FontFamily fontFamily, Double fontSize, Boolean transparent);
 
         //[DefaultOverload]
         static TextDirectionality GetDirectionality(String value);

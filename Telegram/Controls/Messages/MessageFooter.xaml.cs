@@ -13,6 +13,7 @@ using Telegram.Composition;
 using Telegram.Controls.Cells;
 using Telegram.Controls.Media;
 using Telegram.Converters;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Streams;
 using Telegram.Td.Api;
@@ -49,12 +50,9 @@ namespace Telegram.Controls.Messages
         public MessageFooter()
         {
             DefaultStyleKey = typeof(MessageFooter);
-
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             _strokeBrush?.Register();
 
@@ -64,7 +62,7 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _strokeBrush?.Unregister();
         }
@@ -519,7 +517,7 @@ namespace Telegram.Controls.Messages
 
                 text = string.Format(Strings.formatDateAtTime, date, time);
             }
-            if (message.SchedulingState is MessageSchedulingStateSendWhenVideoProcessed sendWhenVideoProcessed)
+            else if (message.SchedulingState is MessageSchedulingStateSendWhenVideoProcessed sendWhenVideoProcessed)
             {
                 text = Strings.VideoConversionTimeInfo;
             }

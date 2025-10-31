@@ -134,7 +134,7 @@ namespace Telegram.Services
             }
             catch (Exception ex)
             {
-                Logger.Error(ex);
+                Logger.Exception(ex);
             }
 
             _updateLock.Release();
@@ -178,7 +178,7 @@ namespace Telegram.Services
                 if (result?.ExtendedErrorCode is not null)
                     Logger.Info(result.ErrorText);
 
-                Logger.Error(ex);
+                Logger.Exception(ex);
                 return false;
             }
             finally

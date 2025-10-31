@@ -40,11 +40,39 @@ namespace Telegram.Views.Profile
 
         public ProfileTabPage()
         {
+            Connected += OnLoaded;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            ScrollingHost.ItemsSource = _itemsSource;
+        }
+
+        private object _itemsSource;
+        public object ItemsSource
+        {
+            get => ScrollingHost.ItemsSource;
+            set
+            {
+                if (IsConnected)
+                {
+                    ScrollingHost.ItemsSource = value;
+                }
+                else
+                {
+                    _itemsSource = value;
+                }
+            }
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             IsProfile = DataContext is ProfileViewModel;
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            ScrollingHost.ItemsSource = null;
         }
 
         public void OnBackRequested(BackRequestedRoutedEventArgs args)

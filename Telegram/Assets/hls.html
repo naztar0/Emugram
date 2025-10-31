@@ -61,7 +61,9 @@
                 startLevel: 0,
                 testBandwidth: false,
                 debug: params['debug'],
-                autoStartLoad: true
+                autoStartLoad: true,
+                maxMaxBufferLength: 30,
+                frontBufferFlushThreshold: 60
             });
             hls.on(Hls.Events.MANIFEST_PARSED, function () {
                 isManifestParsed = true;
@@ -120,6 +122,10 @@
 
         function playerSeek(value) {
             video.currentTime = value;
+        }
+
+        function playerAddTime(value) {
+            video.currentTime = video.currentTime + value;
         }
 
         function playerSetIsMuted(value) {

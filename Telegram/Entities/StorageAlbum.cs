@@ -17,7 +17,8 @@ namespace Telegram.Entities
         None,
         Media,
         Audio,
-        Documents
+        Documents,
+        NotSupported
     }
 
     public partial class StorageAlbum : StorageMedia

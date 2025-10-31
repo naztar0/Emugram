@@ -135,7 +135,14 @@ namespace Telegram.ViewModels.Create
                 }
                 else if (response is Error error)
                 {
-                    AlertsService.ShowAddUserAlert(XamlRoot, error.Message, false);
+                    if (error.MessageEquals(ErrorType.CHANNELS_TOO_MUCH))
+                    {
+                        NavigationService.ShowLimitReached(new PremiumLimitTypeSupergroupCount());
+                    }
+                    else
+                    {
+                        AlertsService.ShowAddUserAlert(XamlRoot, error.Message, false);
+                    }
                 }
             }
             else
@@ -156,9 +163,18 @@ namespace Telegram.ViewModels.Create
 
                 completion.TrySetResult(chat);
             }
-            else
+            else if (response is Error error)
             {
                 completion.TrySetResult(null);
+
+                if (error.MessageEquals(ErrorType.CHANNELS_TOO_MUCH))
+                {
+                    NavigationService.ShowLimitReached(new PremiumLimitTypeSupergroupCount());
+                }
+                else
+                {
+                    ShowToast(error);
+                }
             }
         }
 

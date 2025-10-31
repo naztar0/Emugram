@@ -34,7 +34,7 @@ namespace Telegram.Views.Settings
 
         public void UpdateUser(Chat chat, User user, UserFullInfo fullInfo, bool secret, bool accessToken)
         {
-            Photo.SetUser(ViewModel.ClientService, user, 96);
+            Photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
 
             if (SettingsService.Current.Diagnostics.HidePhoneNumber)
             {

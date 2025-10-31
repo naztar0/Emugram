@@ -9,12 +9,10 @@
                       xmlns:messages="using:Telegram.Controls.Messages"
                       xmlns:local="using:Telegram.Views.Profile"
                       mc:Ignorable="d"
-                      d:DesignHeight="300"
-                      d:DesignWidth="400">
+                      ItemsSource="{x:Bind ViewModel.Voice.ItemsView, Mode=OneWay}">
 
     <Grid>
         <controls:TableListView x:Name="ScrollingHost"
-                                ItemsSource="{x:Bind ViewModel.Voice.ItemsView, Mode=OneWay}"
                                 SelectionMode="None"
                                 ChoosingItemContainer="OnChoosingItemContainer"
                                 ContainerContentChanging="OnContainerContentChanging">

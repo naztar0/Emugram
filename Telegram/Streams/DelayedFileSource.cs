@@ -33,7 +33,7 @@ namespace Telegram.Streams
 
         public static DelayedFileSource FromSticker(IClientService clientService, Sticker sticker)
         {
-            if (sticker == null)
+            if (clientService == null || sticker == null)
             {
                 return null;
             }
@@ -196,7 +196,7 @@ namespace Telegram.Streams
 
         public void Complete()
         {
-            UpdateManager.Unsubscribe(this, ref _fileToken, true);
+            UpdateManager.Unsubscribe(this, ref _fileToken);
         }
 
         public override bool Equals(object obj)

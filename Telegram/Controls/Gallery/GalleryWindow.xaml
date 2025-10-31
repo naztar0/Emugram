@@ -49,6 +49,11 @@
                 </controls:CarouselViewer>
             </controls:ZoomViewer>
         </Grid>
+        <Border x:Name="SafeArea"
+                Background="Transparent"
+                VerticalAlignment="Top"
+                Margin="0,-40,0,0"
+                Height="48" />
         <Border x:Name="TitleBar"
                 Background="Transparent"
                 VerticalAlignment="Top"
@@ -111,30 +116,39 @@
                                       FontSize="{StaticResource GlyphMediumFontSize}"
                                       TabIndex="1" />
 
+                <controls:GlyphButton x:Name="Recognize"
+                                      x:Load="{x:Bind ViewModel.SelectedItem.CanRecognizeText, Mode=OneWay}"
+                                      Click="Recognize_Click"
+                                      Loaded="Recognize_Loaded"
+                                      AutomationProperties.Name="{CustomResource AccDescrScanText}"
+                                      ToolTipService.ToolTip="{CustomResource AccDescrScanText}"
+                                      Glyph="&#xEAD6;"
+                                      TabIndex="2" />
+
                 <controls:GlyphButton x:Name="ZoomOut"
                                       Click="ZoomOut_Click"
                                       AutomationProperties.Name="{CustomResource MediaZoomOut}"
                                       ToolTipService.ToolTip="{CustomResource MediaZoomOut}"
                                       Glyph="&#xE96A;"
-                                      TabIndex="2" />
+                                      TabIndex="3" />
 
                 <controls:GlyphButton x:Name="ZoomIn"
                                       Click="ZoomIn_Click"
                                       AutomationProperties.Name="{CustomResource MediaZoomIn}"
                                       ToolTipService.ToolTip="{CustomResource MediaZoomIn}"
                                       Glyph="&#xE969;"
-                                      TabIndex="3" />
+                                      TabIndex="4" />
 
                 <controls:GlyphButton x:Name="Rotate"
                                       Click="Rotate_Click"
                                       AutomationProperties.Name="{CustomResource AccDescrRotate}"
                                       ToolTipService.ToolTip="{CustomResource AccDescrRotate}"
                                       Glyph="&#xEA5B;"
-                                      TabIndex="4" />
+                                      TabIndex="5" />
 
                 <controls:MoreButton Click="Menu_ContextRequested"
                                      HorizontalAlignment="Right"
-                                     TabIndex="5" />
+                                     TabIndex="6" />
             </StackPanel>
 
             <StackPanel Padding="12"

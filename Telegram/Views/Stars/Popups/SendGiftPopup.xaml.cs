@@ -52,8 +52,8 @@ namespace Telegram.Views.Stars.Popups
 
             clientService.TryGetChatFromUser(clientService.Options.MyId, out Chat chat);
 
-            var content = new MessageGift(gift, clientService.MyId, _receiverId, string.Empty, new FormattedText(string.Empty, Array.Empty<TextEntity>()), gift.DefaultSellStarCount, 0, false, false, false, false, false, false, string.Empty);
-            var message = new Message(0, new MessageSenderUser(clientService.Options.MyId), 0, null, null, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, 0, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, content, null);
+            var content = new MessageGift(gift, clientService.MyId, _receiverId, string.Empty, new FormattedText(string.Empty, Array.Empty<TextEntity>()), gift.DefaultSellStarCount, 0, false, false, false, false, false, false, false, false, string.Empty, string.Empty);
+            var message = new Message(0, new MessageSenderUser(clientService.Options.MyId), 0, null, null, false, false, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, null, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, null, content, null);
 
             var settings = TypeResolver.Current.Resolve<ISettingsService>(clientService.SessionId);
 
@@ -108,16 +108,27 @@ namespace Telegram.Views.Stars.Popups
                 }
             }
 
-            if (gift.TotalCount > 0)
+            if (clientService.TryGetChat(gift.PublisherChatId, out Chat publisherChat)
+                && clientService.TryGetSupergroup(publisherChat, out Supergroup publisher)
+                && publisher.HasActiveUsername(out string username))
+            {
+                Publisher.Visibility = Visibility.Visible;
+                TextBlockHelper.SetMarkdown(PublisherLabel, string.Format(Strings.Gift2ActionReleasedBy, $"@{username}"));
+            }
+            else
+            {
+                Publisher.Visibility = Visibility.Collapsed;
+            }
+
+            if (gift.OverallLimits != null)
             {
                 LimitedRoot.Visibility = Visibility.Visible;
 
-                PrevLimit.Text = Locale.Declension(Strings.R.Gift2AvailabilitySold, gift.TotalCount - gift.RemainingCount);
-                NextLimit.Text = Locale.Declension(Strings.R.Gift2AvailabilityLeft, gift.RemainingCount);
-                NextLimitBelow.Text = Locale.Declension(Strings.R.Gift2AvailabilityLeft, gift.RemainingCount);
+                PrevLimit.Text = PrevLimitAbove.Text = Locale.Declension(Strings.R.Gift2AvailabilitySold, gift.OverallLimits.TotalCount - gift.OverallLimits.RemainingCount);
+                NextLimit.Text = NextLimitBelow.Text = Locale.Declension(Strings.R.Gift2AvailabilityLeft, gift.OverallLimits.RemainingCount);
             }
 
-            PurchaseText.Text = Locale.Declension(Strings.R.Gift2Send, gift.StarCount).Replace("\u2B50", Icons.Premium);
+            PurchaseText.Text = Locale.Declension(Strings.R.Gift2Send, gift.StarCount).ReplaceStar(Icons.Premium);
 
             InitializeGiftsForResale();
         }
@@ -127,7 +138,7 @@ namespace Telegram.Views.Stars.Popups
             var response = await _clientService.SendAsync(new SearchGiftsForResale(_gift.Id, new GiftForResaleOrderPrice(), Array.Empty<UpgradedGiftAttributeId>(), string.Empty, 1));
             if (response is GiftsForResale gifts && gifts.Gifts.Count > 0)
             {
-                _giftForResale = new AvailableGift(_gift, gifts.TotalCount, gifts.Gifts[0].Gift.ResaleStarCount, gifts.Gifts[0].Gift.Title);
+                _giftForResale = new AvailableGift(_gift, gifts.TotalCount, 0, gifts.Gifts[0].Gift.Title);
 
                 ResaleButton.Visibility = Visibility.Visible;
                 TextBlockHelper.SetMarkdown(Resale, string.Format("{0} **{1}**", Strings.Gift2AvailableForResale, gifts.TotalCount));
@@ -149,7 +160,7 @@ namespace Telegram.Views.Stars.Popups
             clientService.TryGetChatFromUser(clientService.Options.MyId, out Chat chat);
 
             var content = new MessageGiftedPremium(_clientService.Options.MyId, userId, new FormattedText(string.Empty, Array.Empty<TextEntity>()), _option.Currency, _option.Amount, string.Empty, 0, _option.MonthCount, _option.Sticker);
-            var message = new Message(0, new MessageSenderUser(clientService.Options.MyId), 0, null, null, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, 0, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, content, null);
+            var message = new Message(0, new MessageSenderUser(clientService.Options.MyId), 0, null, null, false, false, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, null, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, null, content, null);
 
             var settings = TypeResolver.Current.Resolve<ISettingsService>(clientService.SessionId);
 
@@ -190,9 +201,9 @@ namespace Telegram.Views.Stars.Popups
             MessageContent content;
             if (_gift != null)
             {
-                content = new MessageGift(_gift, _clientService.MyId, _receiverId, string.Empty, text, _gift.DefaultSellStarCount, Upgradeable.IsChecked is true ? _gift.UpgradeStarCount : 0, false, false, false, false, false, false, string.Empty);
+                content = new MessageGift(_gift, _clientService.MyId, _receiverId, string.Empty, text, _gift.DefaultSellStarCount, Upgradeable.IsChecked is true ? _gift.UpgradeStarCount : 0, false, false, false, false, false, false, false, false, string.Empty, string.Empty);
 
-                PurchaseText.Text = Locale.Declension(Strings.R.Gift2Send, _gift.StarCount + (Upgradeable.IsChecked is true ? _gift.UpgradeStarCount : 0)).Replace("\u2B50", Icons.Premium);
+                PurchaseText.Text = Locale.Declension(Strings.R.Gift2Send, _gift.StarCount + (Upgradeable.IsChecked is true ? _gift.UpgradeStarCount : 0)).ReplaceStar(Icons.Premium);
             }
             else if (_option != null && _receiverId is MessageSenderUser user)
             {
@@ -206,7 +217,7 @@ namespace Telegram.Views.Stars.Popups
             }
 
             _clientService.TryGetChatFromUser(_clientService.Options.MyId, out Chat chat);
-            var message = new Message(0, new MessageSenderUser(_clientService.Options.MyId), 0, null, null, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, 0, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, content, null);
+            var message = new Message(0, new MessageSenderUser(_clientService.Options.MyId), 0, null, null, false, false, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, null, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, null, content, null);
 
             var settings = TypeResolver.Current.Resolve<ISettingsService>(_clientService.SessionId);
 
@@ -339,15 +350,26 @@ namespace Telegram.Views.Stars.Popups
                 //var formatted = ClientEx.ParseMarkdown(text);
 
                 //Aggregator.Publish(new UpdateConfetti());
-                ToastPopup.Show(XamlRoot, string.Format("**{0}**\n{1}", Strings.StarsGiftCompleted, Locale.Declension(Strings.R.StarsGiftCompletedText, _gift.StarCount)), new DelayedFileSource(_clientService, _gift.Sticker));
+                if (_gift.UserLimits != null)
+                {
+                    ToastPopup.Show(XamlRoot, string.Format("**{0}**\n{1}", Strings.StarsGiftCompleted, Locale.Declension(Strings.R.Gift2SentRemainsLimit, _gift.UserLimits.RemainingCount - 1)), new DelayedFileSource(_clientService, _gift.Sticker));
+                }
+                else
+                {
+                    ToastPopup.Show(XamlRoot, string.Format("**{0}**\n{1}", Strings.StarsGiftCompleted, Locale.Declension(Strings.R.StarsGiftCompletedText, _gift.StarCount)), new DelayedFileSource(_clientService, _gift.Sticker));
+                }
 
                 return PayResult.Succeeded;
             }
             else if (response is Error error)
             {
-                if (error.Message == "STARGIFT_USAGE_LIMITED")
+                if (error.Message == "STARGIFT_USAGE_LIMITED" && _gift.OverallLimits != null)
                 {
-                    ToastPopup.Show(XamlRoot, string.Format("**{0}**\n{1}", Strings.Gift2SoldOutTitle, Locale.Declension(Strings.R.Gift2SoldOutHint, _gift.TotalCount)), new DelayedFileSource(_clientService, _gift.Sticker));
+                    ToastPopup.Show(XamlRoot, string.Format("**{0}**\n{1}", Strings.Gift2SoldOutTitle, Locale.Declension(Strings.R.Gift2SoldOutHint, _gift.OverallLimits.TotalCount)), new DelayedFileSource(_clientService, _gift.Sticker));
+                }
+                else if (error.Message == "STARGIFT_USER_USAGE_LIMITED" && _gift.UserLimits != null)
+                {
+                    ToastPopup.Show(XamlRoot, Locale.Declension(Strings.R.Gift2PerUserLimit, _gift.UserLimits.TotalCount), new DelayedFileSource(_clientService, _gift.Sticker));
                 }
                 else
                 {
@@ -369,11 +391,14 @@ namespace Telegram.Views.Stars.Popups
 
         private void LimitedRoot_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            var percent = (double)(_gift.TotalCount - _gift.RemainingCount) / _gift.TotalCount;
-            var width = e.NewSize.Width * percent;
+            if (_gift.OverallLimits != null)
+            {
+                var percent = (double)(_gift.OverallLimits.TotalCount - _gift.OverallLimits.RemainingCount) / _gift.OverallLimits.TotalCount;
+                var width = e.NewSize.Width * percent;
 
-            var next = ElementComposition.GetElementVisual(NextPanel);
-            next.Clip = next.Compositor.CreateInsetClip(0, 0, (float)width, 0);
+                var next = ElementComposition.GetElementVisual(NextPanel);
+                next.Clip = next.Compositor.CreateInsetClip(0, 0, (float)width, 0);
+            }
         }
 
         private void Resale_Click(object sender, RoutedEventArgs e)

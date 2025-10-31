@@ -661,10 +661,10 @@ namespace Telegram.ViewModels.Drawers
                 ? await ClientService.GetReactionsAsync(missingReactions)
                 : await ClientService.GetAllReactionsAsync();
 
-            var top = new List<Sticker>();
-            var recent = new List<Sticker>();
+            var top = new List<StickerViewModel>();
+            var recent = new List<StickerViewModel>();
 
-            void Populate(IList<AvailableReaction> source, List<Sticker> target)
+            void Populate(IList<AvailableReaction> source, List<StickerViewModel> target)
             {
                 foreach (var item in source)
                 {
@@ -674,17 +674,21 @@ namespace Telegram.ViewModels.Drawers
                         // and in that case reaction won't work
                         reaction.ActivateAnimation.Emoji = emoji.Emoji;
 
-                        target.Add(reaction.ActivateAnimation);
+                        target.Add(new StickerViewModel(ClientService, reaction.ActivateAnimation, reaction: item));
                     }
                     else if (item.Type is ReactionTypeCustomEmoji customEmoji && assets.TryGetValue(customEmoji.CustomEmojiId, out Sticker sticker))
                     {
-                        target.Add(sticker);
+                        target.Add(new StickerViewModel(ClientService, sticker, reaction: item));
+                    }
+                    else if (item.Type is ReactionTypePaid)
+                    {
+                        target.Add(new StickerViewModel(ClientService, new Sticker(0, 0, 512, 512, "\u2B50", new StickerFormatTgs(), new StickerFullTypeRegular(), null, TdExtensions.GetLocalFile("Assets\\Animations\\PaidReactionActivate.tgs")), reaction: item));
                     }
                 }
             }
 
             Populate(source, top);
-            Populate(sourceRecent, recent);
+            Populate(sourceRecent, available.AllowCustomEmoji ? recent : top);
 
             _allowCustomEmoji = available.AllowCustomEmoji;
             _reactionTopSet.Update(top);

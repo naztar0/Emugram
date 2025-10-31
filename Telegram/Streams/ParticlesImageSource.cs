@@ -54,9 +54,9 @@ namespace Telegram.Streams
 
         public override long Offset => 0;
 
-        public override void ReadCallback(long count)
+        public override void ReadCallback(long count, long buffer, out long bytesRead)
         {
-
+            bytesRead = count;
         }
 
         public override void SeekCallback(long offset)

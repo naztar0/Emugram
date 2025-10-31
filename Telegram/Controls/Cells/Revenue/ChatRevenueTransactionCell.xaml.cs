@@ -23,13 +23,13 @@ namespace Telegram.Controls.Cells.Revenue
 
         public void UpdateInfo(ChatRevenueTransaction info)
         {
-            if (info.Type is ChatRevenueTransactionTypeEarnings earnings)
+            if (info.Type is ChatRevenueTransactionTypeSponsoredMessageEarnings earnings)
             {
                 Reason.Text = Strings.MonetizationTransactionProceed;
                 Date.Text = string.Format("{0} - {1}", Formatter.DateAt(earnings.StartDate), Formatter.DateAt(earnings.EndDate));
                 Date.Foreground = BootStrapper.Current.Resources["SystemControlDisabledChromeDisabledLowBrush"] as Brush;
             }
-            else if (info.Type is ChatRevenueTransactionTypeWithdrawal withdrawal)
+            else if (info.Type is ChatRevenueTransactionTypeFragmentWithdrawal withdrawal)
             {
                 Reason.Text = Strings.MonetizationTransactionWithdraw;
 
@@ -49,7 +49,7 @@ namespace Telegram.Controls.Cells.Revenue
                     Date.Foreground = BootStrapper.Current.Resources["SystemFillColorCriticalBrush"] as Brush;
                 }
             }
-            else if (info.Type is ChatRevenueTransactionTypeRefund refund)
+            else if (info.Type is ChatRevenueTransactionTypeFragmentRefund refund)
             {
                 Reason.Text = Strings.MonetizationTransactionRefund;
                 Date.Text = Formatter.DateAt(refund.RefundDate);

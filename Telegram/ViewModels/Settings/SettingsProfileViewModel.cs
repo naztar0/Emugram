@@ -212,14 +212,22 @@ namespace Telegram.ViewModels.Settings
                 var confirm = await ShowPopupAsync(popup);
                 if (confirm == ContentDialogResult.Primary)
                 {
-                    ClientService.Send(new SetBirthdate(popup.Value));
+                    var response = await ClientService.SendAsync(new SetBirthdate(popup.Value));
+                    if (response is Error error)
+                    {
+                        ShowToast(error);
+                    }
                 }
             }
         }
 
-        public void RemoveBirthdate()
+        public async void RemoveBirthdate()
         {
-            ClientService.Send(new SetBirthdate(null));
+            var response = await ClientService.SendAsync(new SetBirthdate(null));
+            if (response is Error error)
+            {
+                ShowToast(error);
+            }
         }
 
         public async void ChangePhoneNumber()

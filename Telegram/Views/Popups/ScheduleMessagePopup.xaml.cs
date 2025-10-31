@@ -11,16 +11,19 @@ using Telegram.Controls;
 using Telegram.Native;
 using Telegram.Td.Api;
 using Windows.System.UserProfile;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
 namespace Telegram.Views.Popups
 {
     public sealed partial class ScheduleMessagePopup : ContentPopup
     {
+        private bool _reminder;
+
         public ScheduleMessagePopup(User user, bool reminder)
         {
             InitializeComponent();
+
+            _reminder = reminder;
 
             var date = DateTime.Now.AddMinutes(10);
             Date.Date = date.Date;
@@ -37,42 +40,39 @@ namespace Telegram.Views.Popups
 
             Title = reminder ? Strings.SetReminder : Strings.ScheduleMessage;
             PrimaryButtonText = Strings.OK;
-            SecondaryButtonText = Strings.Cancel;
 
             if (user != null && user.Type is UserTypeRegular && user.Status is not UserStatusRecently && !reminder)
             {
-                Online.Content = string.Format(Strings.MessageScheduledUntilOnline, user.FirstName);
-            }
-            else
-            {
-                Online.Visibility = Visibility.Collapsed;
+                CloseButtonText = string.Format(Strings.MessageScheduledUntilOnline, user.FirstName);
             }
 
             DefaultButton = ContentDialogButton.Primary;
+
+            UpdatePrimaryButtonText();
         }
 
-        public DateTime Value
+        public MessageSchedulingState SchedulingState { get; private set; }
+
+        private DateTime GetDateTime(bool utc)
         {
-            get
+            if (utc)
             {
-                if (Date.Date is DateTimeOffset date)
+                if (Date.Date is DateTimeOffset dateUtc)
                 {
-                    return date.Add(Time.Time).UtcDateTime;
+                    return dateUtc.Add(Time.Time).UtcDateTime;
                 }
-
-                return DateTime.MinValue;
             }
-        }
 
-        public bool IsUntilOnline { get; private set; }
+            if (Date.Date is DateTimeOffset date)
+            {
+                return date.Add(Time.Time).DateTime;
+            }
+
+            return DateTime.MinValue;
+        }
 
         private void ContentDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
-            if (IsUntilOnline)
-            {
-                return;
-            }
-
             if (Date.Date == null || Date.Date < DateTime.Today)
             {
                 VisualUtilities.ShakeView(Date);
@@ -83,16 +83,42 @@ namespace Telegram.Views.Popups
                 VisualUtilities.ShakeView(Time);
                 args.Cancel = true;
             }
+            else
+            {
+                SchedulingState = new MessageSchedulingStateSendAtDate(GetDateTime(true).ToTimestamp());
+            }
         }
 
         private void ContentDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
+            SchedulingState = new MessageSchedulingStateSendWhenOnline();
         }
 
-        private void Online_Click(object sender, RoutedEventArgs e)
+        private void Date_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
         {
-            IsUntilOnline = true;
-            Hide(ContentDialogResult.Primary);
+            UpdatePrimaryButtonText();
+        }
+
+        private void Time_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
+        {
+            UpdatePrimaryButtonText();
+        }
+
+        private void UpdatePrimaryButtonText()
+        {
+            var date = GetDateTime(false);
+            if (date.Date == DateTime.Today)
+            {
+                PrimaryButtonText = date.ToString(_reminder ? Strings.RemindTodayAt : Strings.SendTodayAt);
+            }
+            else if (date.Year == DateTime.Today.Year)
+            {
+                PrimaryButtonText = date.ToString(_reminder ? Strings.RemindDayAt : Strings.SendDayAt);
+            }
+            else
+            {
+                PrimaryButtonText = date.ToString(_reminder ? Strings.RemindDayYearAt : Strings.SendDayYearAt);
+            }
         }
     }
 }

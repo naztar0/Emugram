@@ -10,7 +10,7 @@ using System.ComponentModel;
 using System.Linq;
 using Telegram.Common;
 
-namespace Telegram.Collection
+namespace Telegram.Collections
 {
     // TODO: This is not the best solution ever, but I am lazy
     public partial class BatchedObservableCollection<T> : DiffObservableCollection<T>

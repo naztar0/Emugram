@@ -4,6 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using System.ComponentModel;
 using Telegram.Common;
 using Telegram.Controls;
 using Telegram.Td.Api;
@@ -67,7 +68,7 @@ namespace Telegram.Views.Payments
             ViewModel.PropertyChanged -= OnPropertyChanged;
         }
 
-        private void OnPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {

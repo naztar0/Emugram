@@ -28,6 +28,8 @@ namespace Telegram.Views.Popups
             var chat = clientService.GetChat(chatId);
             var users = clientService.GetUsers(members.Select(x => x.UserId));
 
+            ScrollingHost.ItemsSource = users;
+
             _clientService = clientService;
             _inviteLink = GetInviteLink(chat);
 
@@ -59,7 +61,6 @@ namespace Telegram.Views.Popups
                 ScrollingHost.SelectionMode = ListViewSelectionMode.None;
             }
 
-            ScrollingHost.ItemsSource = users;
             TextBlockHelper.SetMarkdown(MessageLabel, message);
         }
 
@@ -86,7 +87,7 @@ namespace Telegram.Views.Popups
                     var chat = await _clientService.SendAsync(new CreatePrivateChat(user.Id, false)) as Chat;
                     if (chat != null)
                     {
-                        _clientService.Send(new SendMessage(chat.Id, 0, null, null, null, new InputMessageText(new FormattedText(_inviteLink.InviteLink, Array.Empty<TextEntity>()), null, false)));
+                        _clientService.Send(new SendMessage(chat.Id, null, null, null, null, new InputMessageText(new FormattedText(_inviteLink.InviteLink, Array.Empty<TextEntity>()), null, false)));
                     }
                 }
             }

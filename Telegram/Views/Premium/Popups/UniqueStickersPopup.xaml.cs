@@ -32,10 +32,5 @@ namespace Telegram.Views.Premium.Popups
         {
 
         }
-
-        private void PurchaseShadow_Loaded(object sender, Windows.UI.Xaml.RoutedEventArgs e)
-        {
-
-        }
     }
 }

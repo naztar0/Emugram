@@ -25,11 +25,11 @@ namespace Telegram.Services
     public interface IEventAggregator
     {
         SubscriptionBuilder Subscribe<T>(object subscriber, Action<T> action);
-        void Subscribe<T>(object subscriber, long token, UpdateHandler<T> action, bool fireAndForget);
+        void Subscribe<T>(object subscriber, long token, UpdateHandler<T> action);
 
         void Unsubscribe(object subscriber);
         void Unsubscribe<T>(object subscriber);
-        void Unsubscribe(object subscriber, long token, bool fireAndForget);
+        void Unsubscribe(object subscriber, long token);
 
         void Publish(object message);
         void Publish(object message, long token);
@@ -65,11 +65,6 @@ namespace Telegram.Services
                     // TODO: is this safe for real? Can't be done with normal Dictionary
                     _typeHandlers.TryRemove(item.Key, out _);
                 }
-            }
-
-            if (_longSubscribers.TryGetValue(subscriber, out var prev))
-            {
-                Unsubscribe(subscriber, prev.Token, true);
             }
         }
 
@@ -168,7 +163,6 @@ namespace Telegram.Services
         #region By token
 
         private readonly ConcurrentDictionary<long, LongHandler> _longHandlers = new();
-        private readonly ConditionalWeakTable<object, Subscriber> _longSubscribers = new();
 
         class Subscriber
         {
@@ -180,29 +174,14 @@ namespace Telegram.Services
             }
         }
 
-        public void Subscribe<T>(object subscriber, long token, UpdateHandler<T> action, bool fireAndForget)
+        public void Subscribe<T>(object subscriber, long token, UpdateHandler<T> action)
         {
-            if (fireAndForget && _longSubscribers.TryGetValue(subscriber, out Subscriber prev))
-            {
-                Unsubscribe(subscriber, prev.Token, true);
-            }
-
             var handler = _longHandlers.GetOrAdd(token, x => new LongHandler());
             handler.Subscribe(subscriber, action);
-
-            if (fireAndForget)
-            {
-                _longSubscribers.AddOrUpdate(subscriber, new Subscriber(token));
-            }
         }
 
-        public virtual void Unsubscribe(object subscriber, long token, bool fireAndForget)
+        public virtual void Unsubscribe(object subscriber, long token)
         {
-            if (fireAndForget)
-            {
-                _longSubscribers.Remove(subscriber);
-            }
-
             if (_longHandlers.TryGetValue(token, out var handler))
             {
                 if (handler.Unsubscribe(subscriber))

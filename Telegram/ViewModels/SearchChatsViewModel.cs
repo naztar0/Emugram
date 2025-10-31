@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Telegram.Collections;
 using Telegram.Collections.Handlers;
 using Telegram.Common;
+using Telegram.Navigation.Services;
 using Telegram.Services;
 using Telegram.Td;
 using Telegram.Td.Api;
@@ -27,11 +28,12 @@ namespace Telegram.ViewModels
 {
     public partial class SearchChatsTabItem
     {
-        public SearchChatsTabItem(string text, Type type, SearchCollection<MessageWithOwner, MediaCollection> items)
+        public SearchChatsTabItem(string text, Type type, SearchCollection<MessageWithOwner, MediaCollection> items = null, bool isNew = false)
         {
             Text = text;
             Type = type;
             Items = items;
+            IsNew = isNew;
         }
 
         public string Text { get; }
@@ -39,6 +41,8 @@ namespace Telegram.ViewModels
         public Type Type { get; }
 
         public SearchCollection<MessageWithOwner, MediaCollection> Items { get; }
+
+        public bool IsNew { get; }
     }
 
     public partial class SearchChatsViewModel : MediaTabsViewModelBase, IIncrementalCollectionOwner
@@ -51,6 +55,7 @@ namespace Telegram.ViewModels
 
         private readonly SearchChannelsViewModel _channels;
         private readonly SearchWebAppsViewModel _webApps;
+        private readonly SearchPostsViewModel _posts;
 
         private readonly ChooseChatsTracker _tracker;
 
@@ -65,6 +70,8 @@ namespace Telegram.ViewModels
         {
             _channels = new SearchChannelsViewModel(clientService, settingsService, aggregator);
             _webApps = new SearchWebAppsViewModel(clientService, settingsService, aggregator);
+            _posts = new SearchPostsViewModel(clientService, settingsService, aggregator);
+
             _tracker = new ChooseChatsTracker(clientService, true);
             _tracker.Options = ChooseChatsOptions.All;
 
@@ -76,9 +83,10 @@ namespace Telegram.ViewModels
 
             Tabs = new List<SearchChatsTabItem>
             {
-                new SearchChatsTabItem(Strings.FilterChats, typeof(BlankPage), null),
-                new SearchChatsTabItem(Strings.FilterChannels, typeof(BlankPage), null),
-                new SearchChatsTabItem(Strings.AppsTab, typeof(BlankPage), null),
+                new SearchChatsTabItem(Strings.FilterChats, typeof(BlankPage)),
+                new SearchChatsTabItem(Strings.FilterChannels, typeof(BlankPage)),
+                new SearchChatsTabItem(Strings.AppsTab, typeof(BlankPage)),
+                new SearchChatsTabItem(Strings.SearchPosts, typeof(SearchPostsTabPage), isNew: true),
                 new SearchChatsTabItem(Strings.SharedMediaTab2, typeof(ProfileMediaTabPage), Media.Items),
                 new SearchChatsTabItem(Strings.SharedFilesTab2, typeof(ProfileFilesTabPage), Files.Items),
                 new SearchChatsTabItem(Strings.SharedLinksTab2, typeof(ProfileLinksTabPage), Links.Items),
@@ -86,6 +94,8 @@ namespace Telegram.ViewModels
                 new SearchChatsTabItem(Strings.SharedVoiceTab2, typeof(ProfileVoiceTabPage), Voice.Items)
             };
         }
+
+        public SearchPostsViewModel Posts => _posts;
 
         public List<SearchChatsTabItem> Tabs { get; }
 
@@ -111,6 +121,19 @@ namespace Telegram.ViewModels
             2 => _webApps.Items,
             _ => null,
         };
+
+        public override INavigationService NavigationService
+        {
+            get => base.NavigationService;
+            set
+            {
+                base.NavigationService = value;
+
+                _channels.NavigationService = value;
+                _webApps.NavigationService = value;
+                _posts.NavigationService = value;
+            }
+        }
 
         private readonly DebouncedPropertyWithToken<string> _query;
         public string Query
@@ -140,18 +163,28 @@ namespace Telegram.ViewModels
                     tab.Items.UpdateQuery(query);
                     _channels.SynchronizeQuery(query);
                     _webApps.SynchronizeQuery(query);
+                    _posts.SynchronizeQuery(query);
                     _query.Value = query;
                 }
                 else if (SelectedTab == 1)
                 {
                     _channels.Query = query;
                     _webApps.SynchronizeQuery(query);
+                    _posts.SynchronizeQuery(query);
                     _query.Value = query;
                 }
                 else if (SelectedTab == 2)
                 {
                     _webApps.Query = query;
                     _channels.SynchronizeQuery(query);
+                    _posts.SynchronizeQuery(query);
+                    _query.Value = query;
+                }
+                else if (SelectedTab == 3)
+                {
+                    _posts.Query = query;
+                    _channels.SynchronizeQuery(query);
+                    _webApps.SynchronizeQuery(query);
                     _query.Value = query;
                 }
                 else
@@ -159,6 +192,7 @@ namespace Telegram.ViewModels
                     _query.Set(query, _cancellation.Token);
                     _channels.SynchronizeQuery(query);
                     _webApps.SynchronizeQuery(query);
+                    _posts.SynchronizeQuery(query);
                 }
             }
         }
@@ -203,6 +237,10 @@ namespace Telegram.ViewModels
                     else if (value == 2)
                     {
                         _webApps.Query = Query;
+                    }
+                    else if (value == 3)
+                    {
+                        _posts.Query = Query;
                     }
                     else
                     {

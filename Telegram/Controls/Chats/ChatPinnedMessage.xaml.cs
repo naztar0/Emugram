@@ -5,11 +5,14 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using Microsoft.Graphics.Canvas.Geometry;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Telegram.Common;
 using Telegram.Composition;
+using Telegram.Controls.Media;
 using Telegram.Controls.Messages;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
@@ -19,6 +22,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Automation.Peers;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Hosting;
+using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 
 namespace Telegram.Controls.Chats
@@ -28,7 +32,6 @@ namespace Telegram.Controls.Chats
         public DialogViewModel ViewModel => DataContext as DialogViewModel;
 
         private ChatView _chatView;
-        private UIElement _parent;
 
         private readonly Visual _textVisual1;
         private readonly Visual _textVisual2;
@@ -47,6 +50,8 @@ namespace Telegram.Controls.Chats
             InitializeComponent();
 
             this.CreateInsetClip();
+
+            _collapsed = new SlidePanel.SlideState(this, false, 48);
 
             ElementCompositionPreview.SetIsTranslationEnabled(ContentRoot, true);
 
@@ -77,16 +82,14 @@ namespace Telegram.Controls.Chats
             _loading = false;
             _animate = false;
 
-            _collapsed = true;
-            Visibility = Visibility.Collapsed;
+            _collapsed.Collapse();
         }
 
         public float AnimatedHeight => _collapsed ? 0 : 48;
 
-        public void InitializeParent(ChatView chatView, UIElement parent)
+        public void InitializeParent(ChatView chatView)
         {
             _chatView = chatView;
-            ElementCompositionPreview.SetIsTranslationEnabled(_parent = parent, true);
         }
 
         private readonly Queue<(Chat, MessageViewModel, bool, int, int)> _queue = new();
@@ -258,7 +261,7 @@ namespace Telegram.Controls.Chats
             _textVisual = textVisualShow;
         }
 
-        private bool _collapsed = true;
+        private SlidePanel.SlideState _collapsed;
 
         private void ShowHide(bool show)
         {
@@ -267,41 +270,8 @@ namespace Telegram.Controls.Chats
                 return;
             }
 
-            _collapsed = !show;
-            Visibility = Visibility.Visible;
-
-            var parent = ElementComposition.GetElementVisual(_parent);
-            var visual = ElementComposition.GetElementVisual(this);
-            visual.Clip = visual.Compositor.CreateInsetClip();
-
-            var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-            batch.Completed += (s, args) =>
-            {
-                visual.Clip = null;
-                parent.Properties.InsertVector3("Translation", Vector3.Zero);
-
-                if (_collapsed)
-                {
-                    Visibility = Visibility.Collapsed;
-                }
-            };
-
+            _collapsed.IsVisible = show;
             _chatView.UpdateMessagesHeaderPadding();
-
-            var clip = visual.Compositor.CreateScalarKeyFrameAnimation();
-            clip.InsertKeyFrame(show ? 0 : 1, 48);
-            clip.InsertKeyFrame(show ? 1 : 0, 0);
-            clip.Duration = Constants.FastAnimation;
-
-            var offset = visual.Compositor.CreateScalarKeyFrameAnimation();
-            offset.InsertKeyFrame(show ? 0 : 1, -48);
-            offset.InsertKeyFrame(show ? 1 : 0, 0);
-            offset.Duration = Constants.FastAnimation;
-
-            visual.Clip.StartAnimation("TopInset", clip);
-            parent.StartAnimation("Translation.Y", offset);
-
-            batch.End();
         }
 
         public IEnumerable<UIElement> GetAnimatableVisuals()
@@ -343,15 +313,19 @@ namespace Telegram.Controls.Chats
 
         protected override void HideThumbnail()
         {
+            _thumbnailController?.Recycle();
+
             ShowHideThumbnail(false);
         }
 
-        protected override void ShowThumbnail(CornerRadius radius = default)
+        protected override ImageBrush ShowThumbnail(CornerRadius radius = default)
         {
             ShowHideThumbnail(true);
 
             ThumbRoot.CornerRadius =
                 ThumbEllipse.CornerRadius = radius == default ? _defaultRadius : radius;
+
+            return ThumbImage;
         }
 
         private bool _collapsedThumbnail = true;
@@ -404,14 +378,6 @@ namespace Telegram.Controls.Chats
             batch.End();
         }
 
-        protected override void SetThumbnail(ImageSource value)
-        {
-            if (ThumbImage != null)
-            {
-                ThumbImage.ImageSource = value;
-            }
-        }
-
         protected override void SetText(MessageViewModel message, bool outgoing, MessageSender sender, string title, string service, FormattedText quote, bool manual, bool white)
         {
             _alternativeText = title + ": ";
@@ -455,6 +421,22 @@ namespace Telegram.Controls.Chats
         }
 
         #endregion
+
+        private void OnContextRequested(UIElement sender, ContextRequestedEventArgs args)
+        {
+            var flyout = new MenuFlyout();
+
+            if (ViewModel.Chat.CanPinMessages(ViewModel.ClientService))
+            {
+                flyout.CreateFlyoutItem(ViewModel.UnpinMessages, ViewModel.PinnedMessages.Count == 1 ? Strings.UnpinMessage2 : Strings.UnpinAllMessages2, Icons.PinOff);
+            }
+            else
+            {
+                flyout.CreateFlyoutItem(ViewModel.UnpinMessages, ViewModel.PinnedMessages.Count == 1 ? Strings.HidePinnedMessage2 : Strings.HidePinnedMessages2, Icons.PinOff);
+            }
+
+            flyout.ShowAt(sender, args);
+        }
     }
 
     public partial class ChatPinnedMessageAutomationPeer : HyperlinkButtonAutomationPeer
@@ -518,18 +500,15 @@ namespace Telegram.Controls.Chats
             _maskPath = mask;
 
             ElementCompositionPreview.SetElementChildVisual(this, visual);
-
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             _strokeBrush?.Register();
             _fillBrush?.Register();
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _strokeBrush?.Unregister();
             _fillBrush?.Unregister();
@@ -594,6 +573,8 @@ namespace Telegram.Controls.Chats
 
         public void UpdateIndex(int value, int maximum, int direction)
         {
+            maximum = Math.Clamp(maximum, 0, int.MaxValue);
+
             if (_maskPath == null || (_nextValue == value && _nextMaximum == maximum))
             {
                 return;

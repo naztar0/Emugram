@@ -63,10 +63,10 @@ namespace Telegram.ViewModels.Supergroups
             }
 
             var themeName = chat.Background?.Background.Type is BackgroundTypeChatTheme typeChatTheme
-                ? typeChatTheme.ThemeName
-                : chat.ThemeName;
+                ? new ChatThemeEmoji(typeChatTheme.ThemeName)
+                : chat.Theme;
 
-            SelectedChatTheme = string.IsNullOrEmpty(themeName) ? ChatThemes[0] : ChatThemes.FirstOrDefault(x => x.Name == themeName);
+            SelectedChatTheme = ChatThemes.FirstOrDefault(x => x.AreTheSame(themeName)) ?? ChatThemes[0];
 
             SelectedAccentColor = ClientService.GetAccentColor(chat.AccentColorId);
             SelectedCustomEmojiId = chat.BackgroundCustomEmojiId;
@@ -130,21 +130,21 @@ namespace Telegram.ViewModels.Supergroups
             }
 
             var prevChatTheme = chat.Background?.Background.Type is BackgroundTypeChatTheme typeChatTheme
-                ? typeChatTheme.ThemeName
-                : chat.ThemeName;
+                ? new ChatThemeEmoji(typeChatTheme.ThemeName)
+                : chat.Theme;
 
             var nextChatTheme = SelectedChatTheme?.LightSettings != null
-                ? SelectedChatTheme.Name
-                : string.Empty;
+                ? SelectedChatTheme.Type
+                : null;
 
-            if (prevChatTheme != nextChatTheme)
+            if (!prevChatTheme.AreTheSame(nextChatTheme))
             {
                 changed = true;
             }
 
             if (changed)
             {
-                ConfirmClose();
+                ConfirmClose(args);
                 args.Cancel = true;
             }
         }
@@ -354,14 +354,14 @@ namespace Telegram.ViewModels.Supergroups
             }
 
             var prevChatTheme = chat.Background?.Background.Type is BackgroundTypeChatTheme typeChatTheme
-                ? typeChatTheme.ThemeName
-                : chat.ThemeName;
+                ? new ChatThemeEmoji(typeChatTheme.ThemeName)
+                : chat.Theme;
 
             var nextChatTheme = SelectedChatTheme?.LightSettings != null
-                ? SelectedChatTheme.Name
-                : string.Empty;
+                ? SelectedChatTheme.Type
+                : null;
 
-            if (nextChatTheme.Length > 0 && prevChatTheme != nextChatTheme && MinChatThemeBackgroundBoostLevel > level)
+            if (nextChatTheme != null && !prevChatTheme.AreTheSame(nextChatTheme) && MinChatThemeBackgroundBoostLevel > level)
             {
                 feature = ChatBoostFeature.ChatTheme;
                 level = MinChatThemeBackgroundBoostLevel;
@@ -370,22 +370,26 @@ namespace Telegram.ViewModels.Supergroups
             return level;
         }
 
-        private async void ConfirmClose()
+        private async void ConfirmClose(NavigatingEventArgs args)
         {
             var confirm = await ShowPopupAsync(Strings.ChannelColorUnsavedMessage, Strings.ChannelColorUnsaved, Strings.ChatThemeSaveDialogDiscard, Strings.ChatThemeSaveDialogApply, destructive: true);
             if (confirm == ContentDialogResult.Primary)
             {
                 _confirmed = true;
-                NavigationService.GoBack();
+                NavigationService.GoBack(args);
             }
             else if (confirm == ContentDialogResult.Secondary)
             {
-                _confirmed = true;
-                Commit();
+                Continue(args);
             }
         }
 
-        public async void Commit()
+        public void Commit()
+        {
+            Continue(null);
+        }
+
+        private async void Continue(NavigatingEventArgs args)
         {
             if (Chat is not Chat chat)
             {
@@ -441,17 +445,17 @@ namespace Telegram.ViewModels.Supergroups
             }
 
             var prevChatTheme = chat.Background?.Background.Type is BackgroundTypeChatTheme typeChatTheme
-                ? typeChatTheme.ThemeName
-                : chat.ThemeName;
+                ? new ChatThemeEmoji(typeChatTheme.ThemeName)
+                : chat.Theme;
 
             var nextChatTheme = SelectedChatTheme?.LightSettings != null
-                ? SelectedChatTheme.Name
-                : string.Empty;
+                ? SelectedChatTheme.Type
+                : null;
 
-            if (prevChatTheme != nextChatTheme)
+            if (!prevChatTheme.AreTheSame(nextChatTheme))
             {
                 changed = true;
-                ClientService.Send(new SetChatTheme(chat.Id, nextChatTheme));
+                ClientService.Send(new SetChatTheme(chat.Id, nextChatTheme.ToInput()));
             }
 
             if (changed)
@@ -460,7 +464,7 @@ namespace Telegram.ViewModels.Supergroups
             }
 
             _confirmed = true;
-            NavigationService.GoBack();
+            NavigationService.GoBack(args);
         }
     }
 }

@@ -8,11 +8,12 @@ namespace Telegram.Td.Api
 {
     public class InputMessageReplyToTopicMessage : InputMessageReplyTo
     {
-        public InputMessageReplyToTopicMessage(long messageId, MessageTopic topicId, InputTextQuote quote)
+        public InputMessageReplyToTopicMessage(long messageId, MessageTopic topicId, InputTextQuote quote, int checklistTaskId)
         {
             MessageId = messageId;
             TopicId = topicId;
             Quote = quote;
+            ChecklistTaskId = checklistTaskId;
         }
 
         /// <summary>
@@ -28,6 +29,8 @@ namespace Telegram.Td.Api
         /// for replies in secret chats.
         /// </summary>
         public InputTextQuote Quote { get; set; }
+
+        public int ChecklistTaskId { get; set; }
 
         public override string ToString()
         {

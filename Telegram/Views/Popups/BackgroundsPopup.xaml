@@ -30,18 +30,18 @@
                 </ItemsPanelTemplate>
             </GridView.ItemsPanel>
             <GridView.Header>
-                <StackPanel Margin="-16,0,-16,8">
-                    <controls:BadgeButton Content="{CustomResource SelectFromGallery}"
-                                          Click="ChangeToLocal_Click"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Background="Transparent"
-                                          Glyph="&#xEB9F;" />
+                <StackPanel Margin="-12,0,-12,8">
+                    <controls:SettingsButton Content="{CustomResource SelectFromGallery}"
+                                             Click="ChangeToLocal_Click"
+                                             Style="{StaticResource GlyphBadgeButtonPopupStyle}"
+                                             Background="Transparent"
+                                             Glyph="&#xEB9F;" />
 
-                    <controls:BadgeButton Content="{CustomResource SetColor}"
-                                          Click="ChangeToColor_Click"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Background="Transparent"
-                                          Glyph="&#xE2B1;" />
+                    <controls:SettingsButton Content="{CustomResource SetColor}"
+                                             Click="ChangeToColor_Click"
+                                             Style="{StaticResource GlyphBadgeButtonPopupStyle}"
+                                             Background="Transparent"
+                                             Glyph="&#xE2B1;" />
                 </StackPanel>
             </GridView.Header>
             <GridView.ItemContainerStyle>

@@ -29,7 +29,7 @@ namespace Telegram.ViewModels.Chats
 
         private readonly MvxObservableCollection<GalleryMedia> _group;
 
-        public ChatGalleryViewModel(IClientService clientService, IStorageService storageService, IEventAggregator aggregator, long chatId, MessageTopic topic, MessageWithOwner selected, MessageProperties properties, bool mirrored = false)
+        public ChatGalleryViewModel(IClientService clientService, IStorageService storageService, IEventAggregator aggregator, long chatId, MessageTopic topic, MessageWithOwner selected, MessageProperties properties, bool mirrored = false, SearchMessagesFilter filter = null)
             : base(clientService, storageService, aggregator)
         {
             _isMirrored = mirrored;
@@ -39,7 +39,11 @@ namespace Telegram.ViewModels.Chats
             _chatId = chatId;
             _topic = topic;
 
-            if (selected.Content is MessageAnimation)
+            if (filter != null)
+            {
+                _filter = filter;
+            }
+            else if (selected.Content is MessageAnimation)
             {
                 _filter = new SearchMessagesFilterAnimation();
             }

@@ -141,11 +141,11 @@ namespace Telegram.Services.Settings
             set => AddOrUpdateValue(ref _disablePackageManager, "DisablePackageManager", value);
         }
 
-        private bool? _useSpeexResampler;
-        public bool UseSpeexResampler
+        private bool? _useAVCodec;
+        public bool UseAVCodec
         {
-            get => _useSpeexResampler ??= GetValueOrDefault("UseSpeexResampler", false);
-            set => AddOrUpdateValue(ref _useSpeexResampler, "UseSpeexResampler", value);
+            get => _useAVCodec ??= GetValueOrDefault("UseAVCodec", ApiInfo.IsPackagedRelease);
+            set => AddOrUpdateValue(ref _useAVCodec, "UseAVCodec", value);
         }
 
         private bool? _forumTabsDebug;
@@ -155,18 +155,11 @@ namespace Telegram.Services.Settings
             set => AddOrUpdateValue(ref _forumTabsDebug, "ForumTabsDebug", value);
         }
 
-        private bool? _bubbleTailDebug;
-        public bool BubbleTailDebug
+        private bool? _bubbleElevationDebug;
+        public bool BubbleElevationDebug
         {
-            get => _bubbleTailDebug ??= GetValueOrDefault("BubbleTailDebug", true);
-            set => AddOrUpdateValue(ref _bubbleTailDebug, "BubbleTailDebug", value);
-        }
-
-        private bool? _spoilerEffectDebug;
-        public bool SpoilerEffectDebug
-        {
-            get => _spoilerEffectDebug ??= GetValueOrDefault("SpoilerEffectDebug", true);
-            set => AddOrUpdateValue(ref _spoilerEffectDebug, "SpoilerEffectDebug", value);
+            get => _bubbleElevationDebug ??= GetValueOrDefault("BubbleElevationDebug", true);
+            set => AddOrUpdateValue(ref _bubbleElevationDebug, "BubbleElevationDebug", value);
         }
 
         private bool? _windowResizeDebug;
@@ -176,32 +169,11 @@ namespace Telegram.Services.Settings
             set => AddOrUpdateValue(ref _windowResizeDebug, "WindowResizeDebug", value);
         }
 
-        private bool? _sparseMessagesDebug;
-        public bool SparseMessagesDebug
-        {
-            get => _sparseMessagesDebug ??= GetValueOrDefault("SparseMessagesDebug", true);
-            set => AddOrUpdateValue(ref _sparseMessagesDebug, "SparseMessagesDebug", value);
-        }
-
-        private bool? _savedMessagesDebug;
-        public bool SavedMessagesDebug
-        {
-            get => _savedMessagesDebug ??= GetValueOrDefault("SavedMessagesDebug", ApiInfo.IsPackagedRelease);
-            set => AddOrUpdateValue(ref _savedMessagesDebug, "SavedMessagesDebug", value);
-        }
-
         private bool? _deleteFilesDebug;
         public bool DeleteFilesDebug
         {
             get => _deleteFilesDebug ??= GetValueOrDefault("DeleteFilesDebug", Constants.DEBUG);
             set => AddOrUpdateValue(ref _deleteFilesDebug, "DeleteFilesDebug", value);
-        }
-
-        private bool? _mediaServerDebug;
-        public bool MediaServerDebug
-        {
-            get => _mediaServerDebug ??= GetValueOrDefault("MediaServerDebug", true);
-            set => AddOrUpdateValue(ref _mediaServerDebug, "MediaServerDebug", value);
         }
 
         private bool? _albumPreloadDebug;
@@ -214,7 +186,7 @@ namespace Telegram.Services.Settings
         private bool? _videoPreloadDebug;
         public bool VideoPreloadDebug
         {
-            get => _videoPreloadDebug ??= GetValueOrDefault("VideoPreloadDebug", ApiInfo.IsPackagedRelease);
+            get => _videoPreloadDebug ??= GetValueOrDefault("VideoPreloadDebug", false);
             set => AddOrUpdateValue(ref _videoPreloadDebug, "VideoPreloadDebug", value);
         }
 

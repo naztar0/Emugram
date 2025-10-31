@@ -26,8 +26,7 @@
                                                     Height="96"
                                                     Margin="0,24,0,8">
                         <controls:ProfilePicture x:Name="Photo"
-                                                 Width="96"
-                                                 Height="96" />
+                                                 Size="96" />
                     </controls:ActiveStoriesSegments>
 
                     <TextBlock Text="{CustomResource UpgradedStories}"

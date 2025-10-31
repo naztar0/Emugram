@@ -6,6 +6,7 @@
              xmlns:controls="using:Telegram.Controls"
              xmlns:cells="using:Telegram.Controls.Cells"
              xmlns:selectors="using:Telegram.Selectors"
+             xmlns:viewModels="using:Telegram.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="300"
              d:DesignWidth="400">
@@ -67,13 +68,32 @@
                              ItemsSource="{x:Bind ViewModel.Tabs}"
                              SelectedIndex="{x:Bind ViewModel.SelectedTab, Mode=TwoWay}"
                              SelectionChanged="ChatFolders_SelectionChanged"
-                             DisplayMemberPath="Text"
                              ScrollViewer.IsHorizontalScrollChainingEnabled="False"
                              FocusFollowsSingleSelection="True"
                              SingleSelectionFollowsFocus="False"
                              Height="40"
                              BorderBrush="{ThemeResource SettingsItemBorderBrush}"
-                             BorderThickness="0,0,0,0" />
+                             BorderThickness="0,0,0,0">
+            <controls:TopNavView.ItemTemplate>
+                <DataTemplate  x:DataType="viewModels:SearchChatsTabItem">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{x:Bind Text}" />
+                        <controls:BadgeControl x:Name="Badge"
+                                               x:Load="{x:Bind IsNew}"
+                                               Text="NEW"
+                                               HorizontalAlignment="Left"
+                                               VerticalAlignment="Bottom"
+                                               Margin="4,0,0,0"
+                                               CornerRadius="4"
+                                               Grid.Column="1" />
+                    </Grid>
+                </DataTemplate>
+            </controls:TopNavView.ItemTemplate>
+        </controls:TopNavView>
 
         <!--<ListView x:Load="False"
                                           x:Name="PippoFranco"
@@ -116,6 +136,9 @@
 
         <Grid x:Name="SearchRoot"
               Grid.Row="1">
+            <Grid.Resources>
+                <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
+            </Grid.Resources>
             <ListView x:Name="ItemsHost"
                       ItemsSource="{x:Bind ViewModel.ItemsView, Mode=OneWay}"
                       IsItemClickEnabled="True"
@@ -141,8 +164,7 @@
                                         <Grid Width="48"
                                               Height="48"
                                               Margin="12,0">
-                                            <controls:ProfilePicture Width="48"
-                                                                     Height="48" />
+                                            <controls:ProfilePicture Size="48" />
                                             <controls:BadgeControl VerticalAlignment="Top"
                                                                    HorizontalAlignment="Right" />
                                             <Border Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"

@@ -235,10 +235,10 @@
                     </controls:HeaderedControl>
 
                     <controls:HeaderedControl>
-                        <controls:BadgeButton x:Name="Blacklist"
-                                              Content="{CustomResource ChannelBlacklist}"
-                                              Click="{x:Bind ViewModel.Banned}"
-                                              IsChevronVisible="True" />
+                        <controls:SettingsButton x:Name="Blacklist"
+                                                 Content="{CustomResource ChannelBlacklist}"
+                                                 Click="{x:Bind ViewModel.Banned}"
+                                                 IsChevronVisible="True" />
                     </controls:HeaderedControl>
 
                     <Grid HorizontalAlignment="Left"
@@ -265,10 +265,9 @@
                                               Header="{CustomResource NotificationsExceptions}"
                                               Margin="0,-16,0,-30"
                                               Visibility="Collapsed">
-                        <controls:BadgeButton Content="{CustomResource ChannelAddException}"
-                                              Click="{x:Bind ViewModel.AddRestricted}"
-                                              Style="{StaticResource GlyphBadgeButtonStyle}"
-                                              Glyph="&#xF166;" />
+                        <controls:SettingsButton Content="{CustomResource ChannelAddException}"
+                                                 Click="{x:Bind ViewModel.AddRestricted}"
+                                                 Glyph="&#xF166;" />
                     </controls:HeaderedControl>
                 </controls:SettingsPanel>
             </ListView.Header>

@@ -18,15 +18,7 @@ namespace Telegram.Entities
             Code = code;
             PhoneCode = phoneCode;
             Name = name;
-
-            if (GeographicRegion.IsSupported(code))
-            {
-                DisplayName = new GeographicRegion(code).DisplayName;
-            }
-            else
-            {
-                DisplayName = name;
-            }
+            DisplayName = GetDisplayName(code, name);
 
             if (code == "FT")
             {
@@ -37,6 +29,23 @@ namespace Telegram.Entities
                 Emoji = char.ConvertFromUtf32(127462 + (code[0] - 'A'))
                     + char.ConvertFromUtf32(127462 + (code[1] - 'A'));
             }
+        }
+
+        public static string GetDisplayName(string code, string englishName)
+        {
+            if (GeographicRegion.IsSupported(code))
+            {
+                try
+                {
+                    return new GeographicRegion(code).DisplayName;
+                }
+                catch
+                {
+                    // All the remote procedure calls must be wrapped in a try-catch block
+                }
+            }
+
+            return englishName;
         }
 
         public string Code { get; set; }

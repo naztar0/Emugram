@@ -4,9 +4,14 @@
 #include "PlaceholderImageHelper.g.cpp"
 #endif
 
+#include "MessageBubbleNineGrid.h";
+
 #include "SVG/nanosvg.h"
 #include "StringUtils.h"
 #include "Helpers\COMHelper.h"
+#include "Helpers\BlurHelper.h"
+
+#include <zlib.h>
 
 #include <src\webp\decode.h>
 #include <src\webp\demux.h>
@@ -16,21 +21,20 @@
 
 #include <winrt/Windows.ApplicationModel.h>
 #include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Graphics.Effects.h>
 #include <winrt/Windows.UI.Xaml.Media.Imaging.h>
+#include <winrt/Windows.Security.Cryptography.h>
 #include <windows.ui.xaml.media.dxinterop.h>
 
 #include <BufferSurface.h>
 
 using namespace D2D1;
 using namespace winrt::Windows::ApplicationModel;
+using namespace winrt::Windows::Graphics::DirectX;
 using namespace winrt::Windows::UI::Xaml::Media::Imaging;
 
 namespace winrt::Telegram::Native::implementation
 {
-    std::mutex PlaceholderImageHelper::s_criticalSection;
-    winrt::com_ptr<PlaceholderImageHelper> PlaceholderImageHelper::s_foreground{ nullptr };
-    winrt::com_ptr<PlaceholderImageHelper> PlaceholderImageHelper::s_background{ nullptr };
-
     class CustomEmojiInlineObject
         : public winrt::implements<CustomEmojiInlineObject, IDWriteInlineObject>
     {
@@ -351,41 +355,12 @@ namespace winrt::Telegram::Native::implementation
         WebPIterator iter;
         if (WebPDemuxGetFrame(spDemuxer.get(), 1, &iter))
         {
-            WebPDecoderConfig config;
-            int ret = WebPInitDecoderConfig(&config);
-            if (!ret)
-            {
-                //throw ref new FailureException(ref new String(L"WebPInitDecoderConfig failed"));
-                free(buffer);
-                return false;
-            }
-
-            ret = (WebPGetFeatures(iter.fragment.bytes, iter.fragment.size, &config.input) == VP8_STATUS_OK);
-            if (!ret)
-            {
-                //throw ref new FailureException(ref new String(L"WebPGetFeatures failed"));
-                free(buffer);
-                return false;
-            }
-
             pixelWidth = iter.width;
             pixelHeight = iter.height;
         }
 
         free(buffer);
         return true;
-    }
-
-    winrt::Windows::Foundation::IAsyncAction PlaceholderImageHelper::DrawSvgAsync(hstring path, Color foreground, IRandomAccessStream randomAccessStream, double dpi)
-    {
-        winrt::apartment_context ui_thread;
-        co_await winrt::resume_background();
-
-        Windows::Foundation::Size size;
-        DrawSvg(path, foreground, randomAccessStream, dpi, size);
-        randomAccessStream.Seek(0);
-
-        co_await ui_thread;
     }
 
     winrt::Telegram::Native::SurfaceImage PlaceholderImageHelper::Create(int32_t pixelWidth, int32_t pixelHeight)
@@ -433,12 +408,140 @@ namespace winrt::Telegram::Native::implementation
         return native->EndDraw();
     }
 
-    HRESULT PlaceholderImageHelper::DrawSvg(hstring path, Color foreground, IRandomAccessStream randomAccessStream, double dpi, Windows::Foundation::Size& size)
+    winrt::Windows::Foundation::IAsyncOperation<ChatBackgroundPattern> PlaceholderImageHelper::DrawSvgAsync(Compositor compositor, hstring path, double rasterizationScale)
+    {
+        winrt::apartment_context ui_thread;
+        co_await winrt::resume_background();
+
+        ChatBackgroundPattern pattern{ nullptr };
+        try
+        {
+            pattern = DrawSvg(compositor, path, rasterizationScale);
+        }
+        catch (...)
+        {
+            pattern = nullptr;
+        }
+
+        co_await ui_thread;
+        co_return pattern;
+    }
+
+    constexpr float PI = 3.14159265358979323846f;
+
+    inline static ChatBackgroundSymbol ParseGiftPattern(float topLeftX, float topLeftY, float topRightX, float topRightY, float bottomRightX, float bottomRightY, float bottomLeftX, float bottomLeftY)
+    {
+        ChatBackgroundSymbol pattern;
+        pattern.Offset = float2(topLeftX, topLeftY);
+
+        float dx_top = topRightX - topLeftX;
+        float dy_top = topRightY - topLeftY;
+        pattern.RotationAngle = atan2(dy_top, dx_top);
+
+        float dx_left = bottomLeftX - topLeftX;
+        float dy_left = bottomLeftY - topLeftY;
+        float width = sqrt(dx_top * dx_top + dy_top * dy_top);
+        float height = sqrt(dx_left * dx_left + dy_left * dy_left);
+        pattern.Size = float2(width, height);
+
+        return pattern;
+    }
+
+    inline static bool IsGzipCompressed(const char* data, size_t length)
+    {
+        if (length < 10) return false;
+        return (static_cast<unsigned char>(data[0]) == 0x1f &&
+            static_cast<unsigned char>(data[1]) == 0x8b);
+    }
+
+    inline static std::string DecompressFromFile(hstring path)
+    {
+        FILE* file;
+        _wfopen_s(&file, path.c_str(), L"rb");
+        if (file == NULL)
+        {
+            return "";
+        }
+
+        fseek(file, 0, SEEK_END);
+        size_t length = ftell(file);
+        fseek(file, 0, SEEK_SET);
+        char* buffer = (char*)malloc(length);
+        fread(buffer, 1, length, file);
+        fclose(file);
+
+        if (!buffer || length == 0)
+        {
+            free(buffer);
+            return "";
+        }
+
+        if (!IsGzipCompressed(buffer, length))
+        {
+            free(buffer);
+            return std::string(buffer, length);
+        }
+
+        z_stream stream = {};
+
+        if (inflateInit2(&stream, 15 + 16) != Z_OK)
+        {
+            free(buffer);
+            return "";
+        }
+
+        stream.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(buffer));
+        stream.avail_in = static_cast<uInt>(length);
+
+        std::string decompressed;
+        const size_t CHUNK_SIZE = 32768;
+
+        int ret;
+        do
+        {
+            std::vector<char> chunk(CHUNK_SIZE);
+            stream.next_out = reinterpret_cast<Bytef*>(chunk.data());
+            stream.avail_out = static_cast<uInt>(chunk.size());
+
+            ret = inflate(&stream, Z_NO_FLUSH);
+
+            if (ret != Z_OK && ret != Z_STREAM_END)
+            {
+                inflateEnd(&stream);
+                free(buffer);
+                return "";
+            }
+
+            size_t decompressedSize = chunk.size() - stream.avail_out;
+            decompressed.append(chunk.data(), decompressedSize);
+
+        } while (ret != Z_STREAM_END);
+
+        inflateEnd(&stream);
+        free(buffer);
+        return decompressed;
+    }
+
+    ChatBackgroundPattern PlaceholderImageHelper::DrawSvg(Compositor compositor, hstring path, double rasterizationScale)
     {
         std::lock_guard const guard(m_criticalSection);
         HRESULT result;
 
-        auto data = winrt::to_string(path);
+        if (rasterizationScale < 1)
+        {
+            rasterizationScale = 1;
+        }
+        else if (rasterizationScale > 4)
+        {
+            rasterizationScale = 4;
+        }
+
+        auto scale = (int)(rasterizationScale * 100);
+        float rasterScale = (float)rasterizationScale;
+        float dpi = 0.25f * rasterScale;
+
+        auto data = DecompressFromFile(path);
+        auto patterns = winrt::single_threaded_vector<ChatBackgroundSymbol>();
 
         struct NSVGimage* image;
         image = nsvgParse((char*)data.c_str(), "px", 96);
@@ -448,22 +551,36 @@ namespace winrt::Telegram::Native::implementation
                 nsvgDelete(p);
             });
 
-        auto imageWidth = image->width * dpi;
-        auto imageHeight = image->height * dpi;
-        size = Windows::Foundation::Size(imageWidth, imageHeight);
-
-        winrt::com_ptr<ID2D1Bitmap1> targetBitmap;
-        D2D1_BITMAP_PROPERTIES1 properties = { { DXGI_FORMAT_R8G8B8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED }, 96, 96, D2D1_BITMAP_OPTIONS_TARGET, 0 };
-        ReturnIfFailed(result, m_d2dContext->CreateBitmap(D2D1_SIZE_U{ (uint32_t)imageWidth, (uint32_t)imageHeight }, nullptr, 0, &properties, targetBitmap.put()));
-
-        m_d2dContext->SetTarget(targetBitmap.get());
-        m_d2dContext->BeginDraw();
-        m_d2dContext->Clear(D2D1::ColorF(0, 0, 0, 0));
-        m_d2dContext->SetTransform(D2D1::Matrix3x2F::Scale(1 * dpi, 1 * dpi));
+        auto imageWidth = image->width;
+        auto imageHeight = image->height;
 
         winrt::com_ptr<ID2D1SolidColorBrush> blackBrush;
-        ReturnIfFailed(result, m_d2dContext->CreateSolidColorBrush(
-            D2D1::ColorF(foreground.R / 255.0f, foreground.G / 255.0f, foreground.B / 255.0f, foreground.A / 255.0f), blackBrush.put()));
+
+        winrt::com_ptr<abi::ICompositionGraphicsDevice> deviceInterop;
+        CompositionGraphicsDevice device{ nullptr };
+        CompositionDrawingSurface surface{ nullptr };
+        winrt::com_ptr<abi::ICompositionDrawingSurfaceInterop> surfaceInterop;
+        winrt::Windows::Foundation::Size imageSize(imageWidth * dpi, imageHeight * dpi);
+
+        winrt::com_ptr<ID2D1DeviceContext> d2dContext;
+        POINT offset;
+
+        auto compositorInterop = compositor.as<abi::ICompositorInterop>();
+        CleanupIfFailed(result, compositorInterop->CreateGraphicsDevice(m_d2dDevice.get(), deviceInterop.put()));
+
+        device = deviceInterop.as<CompositionGraphicsDevice>();
+        surface = device.CreateDrawingSurface(imageSize, DirectXPixelFormat::B8G8R8A8UIntNormalized, DirectXAlphaMode::Premultiplied);
+        surfaceInterop = surface.as<abi::ICompositionDrawingSurfaceInterop>();
+
+        // TODO: BeginDraw can return DXGI_ERROR_DEVICE_REMOVED, but it shouldn't be possible
+        // Because we always create a new composition graphics device (not great ndr, but we must use background instance not to block messages measure)
+        // And we handle device loss right before this method is invoked.
+        CleanupIfFailed(result, surfaceInterop->BeginDraw(nullptr, __uuidof(ID2D1DeviceContext), d2dContext.put_void(), &offset));
+
+        d2dContext->Clear(D2D1::ColorF(0, 0, 0, 0));
+        d2dContext->SetTransform(D2D1::Matrix3x2F::Scale(1 * dpi, 1 * dpi));
+
+        CleanupIfFailed(result, d2dContext->CreateSolidColorBrush(D2D1::ColorF(1, 1, 1, 1), blackBrush.put()));
 
         for (auto shape = image->shapes; shape != NULL; shape = shape->next)
         {
@@ -472,13 +589,32 @@ namespace winrt::Telegram::Native::implementation
                 continue;
             }
 
+            if (strcmp(shape->id, "GiftPatterns") == 0)
+            {
+                if (shape->paths && shape->paths->npts == 13)
+                {
+                    auto topLeftX = shape->paths->pts[0] * (1 * dpi);
+                    auto topLeftY = shape->paths->pts[1] * (1 * dpi);
+                    auto topRightX = shape->paths->pts[6] * (1 * dpi);
+                    auto topRightY = shape->paths->pts[7] * (1 * dpi);
+                    auto bottomRightX = shape->paths->pts[12] * (1 * dpi);
+                    auto bottomRightY = shape->paths->pts[13] * (1 * dpi);
+                    auto bottomLeftX = shape->paths->pts[18] * (1 * dpi);
+                    auto bottomLeftY = shape->paths->pts[19] * (1 * dpi);
+
+                    patterns.Append(ParseGiftPattern(topLeftX, topLeftY, topRightX, topRightY, bottomRightX, bottomRightY, bottomLeftX, bottomLeftY));
+                }
+
+                continue;
+            }
+
             blackBrush->SetOpacity(shape->opacity);
 
             winrt::com_ptr<ID2D1PathGeometry1> geometry;
-            ReturnIfFailed(result, m_d2dFactory->CreatePathGeometry(geometry.put()));
+            CleanupIfFailed(result, m_d2dFactory->CreatePathGeometry(geometry.put()));
 
             winrt::com_ptr<ID2D1GeometrySink> sink;
-            ReturnIfFailed(result, geometry->Open(sink.put()));
+            CleanupIfFailed(result, geometry->Open(sink.put()));
 
             for (NSVGpath* path = shape->paths; path != NULL; path = path->next)
             {
@@ -493,7 +629,7 @@ namespace winrt::Telegram::Native::implementation
                 sink->EndFigure(path->closed ? D2D1_FIGURE_END_CLOSED : D2D1_FIGURE_END_OPEN);
             }
 
-            ReturnIfFailed(result, sink->Close());
+            CleanupIfFailed(result, sink->Close());
 
             if (shape->fill.type != NSVG_PAINT_NONE)
             {
@@ -507,7 +643,17 @@ namespace winrt::Telegram::Native::implementation
                     break;
                 }
 
-                m_d2dContext->FillGeometry(geometry.get(), blackBrush.get());
+                winrt::com_ptr<ID2D1PathGeometry1> widenGeometry;
+                CleanupIfFailed(result, m_d2dFactory->CreatePathGeometry(widenGeometry.put()));
+
+                winrt::com_ptr<ID2D1GeometrySink> widenSink;
+                CleanupIfFailed(result, widenGeometry->Open(widenSink.put()));
+
+                geometry->Widen(0.25f * rasterizationScale / dpi, NULL, NULL, widenSink.get());
+                widenSink->Close();
+
+                d2dContext->FillGeometry(widenGeometry.get(), blackBrush.get());
+                d2dContext->FillGeometry(geometry.get(), blackBrush.get());
             }
 
             if (shape->stroke.type != NSVG_PAINT_NONE)
@@ -546,24 +692,25 @@ namespace winrt::Telegram::Native::implementation
                 }
 
                 winrt::com_ptr<ID2D1StrokeStyle1> strokeStyle;
-                ReturnIfFailed(result, m_d2dFactory->CreateStrokeStyle(strokeProperties, NULL, 0, strokeStyle.put()));
+                CleanupIfFailed(result, m_d2dFactory->CreateStrokeStyle(strokeProperties, NULL, 0, strokeStyle.put()));
 
-                m_d2dContext->DrawGeometry(geometry.get(), blackBrush.get(), shape->strokeWidth, strokeStyle.get());
+                auto strokeWidth = std::max(1 * rasterScale / dpi, shape->strokeWidth);
+
+                d2dContext->DrawGeometry(geometry.get(), blackBrush.get(), strokeWidth, strokeStyle.get());
             }
         }
 
-        m_d2dContext->SetTransform(D2D1::Matrix3x2F::Identity());
+        d2dContext->SetTransform(D2D1::Matrix3x2F::Identity());
 
-        if ((result = m_d2dContext->EndDraw()) == D2DERR_RECREATE_TARGET)
-        {
-            ReturnIfFailed(result, CreateDeviceResources());
-            return DrawSvg(path, foreground, randomAccessStream, dpi, size);
-        }
+        CleanupIfFailed(result, surfaceInterop->EndDraw());
 
-        return SaveImageToStream(targetBitmap.get(), GUID_ContainerFormatPng, randomAccessStream);
+        return ChatBackgroundPattern(surface, imageWidth, imageHeight, rasterizationScale, patterns);
+
+    Cleanup:
+        return nullptr;
     }
 
-    HRESULT PlaceholderImageHelper::DrawThumbnailPlaceholder(hstring fileName, float blurAmount, IRandomAccessStream randomAccessStream)
+    SoftwareBitmap PlaceholderImageHelper::DrawBlurred(hstring fileName, float blurAmount)
     {
         std::lock_guard const guard(m_criticalSection);
         HRESULT result;
@@ -572,84 +719,61 @@ namespace winrt::Telegram::Native::implementation
 
         if (file == INVALID_HANDLE_VALUE)
         {
-            return ERROR_FILE_NOT_FOUND;
+            return nullptr;
         }
 
         winrt::com_ptr<IWICBitmapDecoder> wicBitmapDecoder;
-        //ReturnIfFailed(result, m_wicFactory->CreateDecoderFromFilename(fileName->Data(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &wicBitmapDecoder));
-        ReturnIfFailed(result, m_wicFactory->CreateDecoderFromFileHandle(reinterpret_cast<ULONG_PTR>(file), nullptr, WICDecodeMetadataCacheOnLoad, wicBitmapDecoder.put()));
-
         winrt::com_ptr<IWICBitmapFrameDecode> wicFrameDecode;
-        ReturnIfFailed(result, wicBitmapDecoder->GetFrame(0, wicFrameDecode.put()));
-
         winrt::com_ptr<IWICFormatConverter> wicFormatConverter;
-        ReturnIfFailed(result, m_wicFactory->CreateFormatConverter(wicFormatConverter.put()));
-        ReturnIfFailed(result, wicFormatConverter->Initialize(wicFrameDecode.get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom));
+        SoftwareBitmap bitmap{ nullptr };
 
-        ReturnIfFailed(result, InternalDrawThumbnailPlaceholder(wicFormatConverter.get(), blurAmount, randomAccessStream, false));
+        CleanupIfFailed(result, m_wicFactory->CreateDecoderFromFileHandle(reinterpret_cast<ULONG_PTR>(file), nullptr, WICDecodeMetadataCacheOnDemand, wicBitmapDecoder.put()));
 
+        CleanupIfFailed(result, wicBitmapDecoder->GetFrame(0, wicFrameDecode.put()));
+
+        CleanupIfFailed(result, m_wicFactory->CreateFormatConverter(wicFormatConverter.put()));
+        CleanupIfFailed(result, wicFormatConverter->Initialize(wicFrameDecode.get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom));
+
+        CleanupIfFailed(result, DrawBlurredImpl(wicFormatConverter.get(), blurAmount, bitmap, false));
+
+    Cleanup:
         CloseHandle(file);
 
-        return result;
+        return bitmap;
     }
 
-    HRESULT PlaceholderImageHelper::DrawThumbnailPlaceholder(IVector<uint8_t> bytes, float blurAmount, IRandomAccessStream randomAccessStream)
+    SoftwareBitmap PlaceholderImageHelper::DrawBlurred(IVector<uint8_t> bytes, float blurAmount)
     {
         std::lock_guard const guard(m_criticalSection);
         HRESULT result;
 
         winrt::com_ptr<IStream> stream;
-        ReturnIfFailed(result, CreateStreamOverRandomAccessStream(winrt::get_unknown(randomAccessStream), IID_PPV_ARGS(&stream)));
-
-        auto yolo = std::vector<byte>(bytes.begin(), bytes.end());
-
-        ReturnIfFailed(result, stream->Write(yolo.data(), bytes.Size(), nullptr));
-        ReturnIfFailed(result, stream->Seek({ 0 }, STREAM_SEEK_SET, nullptr));
+        auto bytesView = std::vector<byte>(bytes.begin(), bytes.end());
 
         winrt::com_ptr<IWICBitmapDecoder> wicBitmapDecoder;
-        ReturnIfFailed(result, m_wicFactory->CreateDecoderFromStream(stream.get(), nullptr, WICDecodeMetadataCacheOnLoad, wicBitmapDecoder.put()));
-
         winrt::com_ptr<IWICBitmapFrameDecode> wicFrameDecode;
-        ReturnIfFailed(result, wicBitmapDecoder->GetFrame(0, wicFrameDecode.put()));
-
         winrt::com_ptr<IWICFormatConverter> wicFormatConverter;
-        ReturnIfFailed(result, m_wicFactory->CreateFormatConverter(wicFormatConverter.put()));
-        ReturnIfFailed(result, wicFormatConverter->Initialize(wicFrameDecode.get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom));
+        SoftwareBitmap bitmap{ nullptr };
 
-        ReturnIfFailed(result, InternalDrawThumbnailPlaceholder(wicFormatConverter.get(), blurAmount, randomAccessStream, true));
+        CleanupIfFailed(result, CreateStreamOnHGlobal(nullptr, TRUE, stream.put()));
 
-        return result;
-    }
-    HRESULT PlaceholderImageHelper::DrawThumbnailPlaceholder(IVector<uint8_t> bytes, float blurAmount, IBuffer randomAccessStream)
-    {
-        std::lock_guard const guard(m_criticalSection);
-        HRESULT result;
+        CleanupIfFailed(result, stream->Write(bytesView.data(), bytesView.size(), nullptr));
+        CleanupIfFailed(result, stream->Seek({ 0 }, STREAM_SEEK_SET, nullptr));
 
-        winrt::com_ptr<IStream> stream;
-        ReturnIfFailed(result, CreateStreamOverRandomAccessStream(winrt::get_unknown(randomAccessStream), IID_PPV_ARGS(&stream)));
+        CleanupIfFailed(result, m_wicFactory->CreateDecoderFromStream(stream.get(), nullptr, WICDecodeMetadataCacheOnDemand, wicBitmapDecoder.put()));
 
-        auto yolo = std::vector<byte>(bytes.begin(), bytes.end());
+        CleanupIfFailed(result, wicBitmapDecoder->GetFrame(0, wicFrameDecode.put()));
 
-        ReturnIfFailed(result, stream->Write(yolo.data(), bytes.Size(), nullptr));
-        ReturnIfFailed(result, stream->Seek({ 0 }, STREAM_SEEK_SET, nullptr));
+        CleanupIfFailed(result, m_wicFactory->CreateFormatConverter(wicFormatConverter.put()));
+        CleanupIfFailed(result, wicFormatConverter->Initialize(wicFrameDecode.get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom));
 
-        winrt::com_ptr<IWICBitmapDecoder> wicBitmapDecoder;
-        ReturnIfFailed(result, m_wicFactory->CreateDecoderFromStream(stream.get(), nullptr, WICDecodeMetadataCacheOnLoad, wicBitmapDecoder.put()));
+        CleanupIfFailed(result, DrawBlurredImpl(wicFormatConverter.get(), blurAmount, bitmap, true));
 
-        winrt::com_ptr<IWICBitmapFrameDecode> wicFrameDecode;
-        ReturnIfFailed(result, wicBitmapDecoder->GetFrame(0, wicFrameDecode.put()));
-
-        winrt::com_ptr<IWICFormatConverter> wicFormatConverter;
-        ReturnIfFailed(result, m_wicFactory->CreateFormatConverter(wicFormatConverter.put()));
-        ReturnIfFailed(result, wicFormatConverter->Initialize(wicFrameDecode.get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.f, WICBitmapPaletteTypeCustom));
-
-        ReturnIfFailed(result, InternalDrawThumbnailPlaceholder(wicFormatConverter.get(), blurAmount, randomAccessStream, true));
-
-        return result;
+    Cleanup:
+        return bitmap;
     }
 
-
-    HRESULT PlaceholderImageHelper::InternalDrawThumbnailPlaceholder(IWICBitmapSource* wicBitmapSource, float blurAmount, IRandomAccessStream randomAccessStream, bool minithumbnail)
+    HRESULT PlaceholderImageHelper::DrawBlurredImpl(IWICBitmapSource* wicBitmapSource, float blurAmount, SoftwareBitmap& bitmap, bool minithumbnail)
     {
         HRESULT result;
         winrt::com_ptr<ID2D1ImageSourceFromWic> imageSource;
@@ -658,28 +782,51 @@ namespace winrt::Telegram::Native::implementation
         D2D1_SIZE_U size;
         ReturnIfFailed(result, wicBitmapSource->GetSize(&size.width, &size.height));
 
-        //if (minithumbnail) {
-        //	size.width *= 2;
-        //	size.height *= 2;
-        //}
+        uint32_t totalPixels = size.width * size.height;
+        // Disabled for now
+        if (false && ((totalPixels <= 400 * 400 && blurAmount == 3) || (totalPixels <= 150 * 150 && blurAmount == 15)))
+        {
+            UINT bytesPerPixel = 4;
+            UINT stride = size.width * bytesPerPixel;
+            UINT bufferSize = stride * size.height;
+
+            bitmap = SoftwareBitmap(BitmapPixelFormat::Bgra8, size.width, size.height, BitmapAlphaMode::Premultiplied);
+            auto buffer = bitmap.LockBuffer(BitmapBufferAccessMode::Write);
+            auto reference = buffer.CreateReference();
+            auto pixels = reference.data();
+
+            WICRect rect = { 0, 0, static_cast<INT>(size.width), static_cast<INT>(size.height) };
+            ReturnIfFailed(result, wicBitmapSource->CopyPixels(&rect, stride, bufferSize, pixels));
+
+            if (blurAmount == 3)
+            {
+                if (totalPixels <= 100 * 100)
+                {
+                    FixedRadius3Blur::ApplyBlur(pixels, size.width, size.height);
+                }
+                else
+                {
+                    FixedRadius3BoxBlur::ApplyFastBlur(pixels, size.width, size.height);
+                }
+            }
+            else if (totalPixels <= 50 * 50)
+            {
+                FixedRadius15Blur::ApplyBlur(pixels, size.width, size.height);
+            }
+            else
+            {
+                FixedRadius15BoxBlur::ApplyFastBlur(pixels, size.width, size.height);
+            }
+
+            return S_OK;
+        }
 
         winrt::com_ptr<ID2D1Bitmap1> targetBitmap;
-        D2D1_BITMAP_PROPERTIES1 properties = { { DXGI_FORMAT_R8G8B8A8_UNORM, D2D1_ALPHA_MODE_IGNORE }, 96, 96, D2D1_BITMAP_OPTIONS_TARGET, 0 };
+        D2D1_BITMAP_PROPERTIES1 properties = { { DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED }, 96, 96, D2D1_BITMAP_OPTIONS_TARGET, 0 };
         ReturnIfFailed(result, m_d2dContext->CreateBitmap(size, nullptr, 0, &properties, targetBitmap.put()));
-
-        //winrt::com_ptr<ID2D1Effect> scaleEffect;
-        //ReturnIfFailed(result, m_d2dContext->CreateEffect(CLSID_D2D1Scale, scaleEffect.put()));
-        //ReturnIfFailed(result, scaleEffect->SetValue(D2D1_SCALE_PROP_SCALE, D2D1_VECTOR_2F({ 2, 2 })));
-        //ReturnIfFailed(result, scaleEffect->SetValue(D2D1_SCALE_PROP_INTERPOLATION_MODE, D2D1_SCALE_INTERPOLATION_MODE_NEAREST_NEIGHBOR));
-        //scaleEffect->SetInput(0, imageSource.get());
-
-        //winrt::com_ptr<ID2D1Image> test;
-        //scaleEffect->SetInput(0, imageSource.get());
-        //scaleEffect->GetOutput(test.put());
 
         ReturnIfFailed(result, m_gaussianBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, blurAmount));
 
-        //m_gaussianBlurEffect->SetInput(0, test.get());
         m_gaussianBlurEffect->SetInput(0, imageSource.get());
 
         m_d2dContext->SetTarget(targetBitmap.get());
@@ -691,59 +838,20 @@ namespace winrt::Telegram::Native::implementation
         if ((result = m_d2dContext->EndDraw()) == D2DERR_RECREATE_TARGET)
         {
             ReturnIfFailed(result, CreateDeviceResources());
-            return InternalDrawThumbnailPlaceholder(wicBitmapSource, blurAmount, randomAccessStream, minithumbnail);
+            return DrawBlurredImpl(wicBitmapSource, blurAmount, bitmap, minithumbnail);
         }
 
-        return SaveImageToStream(targetBitmap.get(), GUID_ContainerFormatPng, randomAccessStream);
-    }
+        //winrt::com_ptr<IDXGISurface> surface;
+        //ReturnIfFailed(result, targetBitmap->GetSurface(surface.put()));
 
-    HRESULT PlaceholderImageHelper::InternalDrawThumbnailPlaceholder(IWICBitmapSource* wicBitmapSource, float blurAmount, IBuffer randomAccessStream, bool minithumbnail)
-    {
-        HRESULT result;
-        winrt::com_ptr<ID2D1ImageSourceFromWic> imageSource;
-        ReturnIfFailed(result, m_d2dContext->CreateImageSourceFromWic(wicBitmapSource, imageSource.put()));
+        //winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface direct3DSurface{ nullptr };
+        //ReturnIfFailed(result, CreateDirect3D11SurfaceFromDXGISurface(surface.get(), reinterpret_cast<::IInspectable**>(winrt::put_abi(direct3DSurface))));
 
-        D2D1_SIZE_U size;
-        ReturnIfFailed(result, wicBitmapSource->GetSize(&size.width, &size.height));
-
-        //if (minithumbnail) {
-        //	size.width *= 2;
-        //	size.height *= 2;
-        //}
-
-        winrt::com_ptr<ID2D1Bitmap1> targetBitmap;
-        D2D1_BITMAP_PROPERTIES1 properties = { { DXGI_FORMAT_R8G8B8A8_UNORM, D2D1_ALPHA_MODE_IGNORE }, 96, 96, D2D1_BITMAP_OPTIONS_TARGET, 0 };
-        ReturnIfFailed(result, m_d2dContext->CreateBitmap(size, nullptr, 0, &properties, targetBitmap.put()));
-
-        //winrt::com_ptr<ID2D1Effect> scaleEffect;
-        //ReturnIfFailed(result, m_d2dContext->CreateEffect(CLSID_D2D1Scale, scaleEffect.put()));
-        //ReturnIfFailed(result, scaleEffect->SetValue(D2D1_SCALE_PROP_SCALE, D2D1_VECTOR_2F({ 2, 2 })));
-        //ReturnIfFailed(result, scaleEffect->SetValue(D2D1_SCALE_PROP_INTERPOLATION_MODE, D2D1_SCALE_INTERPOLATION_MODE_NEAREST_NEIGHBOR));
-        //scaleEffect->SetInput(0, imageSource.get());
-
-        //winrt::com_ptr<ID2D1Image> test;
-        //scaleEffect->SetInput(0, imageSource.get());
-        //scaleEffect->GetOutput(test.put());
-
-        ReturnIfFailed(result, m_gaussianBlurEffect->SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION, blurAmount));
-
-        //m_gaussianBlurEffect->SetInput(0, test.get());
-        m_gaussianBlurEffect->SetInput(0, imageSource.get());
-
-        m_d2dContext->SetTarget(targetBitmap.get());
-        m_d2dContext->BeginDraw();
-        //m_d2dContext->SetTransform(D2D1::Matrix3x2F::Identity());
-        m_d2dContext->Clear(D2D1::ColorF(ColorF::Black, 0.0f));
-        m_d2dContext->DrawImage(m_gaussianBlurEffect.get());
-
-        if ((result = m_d2dContext->EndDraw()) == D2DERR_RECREATE_TARGET)
-        {
-            ReturnIfFailed(result, CreateDeviceResources());
-            return InternalDrawThumbnailPlaceholder(wicBitmapSource, blurAmount, randomAccessStream, minithumbnail);
-        }
+        //bitmap = SoftwareBitmap::CreateCopyFromSurfaceAsync(direct3DSurface, BitmapAlphaMode::Premultiplied).get();
+        //return result;
 
         winrt::com_ptr<ID2D1Bitmap1> readBitmap;
-        D2D1_BITMAP_PROPERTIES1 properties2 = { { DXGI_FORMAT_R8G8B8A8_UNORM, D2D1_ALPHA_MODE_IGNORE }, 96, 96, D2D1_BITMAP_OPTIONS_CPU_READ | D2D1_BITMAP_OPTIONS_CANNOT_DRAW, 0 };
+        D2D1_BITMAP_PROPERTIES1 properties2 = { { DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED }, 96, 96, D2D1_BITMAP_OPTIONS_CPU_READ | D2D1_BITMAP_OPTIONS_CANNOT_DRAW, 0 };
         ReturnIfFailed(result, m_d2dContext->CreateBitmap(size, nullptr, 0, &properties2, readBitmap.put()));
 
         D2D1_POINT_2U origin{ 0, 0 };
@@ -752,20 +860,67 @@ namespace winrt::Telegram::Native::implementation
         ReturnIfFailed(result, readBitmap->CopyFromBitmap(&origin, targetBitmap.get(), &source));
         ReturnIfFailed(result, readBitmap->Map(D2D1_MAP_OPTIONS_READ, &map));
 
-        memcpy(randomAccessStream.data(), map.bits, randomAccessStream.Length());
+        // Fast path
+        uint32_t rowSizeBytes = size.width * 4;
+        if (map.pitch == rowSizeBytes)
+        {
+            uint32_t bufferSize = map.pitch * size.height;
+            winrt::array_view<const uint8_t> pixelData(
+                static_cast<const uint8_t*>(map.bits),
+                static_cast<const uint8_t*>(map.bits) + bufferSize
+            );
+
+            // BufferSurface here also works
+            auto buffer = winrt::Windows::Security::Cryptography::CryptographicBuffer::CreateFromByteArray(pixelData);
+            bitmap = SoftwareBitmap::CreateCopyFromBuffer(buffer, BitmapPixelFormat::Bgra8, size.width, size.height, BitmapAlphaMode::Premultiplied);
+        }
+        else
+        {
+            bitmap = SoftwareBitmap(BitmapPixelFormat::Bgra8, size.width, size.height, BitmapAlphaMode::Premultiplied);
+            auto buffer = bitmap.LockBuffer(BitmapBufferAccessMode::Write);
+            auto reference = buffer.CreateReference();
+
+            const uint8_t* srcRow = static_cast<const uint8_t*>(map.bits);
+            uint8_t* dstRow = reference.data();
+
+            for (uint32_t y = 0; y < size.height; ++y)
+            {
+                memcpy(dstRow, srcRow, rowSizeBytes);
+                srcRow += map.pitch;
+                dstRow += rowSizeBytes;
+            }
+        }
 
         return readBitmap->Unmap();
-        //return SaveImageToStream(targetBitmap.get(), GUID_ContainerFormatPng, randomAccessStream);
     }
 
-    PlaceholderImageHelper::PlaceholderImageHelper()
+    PlaceholderImageHelper::PlaceholderImageHelper(Window window)
+        : m_window(window)
+        , m_compositor(nullptr)
+        , m_compositionDevice(nullptr)
+        , m_alphaMaskFactory(nullptr)
     {
+        if (window)
+        {
+            m_compositor = window.Compositor();
+        }
+
         winrt::check_hresult(CreateDeviceIndependentResources());
         winrt::check_hresult(CreateDeviceResources());
     }
 
     HRESULT PlaceholderImageHelper::CreateDeviceIndependentResources()
     {
+        if (m_compositor)
+        {
+            auto alphaMask = winrt::make_self<CompositionAlphaMaskEffect>();
+            alphaMask->Name(L"AlphaMask");
+            alphaMask->Source(CompositionEffectSourceParameter(L"source"));
+            alphaMask->AlphaMask(CompositionEffectSourceParameter(L"mask"));
+
+            m_alphaMaskFactory = m_compositor.CreateEffectFactory(alphaMask.as<IGraphicsEffect>());
+        }
+
         HRESULT result;
         D2D1_FACTORY_OPTIONS options = {};
         ReturnIfFailed(result, D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, __uuidof(ID2D1Factory1), &options, m_d2dFactory.put_void()));
@@ -834,7 +989,37 @@ namespace winrt::Telegram::Native::implementation
 
         m_d2dContext->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
 
-        return m_wicFactory->CreateImageEncoder(m_d2dDevice.get(), m_imageEncoder.put());
+        ReturnIfFailed(result, m_wicFactory->CreateImageEncoder(m_d2dDevice.get(), m_imageEncoder.put()));
+
+        if (m_compositor)
+        {
+            // If the composition device already exists, invalidate the rendering device
+            if (m_compositionDevice)
+            {
+                winrt::com_ptr<abi::ICompositionGraphicsDeviceInterop> compositionGraphicsDeviceInterop{ m_compositionDevice.as<abi::ICompositionGraphicsDeviceInterop>() };
+                result = compositionGraphicsDeviceInterop->SetRenderingDevice(m_d2dDevice.get());
+            }
+            else
+            {
+                auto compositorInterop = m_compositor.as<abi::ICompositorInterop>();
+                winrt::com_ptr<abi::ICompositionGraphicsDevice> deviceInterop;
+                ReturnIfFailed(result, compositorInterop->CreateGraphicsDevice(m_d2dDevice.get(), deviceInterop.put()));
+
+                m_compositionDevice = deviceInterop.as<CompositionGraphicsDevice>();
+            }
+        }
+
+        m_deviceLostHelper.WatchDevice(dxgiDevice);
+        m_deviceLostHelper.DeviceLost({ this, &PlaceholderImageHelper::OnDirect3DDeviceLost });
+
+        return S_OK;
+    }
+
+    void PlaceholderImageHelper::OnDirect3DDeviceLost(DeviceLostHelper const* /* sender */, DeviceLostEventArgs const& args)
+    {
+        std::lock_guard const guard(m_criticalSection);
+
+        CreateDeviceResources();
     }
 
     HRESULT PlaceholderImageHelper::CreateTextFormat(double fontSize)
@@ -1200,6 +1385,116 @@ namespace winrt::Telegram::Native::implementation
         return { metrics.left, metrics.top, metrics.width, metrics.height };
     }
 
+    MaxLinesMetrics PlaceholderImageHelper::MaxLines(hstring text, int32_t offset, int32_t length, IVector<TextEntity> entities, double fontSize, double width, bool rtl, int32_t maxLines)
+    {
+        std::lock_guard const guard(m_criticalSection);
+        HRESULT result;
+
+        //ReturnIfFailed(result, CreateTextFormat(fontSize));
+        //ReturnIfFailed(result, m_appleFormat->SetReadingDirection(rtl ? DWRITE_READING_DIRECTION_RIGHT_TO_LEFT : DWRITE_READING_DIRECTION_LEFT_TO_RIGHT));
+
+        winrt::com_ptr<IDWriteTextFormat> textFormat;
+        ReturnDefaultIfFailed(result, m_dwriteFactory->CreateTextFormat(
+            L"Segoe UI Emoji",						// font family name
+            m_fontCollection.get(),			        // system font collection
+            DWRITE_FONT_WEIGHT_NORMAL,				// font weight 
+            DWRITE_FONT_STYLE_NORMAL,				// font style
+            DWRITE_FONT_STRETCH_NORMAL,				// default font stretch
+            fontSize,								// font size
+            L"",									// locale name
+            textFormat.put()
+        ));
+        ReturnDefaultIfFailed(result, textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+        ReturnDefaultIfFailed(result, textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+        ReturnDefaultIfFailed(result, textFormat->SetReadingDirection(rtl ? DWRITE_READING_DIRECTION_RIGHT_TO_LEFT : DWRITE_READING_DIRECTION_LEFT_TO_RIGHT));
+
+        winrt::com_ptr<IDWriteTextLayout> textLayout;
+        ReturnDefaultIfFailed(result, m_dwriteFactory->CreateTextLayout(
+            text.data(),					// The string to be laid out and formatted.
+            text.size(),        			// The length of the string.
+            textFormat.get(),			    // The text format to apply to the string (contains font information, etc).
+            width,							// The width of the layout box.
+            INFINITY,						// The height of the layout box.
+            textLayout.put()				// The IDWriteTextLayout interface pointer.
+        ));
+
+        for (const TextEntity& entity : entities)
+        {
+            UINT32 startPosition = entity.Offset();
+            UINT32 length = entity.Length();
+            auto name = winrt::get_class_name(entity.Type());
+
+            if (name == winrt::name_of<TextEntityTypeBold>())
+            {
+                ReturnDefaultIfFailed(result, textLayout->SetFontWeight(DWRITE_FONT_WEIGHT_SEMI_BOLD, { startPosition, length }));
+            }
+            else if (name == winrt::name_of<TextEntityTypeItalic>())
+            {
+                ReturnDefaultIfFailed(result, textLayout->SetFontStyle(DWRITE_FONT_STYLE_ITALIC, { startPosition, length }));
+            }
+            else if (name == winrt::name_of<TextEntityTypeStrikethrough>())
+            {
+                ReturnDefaultIfFailed(result, textLayout->SetStrikethrough(TRUE, { startPosition, length }));
+            }
+            else if (name == winrt::name_of<TextEntityTypeUnderline>())
+            {
+                ReturnDefaultIfFailed(result, textLayout->SetUnderline(TRUE, { startPosition, length }));
+            }
+            //else if (name == winrt::name_of<TextEntityTypeCustomEmoji>())
+            //{
+            //    textLayout->SetInlineObject(m_customEmoji.get(), { startPosition, length });
+            //}
+            else if (name == winrt::name_of<TextEntityTypeCode>() || name == winrt::name_of<TextEntityTypePre>() || name == winrt::name_of<TextEntityTypePreCode>())
+            {
+                ReturnDefaultIfFailed(result, textLayout->SetFontCollection(m_systemCollection.get(), { startPosition, length }));
+                ReturnDefaultIfFailed(result, textLayout->SetFontFamilyName(L"Consolas", { startPosition, length }));
+            }
+        }
+
+        DWRITE_TEXT_METRICS metrics;
+        ReturnDefaultIfFailed(result, textLayout->GetMetrics(&metrics));
+
+        if (maxLines == 0)
+        {
+            return { metrics.left, metrics.top, metrics.width, metrics.height, metrics.height, length };
+        }
+
+        UINT32 actualLineCount;
+        DWRITE_LINE_METRICS* ranges = new DWRITE_LINE_METRICS[metrics.lineCount];
+        result = textLayout->GetLineMetrics(ranges, metrics.lineCount, &actualLineCount);
+
+        if (result == E_NOT_SUFFICIENT_BUFFER)
+        {
+            delete[] ranges;
+
+            ranges = new DWRITE_LINE_METRICS[actualLineCount];
+            result = textLayout->GetLineMetrics(ranges, actualLineCount, &actualLineCount);
+        }
+
+        ReturnDefaultIfFailed(result, result);
+
+        float truncateHeight = 0;
+        int32_t truncatePosition = 0;
+
+        // Calculate position where to truncate
+        for (UINT32 i = 0; i < maxLines && i < actualLineCount; ++i)
+        {
+            truncateHeight += ranges[i].height;
+            truncatePosition += ranges[i].length;
+        }
+
+        // Remove trailing whitespace from last included line
+        if (maxLines <= actualLineCount)
+        {
+            //truncateHeight += ranges[maxLines - 1].height;
+            truncatePosition -= ranges[maxLines - 1].trailingWhitespaceLength;
+            truncatePosition -= ranges[maxLines - 1].newlineLength;
+        }
+
+        delete[] ranges;
+        return { metrics.left, metrics.top, metrics.width, metrics.height, truncateHeight, truncatePosition };
+    }
+
     HRESULT PlaceholderImageHelper::WriteBytes(IVector<byte> hash, IRandomAccessStream randomAccessStream) noexcept
     {
         HRESULT result;
@@ -1214,76 +1509,54 @@ namespace winrt::Telegram::Native::implementation
         return S_OK;
     }
 
-    CompositionPath PlaceholderImageHelper::GetTail(float width, float height, float topLeftRadius, float topRightRadius, float bottomRightRadius, float bottomLeftRadius)
+    CompositionEffectBrush PlaceholderImageHelper::GetTail(int topLeftRadius, int topRightRadius, int bottomRightRadius, int bottomLeftRadius)
     {
-        std::lock_guard const guard(m_criticalSection);
-        HRESULT result;
+        // Pack 4 radius values into one int
+        // Each value needs only 5 bits (0-31 range), so 4 values fit in 20 bits
+        int key = (topLeftRadius << 15) | (topRightRadius << 10) | (bottomRightRadius << 5) | bottomLeftRadius;
 
-        winrt::com_ptr<ID2D1GeometrySink> d2dGeometrySink;
-        winrt::com_ptr<ID2D1PathGeometry1> d2dPathGeometry;
-
-        ReturnNullIfFailed(result, m_d2dFactory->CreatePathGeometry(d2dPathGeometry.put()));
-        ReturnNullIfFailed(result, d2dPathGeometry->Open(d2dGeometrySink.put()));
-
-        d2dGeometrySink->BeginFigure({ topLeftRadius, 0 }, D2D1_FIGURE_BEGIN_FILLED);
-
-        // Top edge
-        d2dGeometrySink->AddLine({ width - topRightRadius, 0 });
-
-        // Top-right corner
-        if (topRightRadius > 0)
-            d2dGeometrySink->AddArc({ {width, topRightRadius}, {topRightRadius, topRightRadius}, 0, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL });
-
-        // Right edge
-        d2dGeometrySink->AddLine({ width, height - (bottomRightRadius > 0 ? bottomRightRadius : 15) });
-
-        auto xshift = width - 30;
-        auto yshift = height - 30;
-
-        // Bottom-right corner
-        if (bottomRightRadius > 0)
+        auto it = m_nineGridCache.find(key);
+        if (it != m_nineGridCache.end())
         {
-            d2dGeometrySink->AddArc({ { width - bottomRightRadius, height }, { bottomRightRadius, bottomRightRadius}, 0, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL });
+            return it->second->Effect();
         }
-        else
+        else if (m_compositionDevice)
         {
-            d2dGeometrySink->AddBezier({ { xshift + 30.f, yshift + 15.f }, { xshift + 30.f, yshift + 18.493f }, { xshift + 28.796f, yshift + 21.704f } });
-            d2dGeometrySink->AddBezier({ { xshift + 26.802f, yshift + 24.259f }, { xshift + 26.802f, yshift + 27.222f }, { xshift + 29.444f, yshift + 28.889f } });
-            d2dGeometrySink->AddBezier({ { xshift + 29.833f, yshift + 29.167f }, { xshift + 30.f, yshift + 29.444f }, { xshift + 29.815f, yshift + 29.815f } });
-            d2dGeometrySink->AddBezier({ { xshift + 29.444f, yshift + 29.815f }, { xshift + 25.463f, yshift + 29.815f }, { xshift + 24.630f, yshift + 29.815f } });
-            d2dGeometrySink->AddBezier({ { xshift + 21.667f, yshift + 28.444f }, { xshift + 19.630f, yshift + 29.444f }, { xshift + 17.407f, yshift + 30.f } });
+            auto content = m_window.Content();
+            if (content)
+            {
+                auto xamlRoot = content.XamlRoot();
+                if (xamlRoot)
+                {
+                    double rasterizationScale = xamlRoot.RasterizationScale();
+                    SizeInt32 imageSize(std::ceil(MessageBubbleNineGrid::s_width * rasterizationScale), std::ceil(MessageBubbleNineGrid::s_height * rasterizationScale));
+                    
+                    auto surface = CreateDrawingSurface(imageSize);
+                    if (surface)
+                    {
+                        auto nineGrid = winrt::make_self<MessageBubbleNineGrid>(get_strong(), xamlRoot, surface, topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+                        m_nineGridCache[key] = nineGrid;
+                        return nineGrid->Effect();
+                    }
+                }
+            }
         }
 
-        // Bottom edge
-        d2dGeometrySink->AddLine({ bottomLeftRadius > 0 ? bottomLeftRadius : 15, height });
+        // XamlRoot is not ready
+        return nullptr;
+    }
 
-        // Bottom-left corner
-        if (bottomLeftRadius > 0)
+    CompositionDrawingSurface PlaceholderImageHelper::CreateDrawingSurface(SizeInt32 size)
+    {
+        try
         {
-            d2dGeometrySink->AddArc({ { 0, height - bottomLeftRadius }, { bottomLeftRadius, bottomLeftRadius }, 0, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL });
+            return m_compositionDevice.CreateDrawingSurface2(size, DirectXPixelFormat::B8G8R8A8UIntNormalized, DirectXAlphaMode::Premultiplied);
         }
-        else
+        catch (...)
         {
-            d2dGeometrySink->AddBezier({ { 12.593f, yshift + 30.f }, { 10.370f, yshift + 29.444f }, { 8.333f, yshift + 28.444f } });
-            d2dGeometrySink->AddBezier({ { 5.370f, yshift + 29.815f }, { 4.537f, yshift + 29.815f }, { 0.556f, yshift + 29.815f } });
-            d2dGeometrySink->AddBezier({ { 0.185f, yshift + 29.815f }, { 0.f, yshift + 29.444f }, { 0.167f, yshift + 29.167f } });
-            d2dGeometrySink->AddBezier({ { 0.556f, yshift + 28.889f }, { 3.198f, yshift + 27.222f }, { 3.198f, yshift + 24.259f } });
-            d2dGeometrySink->AddBezier({ { 1.204f, yshift + 21.704f }, { 0.f, yshift + 18.493f }, { 0.f, yshift + 15.f } });
+            // TODO: handle device lost, for now we return null
+            return nullptr;
         }
-
-        // Left edge
-        d2dGeometrySink->AddLine({ 0, topLeftRadius });
-
-        // Top-left corner
-        if (topLeftRadius > 0)
-            d2dGeometrySink->AddArc({ { topLeftRadius, 0 }, { topLeftRadius, topLeftRadius }, 0, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_SMALL });
-
-        d2dGeometrySink->EndFigure(D2D1_FIGURE_END_CLOSED);
-
-        ReturnNullIfFailed(result, d2dGeometrySink->Close());
-
-        auto geometry = winrt::make_self<CompositionPathSource>(d2dPathGeometry);
-        return CompositionPath(geometry.as<winrt::Windows::Graphics::IGeometrySource2D>());
     }
 
     CompositionPath PlaceholderImageHelper::GetOutline(IVector<ClosedVectorPath> contours)

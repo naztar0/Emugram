@@ -10,22 +10,27 @@ namespace Telegram.Td
 {
     partial class TdHandler : ClientResultHandler
     {
+        private readonly RefAction<Object> _closure;
         private readonly Action<Object> _callback;
 
-        public TdHandler(Action<Object> callback)
+        public TdHandler(RefAction<Object> closure, Action<Object> callback)
         {
+            _closure = closure;
             _callback = callback;
         }
 
-#if TD_CX
-        public void OnResult(BaseObject result)
-#else
+#if TD_WINRT
         public void OnResult(Object result)
+#else
+        public void OnResult(BaseObject result)
 #endif
         {
             try
             {
-                _callback(result as Object);
+                var temp = result as Object;
+
+                _closure(ref temp);
+                _callback?.Invoke(temp);
             }
             catch
             {

@@ -48,7 +48,7 @@ namespace Telegram.Views.Settings
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            if (Theme.Current.Update(ActualTheme, null, null))
+            if (Theme.Current.Update(ActualTheme, null, null, null, null))
             {
                 var forDarkTheme = Frame.ActualTheme == ElementTheme.Dark;
                 var background = ViewModel.ClientService.GetDefaultBackground(forDarkTheme);
@@ -112,8 +112,8 @@ namespace Telegram.Views.Settings
         {
             if (e.PropertyName == nameof(ViewModel.FontSize) || e.PropertyName == nameof(ViewModel.BubbleRadius))
             {
-                Message1.UpdateMockup();
-                Message2.UpdateMockup();
+                Message1.UpdateMockup(false, true, true);
+                Message2.UpdateMockup(true, true, true);
             }
             else if (e.PropertyName == nameof(ViewModel.UseDefaultScaling))
             {
@@ -269,7 +269,7 @@ namespace Telegram.Views.Settings
             var clientService = ViewModel.ClientService;
             var senderId = new MessageSenderUser(clientService.Options.MyId);
 
-            var message = new Message(0, senderId, 0, null, null, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, 0, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, false, string.Empty, null, null);
+            var message = new Message(0, senderId, 0, null, null, false, false, false, false, false, false, false, false, false, 0, 0, null, null, null, Array.Empty<UnreadReaction>(), null, null, null, null, null, 0, 0, 0, 0, 0, 0, string.Empty, 0, 0, null, null, null);
 
             var settings = TypeResolver.Current.Resolve<ISettingsService>(clientService.SessionId);
 

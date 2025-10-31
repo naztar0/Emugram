@@ -22,8 +22,7 @@
                 <controls:SettingsPanel IsHeader="True"
                                         Margin="0,0,0,-32">
                     <controls:HeaderedControl>
-                        <controls:BadgeButton Content="{CustomResource AddEmulationPreset}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
+                        <controls:SettingsButton Content="{CustomResource AddEmulationPreset}"
                                           Click="{x:Bind ViewModel.OpenCreateEmulationPreset}"
                                           Glyph="&#xE710;" />
 

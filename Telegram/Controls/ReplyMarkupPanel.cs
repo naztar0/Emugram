@@ -125,10 +125,43 @@ namespace Telegram.Controls
                     var button = new ReplyMarkupButton(item);
                     button.HorizontalAlignment = HorizontalAlignment.Stretch;
                     button.VerticalAlignment = VerticalAlignment.Stretch;
-                    button.Margin = new Thickness(4, 8, 4, 0);
-                    button.Height = resize ? 36 : double.NaN;
+                    button.Margin = new Thickness(4, 4, 4, 0);
+                    button.Height = resize ? 40 : double.NaN;
                     button.Text = item.Text;
                     button.Click += Button_Click;
+
+                    var topLeft = 4;
+                    var topRight = 4;
+                    var bottomRight = 4;
+                    var bottomLeft = 4;
+
+                    //if (j == 0)
+                    //{
+                    //    if (i == 0)
+                    //    {
+                    //        topLeft = 24 - 8;
+                    //    }
+
+                    //    if (i == row.Count - 1)
+                    //    {
+                    //        topRight = 24 - 8;
+                    //    }
+                    //}
+
+                    if (j == rows.Count - 1)
+                    {
+                        if (i == 0)
+                        {
+                            bottomLeft = 24 - 8;
+                        }
+
+                        if (i == row.Count - 1)
+                        {
+                            bottomRight = 24 - 8;
+                        }
+                    }
+
+                    button.CornerRadius = new CornerRadius(topLeft, topRight, bottomRight, bottomLeft);
 
                     if (item.Type is KeyboardButtonTypeWebApp)
                     {
@@ -146,7 +179,7 @@ namespace Telegram.Controls
 
             if (Children.Count > 0)
             {
-                Padding = new Thickness(0, 0, 0, 4);
+                Padding = new Thickness(0, 4, 0, 4);
                 return true;
             }
 
@@ -269,6 +302,19 @@ namespace Telegram.Controls
 
         public InlineKeyboardButton Button { get; }
 
+        private UIElement IconPresenter;
+
+        protected override void OnApplyTemplate()
+        {
+            if (!string.IsNullOrEmpty(Icon))
+            {
+                IconPresenter = GetTemplateChild(nameof(IconPresenter)) as UIElement;
+                IconPresenter.Visibility = Visibility.Visible;
+            }
+
+            base.OnApplyTemplate();
+        }
+
         #region Text
 
         public string Text
@@ -279,6 +325,35 @@ namespace Telegram.Controls
 
         public static readonly DependencyProperty TextProperty =
             DependencyProperty.Register("Text", typeof(string), typeof(ReplyMarkupInlineButton), new PropertyMetadata(string.Empty));
+
+        #endregion
+
+        #region Icon
+
+        public string Icon
+        {
+            get { return (string)GetValue(IconProperty); }
+            set { SetValue(IconProperty, value); }
+        }
+
+        public static readonly DependencyProperty IconProperty =
+            DependencyProperty.Register("Icon", typeof(string), typeof(ReplyMarkupInlineButton), new PropertyMetadata(string.Empty, OnIconChanged));
+
+        private static void OnIconChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var sender = d as ReplyMarkupInlineButton;
+            if (sender?.IconPresenter != null || !string.IsNullOrEmpty((string)e.NewValue))
+            {
+                sender.IconPresenter ??= sender.GetTemplateChild(nameof(sender.IconPresenter)) as UIElement;
+
+                if (sender.IconPresenter != null)
+                {
+                    sender.IconPresenter.Visibility = string.IsNullOrEmpty((string)e.NewValue)
+                        ? Visibility.Collapsed
+                        : Visibility.Visible;
+                }
+            }
+        }
 
         #endregion
     }

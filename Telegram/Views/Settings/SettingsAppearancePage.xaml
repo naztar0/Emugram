@@ -78,40 +78,36 @@
                         </GridView.Footer>
                     </GridView>
 
-                    <controls:BadgeButton Content="{CustomResource ChatThemes}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Click="{x:Bind ViewModel.OpenThemes}"
-                                          Glyph="&#xE90E;"
-                                          IsChevronVisible="True" />
+                    <controls:SettingsButton Content="{CustomResource ChatThemes}"
+                                             Click="{x:Bind ViewModel.OpenThemes}"
+                                             Glyph="&#xE90E;"
+                                             IsChevronVisible="True" />
 
-                    <controls:BadgeButton Content="{CustomResource ChatWallpaper}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Click="{x:Bind ViewModel.OpenWallpaper}"
-                                          Glyph="&#xE9E7;"
-                                          IsChevronVisible="True" />
+                    <controls:SettingsButton Content="{CustomResource ChatWallpaper}"
+                                             Click="{x:Bind ViewModel.OpenWallpaper}"
+                                             Glyph="&#xE9E7;"
+                                             IsChevronVisible="True" />
 
-                    <controls:BadgeButton x:Name="NameColor"
-                                          Content="{CustomResource YourNameColor}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Click="{x:Bind ViewModel.ChangeProfileColor}"
-                                          Glyph="&#xE2B1;"
-                                          IsChevronVisible="True">
-                        <controls:BadgeButton.Badge>
+                    <controls:SettingsButton x:Name="NameColor"
+                                             Content="{CustomResource YourNameColor}"
+                                             Click="{x:Bind ViewModel.ChangeProfileColor}"
+                                             Glyph="&#xE2B1;"
+                                             IsChevronVisible="True">
+                        <controls:SettingsButton.Badge>
                             <controls:ProfileColorBadge x:Name="ProfileColor" />
-                        </controls:BadgeButton.Badge>
-                    </controls:BadgeButton>
+                        </controls:SettingsButton.Badge>
+                    </controls:SettingsButton>
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl>
                     <CheckBox Content="{CustomResource SettingsSwitchToNightMode}"
                               Style="{StaticResource SettingsCheckBoxStyle}"
                               IsChecked="{x:Bind ViewModel.ForceNightMode, Mode=TwoWay}" />
-                    <controls:BadgeButton Content="{CustomResource AutoNightTheme}"
-                                          Badge="{x:Bind ConvertNightMode(ViewModel.NightMode), Mode=OneWay}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Click="{x:Bind ViewModel.OpenNightMode}"
-                                          Glyph="&#xE9EA;"
-                                          IsChevronVisible="True" />
+                    <controls:SettingsButton Content="{CustomResource AutoNightTheme}"
+                                             Badge="{x:Bind ConvertNightMode(ViewModel.NightMode), Mode=OneWay}"
+                                             Click="{x:Bind ViewModel.OpenNightMode}"
+                                             Glyph="&#xE9EA;"
+                                             IsChevronVisible="True" />
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl>
@@ -221,10 +217,9 @@
                                 Grid.Column="2"
                                 Grid.ColumnSpan="3" />
                     </Grid>
-                    <controls:BadgeButton Content="{CustomResource FontFamily}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xEAA9;">
-                        <controls:BadgeButton.Badge>
+                    <controls:SettingsButton Content="{CustomResource FontFamily}"
+                                             Glyph="&#xEAA9;">
+                        <controls:SettingsButton.Badge>
                             <controls:SettingsComboBox ItemsSource="{x:Bind ViewModel.FontFamilyOptions}"
                                                        SelectedIndex="{x:Bind ViewModel.FontFamily, Mode=TwoWay}">
                                 <ComboBox.ItemTemplate>
@@ -234,16 +229,15 @@
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </controls:SettingsComboBox>
-                        </controls:BadgeButton.Badge>
-                    </controls:BadgeButton>
+                        </controls:SettingsButton.Badge>
+                    </controls:SettingsButton>
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl Footer="{CustomResource StickersNameInfo}">
-                    <controls:BadgeButton Content="{CustomResource StickersName}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Click="{x:Bind ViewModel.OpenStickers}"
-                                          Glyph="&#xF4AA;"
-                                          IsChevronVisible="True" />
+                    <controls:SettingsButton Content="{CustomResource StickersName}"
+                                             Click="{x:Bind ViewModel.OpenStickers}"
+                                             Glyph="&#xF4AA;"
+                                             IsChevronVisible="True" />
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl Header="{CustomResource ChatQuickActions}">
@@ -292,24 +286,22 @@
                               Content="{CustomResource AdaptiveLayout}"
                               Style="{StaticResource SettingsCheckBoxStyle}" />
 
-                    <controls:BadgeButton Content="{CustomResource SendByEnter2}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xE919;">
-                        <controls:BadgeButton.Badge>
+                    <controls:SettingsButton Content="{CustomResource SendByEnter2}"
+                                             Glyph="&#xE919;">
+                        <controls:SettingsButton.Badge>
                             <controls:SettingsComboBox ItemsSource="{x:Bind ViewModel.SendByOptions}"
                                                        SelectedIndex="{x:Bind ViewModel.SendBy, Mode=TwoWay}"
                                                        DisplayMemberPath="Text" />
-                        </controls:BadgeButton.Badge>
-                    </controls:BadgeButton>
-                    <controls:BadgeButton Content="{CustomResource DistanceUnits}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xE1C4;">
-                        <controls:BadgeButton.Badge>
+                        </controls:SettingsButton.Badge>
+                    </controls:SettingsButton>
+                    <controls:SettingsButton Content="{CustomResource DistanceUnits}"
+                                             Glyph="&#xE1C4;">
+                        <controls:SettingsButton.Badge>
                             <controls:SettingsComboBox ItemsSource="{x:Bind ViewModel.DistanceUnitOptions}"
                                                        SelectedIndex="{x:Bind ViewModel.DistanceUnit, Mode=TwoWay}"
                                                        DisplayMemberPath="Text" />
-                        </controls:BadgeButton.Badge>
-                    </controls:BadgeButton>
+                        </controls:SettingsButton.Badge>
+                    </controls:SettingsButton>
                 </controls:HeaderedControl>
             </controls:SettingsPanel>
         </ScrollViewer>

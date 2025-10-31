@@ -186,23 +186,26 @@ namespace Telegram.Controls.Messages.Content
             }
 
             var outgoing = message.IsOutgoing && !message.IsChannelPost;
-
-            var sender = message.GetSender();
-            var accent = outgoing ? null : sender switch
+            var (accent, giftColors, customEmojiId) = outgoing ? (null, null, 0) : message.GetSender() switch
             {
-                User user => message.ClientService.GetAccentColor(user.AccentColorId),
-                Chat chat => message.ClientService.GetAccentColor(chat.AccentColorId),
-                _ => null
+                User user => (message.ClientService.GetAccentColor(user.AccentColorId), user.UpgradedGiftColors, user.BackgroundCustomEmojiId),
+                Chat chat => (message.ClientService.GetAccentColor(chat.AccentColorId), chat.UpgradedGiftColors, chat.BackgroundCustomEmojiId),
+                _ => (null, null, 0)
             };
 
-            var customEmojiId = sender switch
+            if (giftColors != null)
             {
-                User user2 => user2.BackgroundCustomEmojiId,
-                Chat chat2 => chat2.BackgroundCustomEmojiId,
-                _ => 0
-            };
+                HeaderBrush =
+                    BorderBrush = new SolidColorBrush(giftColors.LightThemeColors[0].ToColor());
 
-            if (accent != null)
+                AccentDash.Stripe1 = giftColors.LightThemeColors.Count > 1
+                    ? new SolidColorBrush(giftColors.LightThemeColors[1].ToColor())
+                    : null;
+                AccentDash.Stripe2 = giftColors.LightThemeColors.Count > 2
+                    ? new SolidColorBrush(giftColors.LightThemeColors[2].ToColor())
+                    : null;
+            }
+            else if (accent != null)
             {
                 HeaderBrush =
                     BorderBrush = new SolidColorBrush(accent.LightThemeColors[0]);
@@ -223,13 +226,20 @@ namespace Telegram.Controls.Messages.Content
                 AccentDash.Stripe2 = null;
             }
 
-            if (customEmojiId != 0)
+            if (giftColors != null)
+            {
+                Pattern.Source = new CustomEmojiFileSource(message.ClientService, giftColors.SymbolCustomEmojiId);
+                Pattern.Model = new CustomEmojiFileSource(message.ClientService, giftColors.ModelCustomEmojiId);
+            }
+            else if (customEmojiId != 0)
             {
                 Pattern.Source = new CustomEmojiFileSource(message.ClientService, customEmojiId);
+                Pattern.Model = null;
             }
             else
             {
                 Pattern.Source = null;
+                Pattern.Model = null;
             }
         }
 
@@ -263,7 +273,7 @@ namespace Telegram.Controls.Messages.Content
 
             if (small)
             {
-                if (linkPreview.Type is LinkPreviewTypeStickerSet)
+                if (linkPreview.Type is LinkPreviewTypeStickerSet or LinkPreviewTypeGiftCollection)
                 {
                     Media.Child = new StickerSetContent(message);
                 }
@@ -324,6 +334,17 @@ namespace Telegram.Controls.Messages.Content
             else if (linkPreview.Type is LinkPreviewTypeUpgradedGift upgradedGift)
             {
                 Media.Child = new WebPageUpgradedGiftContent(message, upgradedGift);
+            }
+            else if (linkPreview.Type is LinkPreviewTypeStoryAlbum storyAlbum)
+            {
+                if (storyAlbum.VideoIcon != null)
+                {
+                    Media.Child = new VideoContent(message);
+                }
+                else if (storyAlbum.PhotoIcon != null)
+                {
+                    Media.Child = new PhotoContent(message);
+                }
             }
             else if (linkPreview.Type is LinkPreviewTypePhoto or
                                          LinkPreviewTypeEmbeddedAudioPlayer or
@@ -406,26 +427,53 @@ namespace Telegram.Controls.Messages.Content
             ButtonLine.Visibility = Visibility.Collapsed;
         }
 
-        public void UpdateMockup(IClientService clientService, long customEmojiId, int color)
+        public void UpdateMockup(IClientService clientService, long customEmojiId, int color, UpgradedGiftColors upgradedGift)
         {
             if (Pattern != null)
             {
-                Pattern.Source = new CustomEmojiFileSource(clientService, customEmojiId);
+                if (upgradedGift != null)
+                {
+                    Pattern.Source = new CustomEmojiFileSource(clientService, upgradedGift.SymbolCustomEmojiId);
+                    Pattern.Model = new CustomEmojiFileSource(clientService, upgradedGift.ModelCustomEmojiId);
+                }
+                else
+                {
+                    Pattern.Source = new CustomEmojiFileSource(clientService, customEmojiId);
+                    Pattern.Model = null;
+                }
             }
 
-            var accent = clientService.GetAccentColor(color);
-
-            HeaderBrush =
-                BorderBrush = new SolidColorBrush(accent.LightThemeColors[0]);
-
-            if (AccentDash != null)
+            if (upgradedGift != null)
             {
-                AccentDash.Stripe1 = accent.LightThemeColors.Count > 1
-                    ? new SolidColorBrush(accent.LightThemeColors[1])
-                    : null;
-                AccentDash.Stripe2 = accent.LightThemeColors.Count > 2
-                    ? new SolidColorBrush(accent.LightThemeColors[2])
-                    : null;
+                HeaderBrush =
+                    BorderBrush = new SolidColorBrush(upgradedGift.LightThemeColors[0].ToColor());
+
+                if (AccentDash != null)
+                {
+                    AccentDash.Stripe1 = upgradedGift.LightThemeColors.Count > 1
+                        ? new SolidColorBrush(upgradedGift.LightThemeColors[1].ToColor())
+                        : null;
+                    AccentDash.Stripe2 = upgradedGift.LightThemeColors.Count > 2
+                        ? new SolidColorBrush(upgradedGift.LightThemeColors[2].ToColor())
+                        : null;
+                }
+            }
+            else
+            {
+                var accent = clientService.GetAccentColor(color);
+
+                HeaderBrush =
+                    BorderBrush = new SolidColorBrush(accent.LightThemeColors[0]);
+
+                if (AccentDash != null)
+                {
+                    AccentDash.Stripe1 = accent.LightThemeColors.Count > 1
+                        ? new SolidColorBrush(accent.LightThemeColors[1])
+                        : null;
+                    AccentDash.Stripe2 = accent.LightThemeColors.Count > 2
+                        ? new SolidColorBrush(accent.LightThemeColors[2])
+                        : null;
+                }
             }
         }
 
@@ -543,7 +591,7 @@ namespace Telegram.Controls.Messages.Content
             }
             else if (linkPreview.Type is LinkPreviewTypeVideoChat videoChat)
             {
-                ShowButton(videoChat.IsLiveStream ? Strings.VoipGroupJoinAsSpeaker : Strings.VoipGroupJoinAsLinstener);
+                ShowButton(videoChat.JoinsAsSpeaker ? Strings.VoipGroupJoinAsSpeaker : Strings.VoipGroupJoinAsLinstener);
             }
             else if (linkPreview.Type is LinkPreviewTypeBackground)
             {
@@ -583,6 +631,18 @@ namespace Telegram.Controls.Messages.Content
             else if (linkPreview.Type is LinkPreviewTypeUpgradedGift)
             {
                 ShowButton(Strings.OpenUniqueGift);
+            }
+            else if (linkPreview.Type is LinkPreviewTypeDirectMessagesChat)
+            {
+                ShowButton(Strings.OpenChannelDirect);
+            }
+            else if (linkPreview.Type is LinkPreviewTypeGiftCollection)
+            {
+                ShowButton(Strings.ViewCollection);
+            }
+            else if (linkPreview.Type is LinkPreviewTypeStoryAlbum)
+            {
+                ShowButton(Strings.ViewAlbum);
             }
             else
             {

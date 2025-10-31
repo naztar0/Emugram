@@ -31,17 +31,15 @@ namespace Telegram.Controls
             _handler = new AnimatedListHandler(ScrollingHost, AnimatedListType.Other);
 
             _zoomer = new ZoomableListHandler(ScrollingHost);
-            _zoomer.Opening = _handler.UnloadVisibleItems;
-            _zoomer.Closing = _handler.ThrottleVisibleItems;
-            _zoomer.DownloadFile = fileId => ViewModel.ClientService.DownloadFile(fileId, 32);
-            _zoomer.SessionId = () => ViewModel.ClientService.SessionId;
+            _zoomer.Opening = _handler.Suspend;
+            _zoomer.Closing = _handler.Resume;
         }
 
         public void UpdateCornerRadius(double radius)
         {
-            var min = Math.Max(4, radius - 2);
+            var min = Math.Max(4, radius - 4);
 
-            Root.Padding = new Thickness(0, 0, 0, radius);
+            ScrollingHost.Padding = new Thickness(0, 0, 0, radius);
             SwitchPm.CornerRadius = new CornerRadius(min, min, 4, 4);
 
             CornerRadius = new CornerRadius(radius, radius, 0, 0);

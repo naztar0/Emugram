@@ -31,7 +31,7 @@ namespace Telegram.Controls.Cells.Business
             _day = value;
 
             Button.Content = value.Name;
-            Button.Badge = value.Description;
+            Button.Description = value.Description;
 
             Switch.Toggled -= Switch_Toggled;
             Switch.IsOn = value.IsOpen;

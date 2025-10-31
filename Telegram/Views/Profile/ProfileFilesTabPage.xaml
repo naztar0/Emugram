@@ -8,11 +8,11 @@
                       xmlns:cells="using:Telegram.Controls.Cells"
                       xmlns:messages="using:Telegram.Controls.Messages"
                       xmlns:local="using:Telegram.Views.Profile"
-                      mc:Ignorable="d">
+                      mc:Ignorable="d"
+                      ItemsSource="{x:Bind ViewModel.Files.ItemsView, Mode=OneWay}">
 
     <Grid>
         <controls:TableListView x:Name="ScrollingHost"
-                                ItemsSource="{x:Bind ViewModel.Files.ItemsView, Mode=OneWay}"
                                 SelectionMode="None"
                                 ChoosingItemContainer="OnChoosingItemContainer"
                                 ContainerContentChanging="OnContainerContentChanging">

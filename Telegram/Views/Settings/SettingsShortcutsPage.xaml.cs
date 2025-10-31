@@ -22,7 +22,7 @@ namespace Telegram.Views.Settings
 
         private void OnElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
         {
-            var button = args.Element as BadgeButton;
+            var button = args.Element as SettingsButton;
             var info = sender.ItemsSourceView.GetAt(args.Index) as ShortcutInfo;
             //var info = button.DataContext as ShortcutInfo;
 

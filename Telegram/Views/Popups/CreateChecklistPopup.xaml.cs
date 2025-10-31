@@ -15,6 +15,7 @@ using Telegram.Controls.Drawers;
 using Telegram.Controls.Messages;
 using Telegram.Navigation;
 using Telegram.Services;
+using Telegram.Td;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Drawers;
 using Windows.ApplicationModel.DataTransfer;
@@ -156,7 +157,7 @@ namespace Telegram.Views.Popups
 
                 if (item.Id == -1)
                 {
-                    tasks.Add(new InputChecklistTask(++nextTaskId, item.Text));
+                    tasks.Add(new InputChecklistTask(++nextTaskId, ClientEx.ParseMarkdown(item.Text)));
                 }
                 else
                 {
@@ -165,7 +166,7 @@ namespace Telegram.Views.Popups
                         continue;
                     }
 
-                    tasks.Add(new InputChecklistTask(item.Id, item.Text));
+                    tasks.Add(new InputChecklistTask(item.Id, ClientEx.ParseMarkdown(item.Text)));
                 }
             }
 
@@ -220,7 +221,7 @@ namespace Telegram.Views.Popups
 
             if (Items.Count < _viewModel.ClientService.Options.ChecklistTaskCountMax && !AddTask.IsReadOnly && !AddTask.IsEmpty)
             {
-                Items.Add(new ChecklistTaskViewModel(AddTask.GetFormattedText(true), false, true));
+                Items.Add(new ChecklistTaskViewModel(AddTask.GetFormattedText(true, false), false, true));
                 AddTask.IsReadOnly = true;
             }
         }
@@ -253,7 +254,7 @@ namespace Telegram.Views.Popups
         {
             if (sender is FormattedTextBox textBox && textBox.Tag is ChecklistTaskViewModel task)
             {
-                task.Text = textBox.GetFormattedText();
+                task.Text = textBox.GetFormattedText(parseMarkdown: false);
             }
 
             UpdatePrimaryButton();
@@ -441,6 +442,8 @@ namespace Telegram.Views.Popups
 
         private void OnContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
+            args.Handled = true;
+
             if (args.InRecycleQueue)
             {
                 return;
@@ -473,9 +476,16 @@ namespace Telegram.Views.Popups
                     emoji.Tag = text;
                     handle.Opacity = 1;
                     remove.Visibility = Visibility.Visible;
-
                     remove.Tag = task;
-                    remove.Click += Remove_Click;
+
+                    // If the container is recycled the box may still be loaded
+                    if (task.FocusOnLoaded && text.IsLoaded)
+                    {
+                        text.Document.Selection.SetRange(int.MaxValue, int.MaxValue);
+                        text.Focus(FocusState.Keyboard);
+
+                        task.FocusOnLoaded = false;
+                    }
                 }
             }
         }

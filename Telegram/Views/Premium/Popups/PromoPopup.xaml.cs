@@ -36,6 +36,36 @@ namespace Telegram.Views.Premium.Popups
         private readonly StickerSet _stickerSet;
         private readonly string _giftCode;
 
+        public PromoPopup(IClientService clientService, AvailableGift gift)
+        {
+            InitializeComponent();
+
+            Animated.Visibility = Visibility.Collapsed;
+            Identity.Visibility = Visibility.Visible;
+
+            Identity.Source = DelayedFileSource.FromSticker(clientService, gift.Gift.Sticker);
+
+            var paragraph = new Paragraph();
+            paragraph.Inlines.Add(Strings.Gift2PremiumTitle);
+
+            ChatTitle.Blocks.Add(paragraph);
+
+            if (gift.Gift.UserLimits != null)
+            {
+                TextBlockHelper.SetMarkdown(ChatSubtitle, Locale.Declension(Strings.R.Gift2PremiumSubtitleMany, gift.Gift.UserLimits.TotalCount));
+            }
+            else
+            {
+                TextBlockHelper.SetMarkdown(ChatSubtitle, Strings.Gift2PremiumSubtitle);
+            }
+
+            ChatTitle.Visibility = Visibility.Visible;
+            ChatSubtitle.Visibility = Visibility.Visible;
+
+            PremiumTitle.Visibility = Visibility.Collapsed;
+            PremiumSubtitle.Visibility = Visibility.Collapsed;
+        }
+
         public PromoPopup(IClientService clientService, Chat chat, StickerSet stickerSet)
         {
             InitializeComponent();
@@ -77,7 +107,7 @@ namespace Telegram.Views.Premium.Popups
                 var hyperlink = new Hyperlink();
                 hyperlink.Click += StickerSet_Click;
                 hyperlink.UnderlineStyle = UnderlineStyle.None;
-                hyperlink.Inlines.Add($" {stickerSet.Name}");
+                hyperlink.Inlines.Add($" {stickerSet.Title}");
 
                 var text = string.Format(Strings.TelegramPremiumUserStatusDialogTitle, title, "{0}");
                 var index = text.IndexOf("{0}");

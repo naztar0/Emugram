@@ -162,6 +162,7 @@
                                                   Grid.Column="1" />
 
                             <controls:GlyphButton x:Name="Remove"
+                                                  Click="Remove_Click"
                                                   Glyph="&#xE711;"
                                                   IsTabStop="False"
                                                   AutomationProperties.AccessibilityView="Raw"

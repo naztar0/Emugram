@@ -277,6 +277,7 @@ namespace Telegram.Controls.Cells
             if (_needArrange)
             {
                 _visual.Size = finalSize.ToVector2();
+                _visual.CenterPoint = new Vector3(_visual.Size / 2, 0);
             }
 
             if (_pausedVisual != null)
@@ -304,6 +305,11 @@ namespace Telegram.Controls.Cells
             var pattern = peer.GetPattern(PatternInterface.Invoke) as IInvokeProvider;
 
             pattern.Invoke();
+        }
+
+        public void StartAnimation(ExpressionAnimation factor)
+        {
+            _visual.StartAnimation("Scale", factor);
         }
     }
 }

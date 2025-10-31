@@ -61,7 +61,7 @@
                                                                 Source="ms-appx:///Assets/Animations/SupergroupTopicsTabs.tgs"
                                                                 AutoPlay="True"
                                                                 LoopCount="1"
-                                                                FitToSize="True"
+                                                                ResizeMode="Fill"
                                                                 DecodeFrameType="Logical" />
                                     </Grid>
                                 </RadioButton>
@@ -86,7 +86,7 @@
                                                                 Source="ms-appx:///Assets/Animations/SupergroupTopicsList.tgs"
                                                                 AutoPlay="True"
                                                                 LoopCount="1"
-                                                                FitToSize="True"
+                                                                ResizeMode="Fill"
                                                                 DecodeFrameType="Logical" />
                                     </Grid>
                                 </RadioButton>

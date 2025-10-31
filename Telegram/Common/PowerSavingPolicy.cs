@@ -223,7 +223,7 @@ namespace Telegram.Common
 
         public static bool AreSmoothTransitionsEnabled
         {
-            get => SettingsService.Current.AreSmoothTransitionsEnabled && !m_isPowerSavingMode;
+            get => SettingsService.Current.AreSmoothTransitionsEnabled && m_uiSettings.AnimationsEnabled && !m_isPowerSavingMode;
             set
             {
                 SettingsService.Current.AreSmoothTransitionsEnabled = value;

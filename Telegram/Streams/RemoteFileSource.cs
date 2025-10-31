@@ -4,24 +4,28 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Common;
+using Telegram.Native.Media;
 using Telegram.Services;
 using Telegram.Td.Api;
 
 namespace Telegram.Streams
 {
-    public partial class RemoteFileSource : AnimatedImageSource
+    public partial class RemoteFileSource : AnimatedImageSource, IAsyncMediaPlayerSource
     {
         private readonly ManualResetEvent _event;
         private readonly object _stateLock = new object();
 
         private readonly IClientService _clientService;
-
         private readonly File _file;
+        private readonly double _duration;
+        private readonly int _priority;
+        private readonly bool _adaptive;
 
-        private bool _canceled;
+        private readonly RemoteFileBitrate _bitrate;
 
         private long _offset;
         private long _count;
@@ -30,17 +34,31 @@ namespace Telegram.Streams
 
         private long _fileToken;
 
-        private readonly int _priority;
-        private readonly bool _limit;
-
-        public RemoteFileSource(IClientService clientService, File file, int priority = 32, bool limit = false)
+        public RemoteFileSource(IClientService clientService, File file, double duration)
         {
             _event = new ManualResetEvent(false);
 
             _clientService = clientService;
             _file = file;
-            _priority = priority;
-            _limit = limit;
+            _duration = duration;
+            _priority = 32;
+            _adaptive = true;
+
+            _bitrate = new RemoteFileBitrate(file);
+
+            Format = new StickerFormatWebm();
+            UpdateManager.Subscribe(this, clientService, file, ref _fileToken, UpdateFile);
+        }
+
+        public RemoteFileSource(IClientService clientService, File file/*, int priority = 32*/)
+        {
+            _event = new ManualResetEvent(false);
+
+            _clientService = clientService;
+            _file = file;
+            _duration = 0;
+            _priority = 32;
+            _adaptive = false;
 
             Format = new StickerFormatWebm();
             UpdateManager.Subscribe(this, clientService, file, ref _fileToken, UpdateFile);
@@ -52,50 +70,104 @@ namespace Telegram.Streams
             {
                 _offset = offset;
 
-                if (_file.Local.CanBeDownloaded && !_file.Local.IsDownloadingCompleted && !_limit)
+                if (_file.Local.CanBeDownloaded && !_file.Local.IsDownloadingCompleted && !_adaptive)
                 {
                     _clientService.DownloadFile(_file.Id, _priority, offset, 0, false);
                 }
             }
         }
 
-        public override void ReadCallback(long count)
+        public override void ReadCallback(long count, long buffer, out long bytesRead)
         {
-            if (MustWait(count))
+            if (MustWait(count, buffer))
             {
                 _event.WaitOne();
             }
+
+            bytesRead = DownloadedBytes;
         }
 
-        public Task ReadCallbackAsync(long count)
+        public async Task<long> ReadCallbackAsync(long count, long buffer)
         {
-            if (MustWait(count))
+            if (MustWait(count, buffer))
             {
-                return _event.WaitOneAsync();
+                await _event.WaitOneAsync();
             }
 
-            return Task.CompletedTask;
+            return DownloadedBytes;
         }
 
-        protected bool MustWait(long count)
+        public double Duration => _duration;
+
+        public double DownloadRate => _bitrate?.CurrentBitrate ?? 0;
+
+        public long DownloadedBytes => CalculateDownloadedBytes();
+
+        private long CalculateDownloadedBytes()
+        {
+            if (_closed)
+            {
+                return -1;
+            }
+
+            if (_offset >= _file.Size - 1)
+            {
+                return 0;
+            }
+
+            var begin = _file.Local.DownloadOffset;
+            var end = _file.Local.DownloadOffset + _file.Local.DownloadedPrefixSize;
+
+            var inBegin = _offset >= begin;
+            var inEnd = end >= _offset;
+
+            if (_file.Local.Path.Length > 0 && inBegin && inEnd)
+            {
+                if (_file.Local.IsDownloadingCompleted)
+                {
+                    return Math.Max(0, _file.Size - _offset);
+                }
+                else
+                {
+                    return Math.Max(0, end - _offset);
+                }
+            }
+
+            using var ev = new ManualResetEventSlim(false);
+            var buffered = 0L;
+
+            _clientService.Send(new GetFileDownloadedPrefixSize(_file.Id, _offset), result =>
+            {
+                if (result is FileDownloadedPrefixSize prefixSize)
+                {
+                    buffered = prefixSize.Size;
+                }
+                ev.Set();
+            });
+
+            ev.Wait(500);
+            return buffered;
+        }
+
+        protected bool MustWait(long count, long buffer)
         {
             lock (_stateLock)
             {
-                if (_canceled)
+                if (_closed || _file.Local.IsDownloadingCompleted || _offset >= _file.Size - 1)
                 {
-                    //Logger.Info("Canceled");
                     return false;
                 }
 
-                var begin = _file.Local.DownloadOffset;
-                var end = _file.Local.DownloadOffset + _file.Local.DownloadedPrefixSize;
+                count = Math.Min(_file.Size - _offset, count);
+                buffer = _adaptive ? Math.Min(_file.Size - _offset, Math.Max(count, buffer)) : 0;
 
-                var inBegin = _offset >= begin;
-                var inEnd = end >= _offset + count /*|| end == _file.Size*/;
-
-                if (_file.Local.Path.Length > 0 && ((inBegin && inEnd) || _file.Local.IsDownloadingCompleted))
+                var downloaded = CalculateDownloadedBytes();
+                if (downloaded >= count)
                 {
-                    Logger.Debug($"Next chunk is available, offset: {_offset}, count: {count}, prefix: {_file.Local.DownloadedPrefixSize}, size: {_file.Size}");
+                    // Always request new bytes
+                    _clientService.DownloadFile(_file.Id, _priority, _offset, buffer, false);
+
+                    //Logger.Debug($"Next chunk is available for {_file.Id}, offset: {_offset}, limit: {buffer}, count: {count}, download: {_file.Local.DownloadOffset}, prefix: {_file.Local.DownloadedPrefixSize}, size: {_file.Size}");
                     return false;
                 }
 
@@ -103,9 +175,9 @@ namespace Telegram.Streams
                 _event.Reset();
                 _count = count;
 
-                _clientService.DownloadFile(_file.Id, 32, _offset, _limit ? count : 0, false);
+                _clientService.DownloadFile(_file.Id, _priority, _offset, buffer, false);
 
-                Logger.Debug($"Not enough data available, offset: {_offset}, count: {count}, size: {_file.Size}");
+                //Logger.Debug($"Not enough data available for {_file.Id}, offset: {_offset}, limit: {buffer}, count: {count}, download: {_file.Local.DownloadOffset}, prefix: {_file.Local.DownloadedPrefixSize}, size: {_file.Size}");
                 return true;
             }
         }
@@ -117,8 +189,6 @@ namespace Telegram.Streams
 
         public override long Offset => _offset;
 
-        public bool IsCanceled => _canceled;
-
         private void UpdateFile(object target, File file)
         {
             if (file.Id != _file.Id)
@@ -126,28 +196,38 @@ namespace Telegram.Streams
                 return;
             }
 
+            _bitrate?.Update(file);
+
             lock (_stateLock)
             {
+                // No need to process the update if no one is waiting
+                if (_event.WaitOne(0))
+                {
+                    return;
+                }
+
                 var begin = _file.Local.DownloadOffset;
                 var end = _file.Local.DownloadOffset + _file.Local.DownloadedPrefixSize;
 
                 var inBegin = _offset >= begin;
                 var inEnd = end >= _offset + _count /*|| end == _file.Size*/;
 
-                if (_file.Local.Path.Length > 0 && ((inBegin && inEnd) || _file.Local.IsDownloadingCompleted))
+                var available = _file.Local.Path.Length > 0 && ((inBegin && inEnd) || _file.Local.IsDownloadingCompleted);
+                var canceled = _closed || !file.Local.IsDownloadingActive;
+
+                if (available || canceled)
                 {
-                    Logger.Debug($"Next chunk is available, offset: {_offset}, count: {_count}, prefix: {file.Local.DownloadedPrefixSize}, size: {_file.Size}");
+                    //if (available)
+                    //{
+                    //    Logger.Debug($"Next chunk is available for {_file.Id}, offset: {_offset}, count: {_count}, download: {_file.Local.DownloadOffset}, prefix: {file.Local.DownloadedPrefixSize}, size: {_file.Size}");
+                    //}
+                    //else
+                    //{
+                    //    Logger.Info($"Download was canceled for {_file.Id}");
+                    //}
+
                     _event.Set();
                 }
-                else if (_canceled || !file.Local.IsDownloadingActive)
-                {
-                    Logger.Info("Download was canceled for " + file.Id);
-                    _event.Set();
-                }
-                //else
-                //{
-                //    Logger.Debug($"Not enough data available, expected offset: {_offset}, expected count: {_count}, offset: {file.Local.DownloadOffset}, prefix: {file.Local.DownloadedPrefixSize}, size: {_file.Size}, completed: {file.Local.IsDownloadingCompleted}");
-                //}
             }
         }
 
@@ -156,13 +236,12 @@ namespace Telegram.Streams
             lock (_stateLock)
             {
                 _closed = false;
-                _canceled = false;
             }
 
             SeekCallback(0);
         }
 
-        public void Close(bool cancel)
+        public void Close(/*bool cancel*/)
         {
             lock (_stateLock)
             {
@@ -176,17 +255,107 @@ namespace Telegram.Streams
                 //Logger.Debug($"Disposing the stream");
                 UpdateManager.Unsubscribe(this, ref _fileToken);
 
-                if (cancel)
-                {
-                    _canceled = true;
-                    _clientService.Send(new CancelDownloadFile(_file.Id, false));
-                }
+                //if (cancel)
+                //{
+                //    _canceled = true;
+                //    _clientService.Send(new CancelDownloadFile(_file.Id, false));
+                //}
 
                 _event.Set();
             }
 
             //_event.Dispose();
             //_readLock.Dispose();
+        }
+
+        public class RemoteFileBitrate
+        {
+            public double CurrentBitrate => _bitrate;
+
+            private readonly double _alpha = 0.2;
+
+            private ulong _lastUpdateTime;
+            private long _lastDownloadOffset;
+            private long _lastDownloadedPrefixSize;
+            private double _bitrate;
+            private bool _downloadingActive;
+            private bool _initialized;
+
+            public RemoteFileBitrate(File file)
+            {
+                Update(file);
+            }
+
+            public double Update(File file)
+            {
+                ulong now = Logger.TickCount;
+
+                if (!_initialized)
+                {
+                    _lastDownloadOffset = file.Local.DownloadOffset;
+                    _lastDownloadedPrefixSize = file.Local.DownloadedPrefixSize;
+                    _lastUpdateTime = now;
+                    _downloadingActive = file.Local.IsDownloadingActive;
+                    _bitrate = 0;
+
+                    _initialized = true;
+                    return 0;
+                }
+
+                if (file.Local.IsDownloadingActive && !_downloadingActive)
+                {
+                    _lastDownloadOffset = file.Local.DownloadOffset;
+                    _lastDownloadedPrefixSize = file.Local.DownloadedPrefixSize;
+                    _lastUpdateTime = now;
+                    _downloadingActive = true;
+                    return _bitrate;
+                }
+
+                if (!file.Local.IsDownloadingActive)
+                {
+                    _downloadingActive = false;
+                    return _bitrate;
+                }
+
+                var delta = now - _lastUpdateTime;
+                if (delta < 100)
+                {
+                    return _bitrate;
+                }
+
+                long bytesDownloaded = 0;
+
+                if (file.Local.DownloadOffset != _lastDownloadOffset)
+                {
+                    bytesDownloaded = file.Local.DownloadedPrefixSize;
+                }
+                else
+                {
+                    var currentPosition = file.Local.DownloadedPrefixSize;
+                    var previousPosition = _lastDownloadedPrefixSize;
+                    bytesDownloaded = currentPosition - previousPosition;
+                }
+
+                _lastDownloadOffset = file.Local.DownloadOffset;
+                _lastDownloadedPrefixSize = file.Local.DownloadedPrefixSize;
+                _lastUpdateTime = now;
+
+                if (bytesDownloaded > 0)
+                {
+                    double instant = (bytesDownloaded * 8.0) / delta;
+
+                    if (_bitrate == 0)
+                    {
+                        _bitrate = instant;
+                    }
+                    else
+                    {
+                        _bitrate = _alpha * instant + (1 - _alpha) * _bitrate;
+                    }
+                }
+
+                return _bitrate;
+            }
         }
     }
 }

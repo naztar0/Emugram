@@ -87,10 +87,10 @@
                              AcceptsReturn="True"
                              Padding="12,11,6,12" />
 
-                    <controls:BadgeButton x:Name="StickerButton"
-                                          Click="Sticker_Click"
-                                          Content="{CustomResource BusinessIntroSticker}"
-                                          Badge="{CustomResource BusinessIntroStickerRandom}">
+                    <controls:SettingsButton x:Name="StickerButton"
+                                             Click="Sticker_Click"
+                                             Content="{CustomResource BusinessIntroSticker}"
+                                             Badge="{CustomResource BusinessIntroStickerRandom}">
                         <FlyoutBase.AttachedFlyout>
                             <Flyout x:Name="StickerFlyout"
                                     Placement="BottomEdgeAlignedRight"
@@ -107,13 +107,13 @@
                                                        Height="360" />
                             </Flyout>
                         </FlyoutBase.AttachedFlyout>
-                    </controls:BadgeButton>
+                    </controls:SettingsButton>
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl Visibility="{x:Bind ViewModel.IsNotDefault, Mode=OneWay}">
-                    <controls:BadgeButton Click="{x:Bind ViewModel.Clear}"
-                                          Content="{CustomResource BusinessIntroReset}"
-                                          Foreground="{ThemeResource DangerButtonBackground}" />
+                    <controls:SettingsButton Click="{x:Bind ViewModel.Clear}"
+                                             Content="{CustomResource BusinessIntroReset}"
+                                             Foreground="{ThemeResource DangerButtonBackground}" />
                 </controls:HeaderedControl>
             </controls:SettingsPanel>
         </ScrollViewer>

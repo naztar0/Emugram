@@ -277,6 +277,42 @@ namespace Telegram.Common
             return diff / 60 / 60 / 24 / 7 + "w";
         }
 
+        public static string FormatAutoDelete(int diff)
+        {
+            if (diff <= 0)
+            {
+                return string.Empty;
+            }
+            else if (diff < 60)
+            {
+                return diff + "s";
+            }
+            else if (diff < 60 * 60)
+            {
+                return diff / 60 + "m";
+            }
+            else if (diff < 60 * 60 * 24)
+            {
+                return diff / 60 / 60 + "h";
+            }
+            else if (diff < 60 * 60 * 24 * 7)
+            {
+                return diff / 60 / 60 / 24 + "d";
+            }
+            else if (diff < 60 * 60 * 24 * 30)
+            {
+                return diff / 60 / 60 / 24 / 7 + "w";
+            }
+            else if (diff < 60 * 60 * 24 * 365)
+            {
+                return diff / 60 / 60 / 24 / 30 + "mo";
+            }
+            else
+            {
+                return diff / 60 / 60 / 24 / 365 + "y";
+            }
+        }
+
         public static string FormatLivePeriod(int livePeriod, int date)
         {
             if (livePeriod == int.MaxValue)

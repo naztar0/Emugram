@@ -162,9 +162,10 @@ namespace Telegram.Navigation.Services
         {
             Logger.Info($"CanGoBack {CanGoBack}");
 
-            NavigationModeHint = NavigationMode.Back;
             if (CanGoBack)
             {
+                NavigationModeHint = NavigationMode.Back;
+
                 if (infoOverride == null)
                 {
                     Frame.GoBack();
@@ -252,9 +253,9 @@ namespace Telegram.Navigation.Services
         {
             Logger.Info($"CanGoForward {CanGoForward}");
 
-            NavigationModeHint = NavigationMode.Forward;
             if (CanGoForward)
             {
+                NavigationModeHint = NavigationMode.Forward;
                 Frame.GoForward();
             }
         }

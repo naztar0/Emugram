@@ -51,7 +51,7 @@ namespace Telegram.Controls.Cells
                     Title.Text = user.FirstName;
                 }
 
-                Photo.SetUser(activeStories.ClientService, user, 40);
+                Photo.Source = ProfilePictureSource.User(activeStories.ClientService, user);
 
             }
             else
@@ -59,7 +59,7 @@ namespace Telegram.Controls.Cells
                 _automationName = string.Format(Strings.AccDescrStoryBy, chat.Title);
                 Title.Text = chat.Title;
 
-                Photo.SetChat(activeStories.ClientService, chat, 40);
+                Photo.Source = ProfilePictureSource.Chat(activeStories.ClientService, chat);
             }
 
             Segments.UpdateActiveStories(activeStories.Item, 48, true);

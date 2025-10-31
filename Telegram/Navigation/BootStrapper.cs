@@ -351,10 +351,11 @@ namespace Telegram.Navigation
             RaiseBackRequested(null, VirtualKey.GoBack, ref handled);
         }
 
-        public void RaiseBackRequested(XamlRoot xamlRoot, VirtualKey key)
+        public bool RaiseBackRequested(XamlRoot xamlRoot, VirtualKey key)
         {
             var handled = false;
             RaiseBackRequested(xamlRoot, key, ref handled);
+            return handled;
         }
 
         /// <summary>
@@ -368,12 +369,6 @@ namespace Telegram.Navigation
             Logger.Info();
 
             var args = new BackRequestedRoutedEventArgs(key);
-            BackRequested?.Invoke(null, args);
-            if (handled = args.Handled)
-            {
-                return;
-            }
-
             var popups = xamlRoot == null
                 ? VisualTreeHelper.GetOpenPopups(Window.Current)
                 : VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot);
@@ -407,9 +402,10 @@ namespace Telegram.Navigation
                 }
                 else if (key == VirtualKey.Escape)
                 {
+                    // TODO: what is this for? I have no clue anymore
                     if (popup.Child is not Grid)
                     {
-                        handled = args.Handled = true;
+                        //handled = args.Handled = true;
                         return;
                     }
                 }
@@ -428,37 +424,33 @@ namespace Telegram.Navigation
             if (NavigationService?.CanGoBack ?? false)
             {
                 NavigationService?.GoBack();
+                handled = true;
             }
         }
 
-        // this event precedes the in-frame event by the same name
-        public static event EventHandler<HandledEventArgs> BackRequested;
-
-        public void RaiseForwardRequested()
+        public bool RaiseForwardRequested()
         {
             Logger.Info();
 
             var args = new HandledEventArgs();
-            ForwardRequested?.Invoke(null, args);
-            if (args.Handled)
-            {
-                return;
-            }
 
             foreach (var frame in WindowContext.Current.NavigationServices.Select(x => x.FrameFacade))
             {
                 frame.RaiseForwardRequested(args);
                 if (args.Handled)
                 {
-                    return;
+                    return true;
                 }
             }
 
-            NavigationService?.GoForward();
-        }
+            if (NavigationService?.CanGoForward ?? false)
+            {
+                NavigationService?.GoForward();
+                return true;
+            }
 
-        // this event precedes the in-frame event by the same name
-        public static event EventHandler<HandledEventArgs> ForwardRequested;
+            return false;
+        }
 
         #region overrides
 

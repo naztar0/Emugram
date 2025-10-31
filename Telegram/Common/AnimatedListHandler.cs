@@ -36,6 +36,7 @@ namespace Telegram.Common
 
         private readonly AnimatedListType _type;
 
+        private bool _paused;
         private bool _unloaded;
 
         public AnimatedListHandler(ListViewBase listView, AnimatedListType type)
@@ -114,7 +115,7 @@ namespace Telegram.Common
             //_throttling = true;
             //VisualUtilities.QueueCallbackForCompositionRendering(LoadVisibleItems);
 
-            if (_debouncer.IsEnabled)
+            if (_debouncer.IsEnabled || _paused)
             {
                 return;
             }
@@ -134,6 +135,18 @@ namespace Telegram.Common
             };
         }
 
+        public void Suspend()
+        {
+            _paused = true;
+            UpdateVisibleItems(false);
+        }
+
+        public void Resume()
+        {
+            _paused = false;
+            ThrottleVisibleItems();
+        }
+
         public void LoadVisibleItems() => UpdateVisibleItems(true);
 
         public void UnloadVisibleItems() => UpdateVisibleItems(false);
@@ -143,6 +156,11 @@ namespace Telegram.Common
         public void UpdateVisibleItems(bool load)
         {
             //_throttling = false;
+
+            if (_paused && load)
+            {
+                return;
+            }
 
             int lastVisibleIndex;
             int firstVisibleIndex;

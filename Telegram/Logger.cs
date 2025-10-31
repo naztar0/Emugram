@@ -47,7 +47,12 @@ namespace Telegram
             Log(LogLevel.Error, message, member, filePath, line);
         }
 
-        public static void Error(Exception exception, [CallerMemberName] string member = "", [CallerFilePath] string filePath = "", [CallerLineNumber] int line = 0)
+        public static void Error(object message, Exception exception, [CallerMemberName] string member = "", [CallerFilePath] string filePath = "", [CallerLineNumber] int line = 0)
+        {
+            Log(LogLevel.Error, message + "\n" + exception, member, filePath, line);
+        }
+
+        public static void Exception(Exception exception, [CallerMemberName] string member = "", [CallerFilePath] string filePath = "", [CallerLineNumber] int line = 0)
         {
             Log(LogLevel.Error, Environment.StackTrace, member, filePath, line);
 

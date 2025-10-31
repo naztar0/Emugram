@@ -44,6 +44,13 @@ namespace Telegram.Common
         private static bool? _canCreateRectangleClip;
         public static bool CanCreateRectangleClip => _canCreateRectangleClip ??= ApiInformation.IsMethodPresent("Windows.UI.Composition.Compositor", "CreateRectangleClip");
 
+        // We only enable shadows on Windows 11 for three reasons:
+        // First: they look terrible on Windows 10
+        // Second: they are way more optimized on Windows 11 (they use a nine-grid instead of dynamically casted shadows)
+        // Third: there seems to be no way to create a custom shadow that only casts below messages without overlaps
+        private static bool? _canCreateThemeShadow;
+        public static bool CanCreateThemeShadow => IsWindows11 && (_canCreateThemeShadow ??= ApiInformation.IsPropertyPresent("Windows.UI.Xaml.UIElement", "Shadow"));
+
         private static bool? _canAnimatePaths;
         public static bool CanAnimatePaths => _canAnimatePaths ??= IsBuildOrGreater(19043);
 

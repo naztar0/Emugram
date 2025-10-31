@@ -13,7 +13,7 @@ using Windows.UI.Xaml.Controls;
 
 namespace Telegram.Controls.Drawers
 {
-    public sealed partial class EmojiSkinFlyout : GridEx
+    public sealed partial class EmojiSkinFlyout : Grid
     {
         private readonly EmojiDrawer _drawer;
         private readonly Flyout _flyout;

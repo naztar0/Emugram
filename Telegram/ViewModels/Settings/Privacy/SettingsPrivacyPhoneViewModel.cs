@@ -71,12 +71,12 @@ namespace Telegram.ViewModels.Settings.Privacy
                 var confirm = await ShowPopupAsync(Strings.PrivacySettingsChangedAlert, Strings.UnsavedChanges, Strings.ApplyTheme, Strings.PassportDiscard);
                 if (confirm == ContentDialogResult.Primary)
                 {
-                    Continue();
+                    ContinueImpl(args);
                 }
                 else if (confirm == ContentDialogResult.Secondary)
                 {
                     _completed = true;
-                    NavigationService.GoBack();
+                    NavigationService.GoBack(args);
                 }
             }
         }
@@ -84,15 +84,29 @@ namespace Telegram.ViewModels.Settings.Privacy
         protected bool _completed;
         public virtual bool HasChanged => ShowPhone.HasChanged || AllowFindingByPhoneNumber.HasChanged;
 
-        public async void Continue()
+        public void Continue()
         {
-            _completed = true;
+            ContinueImpl(null);
+        }
 
+        private async void ContinueImpl(NavigatingEventArgs args)
+        {
             var response1 = await ShowPhone.SendAsync();
+            if (response1 is Error error1)
+            {
+                ShowToast(error1);
+                return;
+            }
+
             var response2 = await AllowFindingByPhoneNumber.SendAsync();
             if (response1 is Ok && response2 is Ok)
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
+            }
+            else if (response2 is Error error2)
+            {
+                ShowToast(error2);
             }
         }
     }

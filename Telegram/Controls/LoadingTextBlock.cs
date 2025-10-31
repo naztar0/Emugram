@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Telegram.Common;
-using Telegram.Native;
 using Telegram.Navigation;
 using Telegram.Td.Api;
 using Windows.Foundation;
@@ -27,8 +26,8 @@ namespace Telegram.Controls
         private ContainerVisual _skeleton;
         private SpriteVisual _foreground;
 
-        private TextBlock _placeholder;
-        private TextBlock _presenter;
+        private TextBlock Placeholder;
+        private TextBlock Presenter;
 
         public LoadingTextBlock()
         {
@@ -64,8 +63,8 @@ namespace Telegram.Controls
             _foreground.Brush = gradient;
             _foreground.StartAnimation("RelativeOffsetAdjustment", animation);
 
-            _placeholder = GetTemplateChild("Placeholder") as TextBlock;
-            _presenter = GetTemplateChild("Presenter") as TextBlock;
+            Placeholder = GetTemplateChild(nameof(Placeholder)) as TextBlock;
+            Presenter = GetTemplateChild(nameof(Presenter)) as TextBlock;
 
             _skeleton = BootStrapper.Current.Compositor.CreateContainerVisual();
             _skeleton.Children.InsertAtTop(background);
@@ -75,7 +74,7 @@ namespace Telegram.Controls
             _skeleton.AnchorPoint = new Vector2(IsPlaceholderRightToLeft ? 1 : 0, 0);
             _skeleton.RelativeOffsetAdjustment = new Vector3(IsPlaceholderRightToLeft ? 1 : 0, 0, 0);
 
-            ElementCompositionPreview.SetElementChildVisual(_placeholder, _skeleton);
+            ElementCompositionPreview.SetElementChildVisual(Placeholder, _skeleton);
 
             base.OnApplyTemplate();
         }
@@ -140,12 +139,12 @@ namespace Telegram.Controls
 
         private async void OnTextChanged(string text, string placeholder)
         {
-            var visual1 = ElementComposition.GetElementVisual(_presenter);
-            var visual2 = ElementComposition.GetElementVisual(_placeholder);
+            var visual1 = ElementComposition.GetElementVisual(Presenter);
+            var visual2 = ElementComposition.GetElementVisual(Placeholder);
 
             if (string.IsNullOrEmpty(text))
             {
-                _placeholder.Visibility = Visibility.Visible;
+                Placeholder.Visibility = Visibility.Visible;
 
                 visual1.Clip = null;
                 visual2.Clip = null;
@@ -159,7 +158,7 @@ namespace Telegram.Controls
             var batch = BootStrapper.Current.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
             batch.Completed += (s, args) =>
             {
-                _placeholder.Visibility = Visibility.Collapsed;
+                Placeholder.Visibility = Visibility.Collapsed;
             };
 
             var fadeIn = BootStrapper.Current.Compositor.CreateScalarKeyFrameAnimation();
@@ -168,8 +167,8 @@ namespace Telegram.Controls
 
             visual1.StartAnimation("Opacity", fadeIn);
 
-            var size1 = _presenter.ActualSize;
-            var size2 = _placeholder.ActualSize;
+            var size1 = Presenter.ActualSize;
+            var size2 = Placeholder.ActualSize;
 
             var final = new Vector2(MathF.Max(size1.X, size2.X), MathF.Max(size1.Y, size2.Y));
 
@@ -249,10 +248,10 @@ namespace Telegram.Controls
             {
                 if (string.IsNullOrEmpty(Text))
                 {
-                    return _placeholder.DesiredSize;
+                    return Placeholder.DesiredSize;
                 }
 
-                return _presenter.DesiredSize;
+                return Presenter.DesiredSize;
             }
 
             if (string.IsNullOrEmpty(Text))
@@ -260,14 +259,14 @@ namespace Telegram.Controls
                 return availableSize;
             }
 
-            return new Size(availableSize.Width, _presenter.DesiredSize.Height);
+            return new Size(availableSize.Width, Presenter.DesiredSize.Height);
         }
 
         protected override Size ArrangeOverride(Size finalSize)
         {
             finalSize = base.ArrangeOverride(finalSize);
 
-            if (_placeholder.DesiredSize.Width == 0)
+            if (Placeholder.DesiredSize.Width == 0)
             {
                 return finalSize;
             }
@@ -276,7 +275,7 @@ namespace Telegram.Controls
 
             var left = (float)Padding.Left;
             var top = (float)Padding.Top;
-            var rects = PlaceholderImageHelper.Foreground.LineMetrics(PlaceholderText ?? string.Empty, Array.Empty<TextEntity>(), _placeholder.FontSize, _placeholder.DesiredSize.Width - Padding.Left - Padding.Right, IsPlaceholderRightToLeft);
+            var rects = PlaceholderHelper.Foreground.LineMetrics(PlaceholderText ?? string.Empty, Array.Empty<TextEntity>(), Placeholder.FontSize, Placeholder.DesiredSize.Width - Padding.Left - Padding.Right, IsPlaceholderRightToLeft);
 
             foreach (var rect in rects)
             {
@@ -289,7 +288,7 @@ namespace Telegram.Controls
             }
 
             _skeleton.Clip = BootStrapper.Current.Compositor.CreateGeometricClip(BootStrapper.Current.Compositor.CreatePathGeometry(new CompositionPath(CanvasGeometry.CreateGroup(null, list.ToArray(), CanvasFilledRegionDetermination.Winding))));
-            _skeleton.Size = _placeholder.DesiredSize.ToVector2();
+            _skeleton.Size = Placeholder.DesiredSize.ToVector2();
 
             return finalSize;
         }

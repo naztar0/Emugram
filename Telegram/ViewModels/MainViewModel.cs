@@ -20,7 +20,6 @@ using Telegram.Services.Updates;
 using Telegram.Td;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Folders;
-using Telegram.ViewModels.Profile;
 using Telegram.ViewModels.Stories;
 using Telegram.Views;
 using Telegram.Views.Folders;
@@ -56,14 +55,6 @@ namespace Telegram.ViewModels
             _shortcutService = shortcutService;
 
             Folders = new ChatFolderCollection();
-            NavigationItems = new List<IEnumerable<ChatFolderViewModel>>
-            {
-                Folders,
-                new ChatFolderViewModel[]
-                {
-                    new ChatFolderViewModel(ClientService, int.MaxValue - 1, Strings.Settings, "\uE98F", "\uE98E"),
-                }
-            };
 
             ChatList chatList = ClientService.MainChatListPosition > 0 && ClientService.ChatFolders.Count > 0
                 ? new ChatListFolder(ClientService.ChatFolders[0].Id)
@@ -206,8 +197,7 @@ namespace Telegram.ViewModels
                 return;
             }
 
-            var message = TypeResolver.Current.Playback.CurrentItem;
-            if (message == null || message.ClientService != ClientService)
+            if (TypeResolver.Current.Playback.CurrentItem is not PlaybackItemMessage message || message.ClientService != ClientService)
             {
                 return;
             }
@@ -248,6 +238,7 @@ namespace Telegram.ViewModels
                 else
                 {
                     RaisePropertyChanged(nameof(SelectedFolder));
+                    RaisePropertyChanged(nameof(SelectedFolderView));
                     RaisePropertyChanged(nameof(IsPrimaryFolderSelected));
                 }
 
@@ -275,7 +266,7 @@ namespace Telegram.ViewModels
                 RaisePropertyChanged(nameof(IsPrimaryFolderSelected));
             }
 
-            Chats.Delegate?.UpdateChatFolders();
+            Chats.Delegate?.UpdateChatFoldersLayout();
         }
 
         private void Merge(IList<ChatFolderViewModel> destination, IList<ChatFolderInfo> origin, int selectedFolderId, out bool updateSelection)
@@ -351,8 +342,6 @@ namespace Telegram.ViewModels
             set => Set(ref _folders, value);
         }
 
-        public List<IEnumerable<ChatFolderViewModel>> NavigationItems { get; private set; }
-
         private ChatFolderViewModel _selectedFolder;
         public ChatFolderViewModel SelectedFolder
         {
@@ -363,6 +352,7 @@ namespace Telegram.ViewModels
                 {
                     Logger.Info();
 
+                    RaisePropertyChanged(nameof(SelectedFolderView));
                     RaisePropertyChanged(nameof(IsPrimaryFolderSelected));
                     Chats.SetChatList(value.ChatList);
                     Stories.SetList(value.ChatList is ChatListArchive
@@ -372,7 +362,23 @@ namespace Telegram.ViewModels
             }
         }
 
+        public ChatFolderViewModel SelectedFolderView => _isSettingsSelected || _selectedFolder?.ChatFolderId is Constants.ChatListArchive ? null : _selectedFolder;
+
         public bool IsPrimaryFolderSelected => Folders.Count > 0 ? _selectedFolder == Folders[0] : true;
+
+        private bool _isSettingsSelected;
+        public bool IsSettingsSelected
+        {
+            get => _isSettingsSelected;
+            set
+            {
+                if (Set(ref _isSettingsSelected, value))
+                {
+                    RaisePropertyChanged(nameof(SelectedFolder));
+                    RaisePropertyChanged(nameof(SelectedFolderView));
+                }
+            }
+        }
 
         protected override Task OnNavigatedToAsync(object parameter, NavigationMode mode, NavigationState state)
         {
@@ -475,7 +481,7 @@ namespace Telegram.ViewModels
             }
 
             var rule = await GetPrimaryRuleAsync();
-            var popup = new SettingsBirthdatePopup(null, rule);
+            var popup = new SettingsBirthdatePopup(date: null, rule);
 
             var confirm = await ShowPopupAsync(popup);
             if (confirm == ContentDialogResult.Primary)
@@ -599,17 +605,15 @@ namespace Telegram.ViewModels
             ShowPopup(new SettingsArchivePopup(ClientService));
         }
 
-        public async void NavigateToMyProfile(bool savedMessages)
+        public void NavigateToMyProfile(bool savedMessages)
         {
-            await ClientService.SendAsync(new CreatePrivateChat(ClientService.Options.MyId, false));
-
             if (savedMessages)
             {
                 NavigationService.NavigateToChat(ClientService.Options.MyId, force: false);
             }
             else
             {
-                NavigationService.Navigate(typeof(ProfilePage), new ProfileMyArgs());
+                NavigationService.Navigate(typeof(ProfilePage), ClientService.Options.MyId);
             }
         }
     }

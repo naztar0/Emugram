@@ -32,8 +32,8 @@ namespace winrt::Telegram::Native::implementation
 
         static int32_t GetLastInputTime();
 
-        static IXamlDirectObject AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, FlowDirection direction, bool italic, TextDecorations decorations, FontFamily fontFamily, double fontSize, bool transparent);
-        static IXamlDirectObject AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, int32_t offset, int32_t length, FlowDirection direction, bool italic, TextDecorations decorations, FontFamily fontFamily, double fontSize, bool transparent);
+        static IXamlDirectObject AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, FlowDirection direction, TextStyle style, FontFamily fontFamily, double fontSize, bool transparent);
+        static IXamlDirectObject AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, int32_t offset, int32_t length, FlowDirection direction, TextStyle style, FontFamily fontFamily, double fontSize, bool transparent);
 
         //[DefaultOverload]
         static winrt::Telegram::Native::TextDirectionality GetDirectionality(hstring value);
