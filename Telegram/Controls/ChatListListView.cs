@@ -528,10 +528,20 @@ namespace Telegram.Controls
         {
             Logger.Info(args.HoldingState);
 
-            if (args.HoldingState == HoldingState.Started && args.Position.X is >= 8 and <= 56 && args.Position.Y is >= 8 and <= 56 && ContentTemplateRoot is ChatCell cell)
+            if (args.HoldingState == HoldingState.Started && args.Position.X is >= 8 and <= 56 && args.Position.Y is >= 8 and <= 56 && ContentTemplateRoot is ChatCell chatCell)
             {
                 ReleasePointerCaptures();
-                cell.ShowPreview(args);
+                chatCell.ShowPreview(args.Position);
+            }
+            else if (args.HoldingState == HoldingState.Started && args.Position.X is >= 8 and <= 56 && args.Position.Y is >= 8 and <= 56 && ContentTemplateRoot is ForumTopicCell forumTopicCell)
+            {
+                ReleasePointerCaptures();
+                forumTopicCell.ShowPreview(args.Position);
+            }
+            else if (args.HoldingState == HoldingState.Started && args.Position.X is >= 8 and <= 56 && args.Position.Y is >= 8 and <= 56 && ContentTemplateRoot is ForumTopicVerticalCell forumTopicVerticalCell)
+            {
+                ReleasePointerCaptures();
+                forumTopicVerticalCell.ShowPreview(args.Position);
             }
         }
 

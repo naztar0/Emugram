@@ -212,9 +212,13 @@ namespace Telegram.Views.Supergroups.Popups
 
         private void ToggleEmoji(StickerViewModel sticker)
         {
-            var reaction = sticker.ToReactionType();
+            var reaction = sticker.Reaction;
+            if (reaction == null)
+            {
+                return;
+            }
 
-            var already = ViewModel.Items.FirstOrDefault(x => x.AreTheSame(reaction));
+            var already = ViewModel.Items.FirstOrDefault(x => x.AreTheSame(reaction.Type));
             if (already != null)
             {
                 ViewModel.Items.Remove(already);

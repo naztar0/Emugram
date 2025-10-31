@@ -7,7 +7,6 @@
 using Microsoft.Win32;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -64,117 +63,11 @@ namespace Telegram.Stub
                 {
                     Connect();
                 }
-
-                if (local.Values.ContainsKey("AddLocalhostExemption"))
-                {
-                    // Already registered
-                }
-                else
-                {
-                    AddLocalhostExemption();
-                    local.Values.Add("AddLocalhostExemption", true);
-                }
-
-                //if (local.Values.ContainsKey("MigratedV2"))
-                //{
-                //    // Already migrated
-                //}
-                //else if (Migrate())
-                //{
-                //    local.Values.Add("MigratedV2", true);
-                //}
             }
             catch
             {
                 // Can happen
             }
-        }
-
-        private bool Migrate()
-        {
-            var destination = ApplicationData.Current.LocalFolder.Path;
-            var source = destination.Replace(Package.Current.Id.FamilyName, "TelegramFZ-LLC.Unigram_1vfw5zm9jmzqy");
-
-            var migrated = false;
-
-            if (Directory.Exists(source))
-            {
-                try
-                {
-                    var confirm = MessageBox.Show("A previous installation of the app has been found. Do you want to migrate your accounts to this app?\n\nWARNING: secret chats will not be migrated.", "Unigram", MessageBoxButtons.YesNoCancel);
-                    if (confirm != DialogResult.Yes)
-                    {
-                        return confirm == DialogResult.No;
-                    }
-
-                    _closeRequested = false;
-
-                    _connection.RequestReceived -= OnRequestReceived;
-                    _connection.ServiceClosed -= OnServiceClosed;
-
-                    var current = Process.GetCurrentProcess();
-
-                    foreach (var process in Process.GetProcesses())
-                    {
-                        if (process.Id == current.Id)
-                        {
-                            continue;
-                        }
-
-                        try
-                        {
-                            if (process.MainModule.FileName.Contains("1vfw5zm9jmzqy") || process.MainModule.FileName.Contains("3epzvh0nk91te"))
-                            {
-                                process.Kill();
-                            }
-                        }
-                        catch
-                        {
-                            // It's not always possible to access MainModule
-                        }
-                    }
-
-                    var accounts = Directory.GetDirectories(source);
-
-                    foreach (var folder in accounts)
-                    {
-                        void Migrate(string binlog)
-                        {
-                            var binlogSource = Path.Combine(folder, binlog);
-                            var binlogDestination = binlogSource.Replace("TelegramFZ-LLC.Unigram_1vfw5zm9jmzqy", Package.Current.Id.FamilyName);
-
-                            if (File.Exists(binlogSource))
-                            {
-                                var directorty = Path.GetFileName(binlogDestination);
-
-                                var session = Path.GetFileName(folder);
-                                var container = ApplicationData.Current.LocalSettings.CreateContainer($"{session}", ApplicationDataCreateDisposition.Always);
-
-                                container.Values["UserId"] = 1L;
-                                container.Values["UseTestDC"] = binlog == "td_test.binlog";
-
-                                Directory.CreateDirectory(directorty);
-                                File.Copy(binlogSource, binlogDestination, true);
-                            }
-                        }
-
-                        Migrate("td.binlog");
-                        Migrate("td_test.binlog");
-                    }
-
-                    migrated = true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                }
-                finally
-                {
-                    OpenApp(null, null);
-                }
-            }
-
-            return migrated;
         }
 
         /*[DllImport("..\\Telegram.Diagnostics.dll")]
@@ -452,12 +345,6 @@ namespace Telegram.Stub
                 }
             }
 
-            if (args.Request.Message.ContainsKey("LoopbackExempt"))
-            {
-                Logger.Info("LoopbackExempt");
-                AddLocalhostExemption();
-            }
-
             if (args.Request.Message.ContainsKey("CloseRequested"))
             {
                 Logger.Info("CloseRequested");
@@ -529,30 +416,6 @@ namespace Telegram.Stub
                 _notifyIcon.Dispose();
                 Application.Exit();
             }
-        }
-
-        private static void AddLocalhostExemption()
-        {
-            var familyName = Package.Current.Id.FamilyName;
-            var info = new ProcessStartInfo
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                FileName = "CheckNetIsolation.exe",
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Arguments = "LoopbackExempt -a -n=" + familyName
-            };
-
-            try
-            {
-                Process process = Process.Start(info);
-                process.WaitForExit();
-                process.Dispose();
-            }
-            catch { }
         }
     }
 }

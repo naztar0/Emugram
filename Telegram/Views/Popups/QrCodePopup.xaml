@@ -43,8 +43,7 @@
                                 Grid.RowSpan="3" />
 
                         <controls:ProfilePicture x:Name="Photo"
-                                                 Width="96"
-                                                 Height="96"
+                                                 Size="96"
                                                  Margin="0,-48,0,0" />
 
                         <Border x:Name="Code"

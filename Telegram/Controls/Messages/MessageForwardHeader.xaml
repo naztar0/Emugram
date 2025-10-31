@@ -45,8 +45,7 @@
                         <controls:ProfilePicture x:Name="ForwardPhoto"
                                                  HorizontalAlignment="Left"
                                                  VerticalAlignment="Bottom"
-                                                 Width="16"
-                                                 Height="16" />
+                                                 Size="16" />
 
                         <TextBlock x:Name="ForwardLabel"
                                    Foreground="{TemplateBinding Foreground}"

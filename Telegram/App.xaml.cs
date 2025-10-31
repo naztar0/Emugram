@@ -273,6 +273,10 @@ namespace Telegram
             {
                 await NotifyIcon.LaunchAsync();
             }
+            else if (Constants.RELEASE && startKind == StartKind.Launch)
+            {
+                await NotifyIcon.AddLoopbackExemptionAsync();
+            }
 
             Windows.ApplicationModel.Core.CoreApplication.EnablePrelaunch(true);
 

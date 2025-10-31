@@ -136,11 +136,6 @@ namespace Telegram.Views.Chats.Popups
 
         #endregion
 
-        private void PurchaseShadow_Loaded(object sender, Windows.UI.Xaml.RoutedEventArgs e)
-        {
-            VisualUtilities.DropShadow(PurchaseShadow);
-        }
-
         private async void Purchase_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             var selected = ScrollingHost.SelectedItems

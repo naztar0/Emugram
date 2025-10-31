@@ -165,7 +165,7 @@
         <Style x:Key="BlockBlockquoteStyle"
                TargetType="StackPanel">
             <Setter Property="BorderBrush"
-                    Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                    Value="{ThemeResource TextFillColorPrimaryBrush}" />
             <Setter Property="BorderThickness"
                     Value="2,0,0,0" />
             <Setter Property="Padding"
@@ -197,7 +197,7 @@
         <Style x:Key="BlockEmbedPostStyle"
                TargetType="StackPanel">
             <Setter Property="BorderBrush"
-                    Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                    Value="{ThemeResource TextFillColorPrimaryBrush}" />
             <Setter Property="BorderThickness"
                     Value="2,0,0,0" />
         </Style>

@@ -28,7 +28,7 @@ namespace Telegram.Views.Settings
 
             var chat = clientService.GetChat(statistics.ChatId);
 
-            Title = chat == null
+            TitleLabel.Text = chat == null
                 ? Strings.ClearMediaCache
                 : clientService.GetTitle(chat);
 
@@ -88,12 +88,12 @@ namespace Telegram.Views.Settings
                 stickers,
                 stories,
                 local
-            }.Where(x => x != null).ToList();
+            }.Where(x => x != null).OrderByDescending(x => x.TotalBytes).ToList();
 
             ScrollingHost.ItemsSource = items;
             Chart.Items = items;
 
-            var size = Chart.Items.Where(x => x.IsVisible).Sum(x => x.Size);
+            var size = Chart.Items.Where(x => x.IsVisible).Sum(x => x.TotalBytes);
             var readable = FileSizeConverter.Convert(size, true).Split(' ');
 
             SizeLabel.Text = readable[0];
@@ -125,7 +125,7 @@ namespace Telegram.Views.Settings
                 check.Tag = item;
 
                 title.Text = item.Name;
-                subtitle.Text = FileSizeConverter.Convert(item.Size, true);
+                subtitle.Text = FileSizeConverter.Convert(item.TotalBytes, true);
 
                 args.Handled = true;
             }
@@ -179,7 +179,7 @@ namespace Telegram.Views.Settings
                 VisualUtilities.ShakeView(check);
             }
 
-            var size = Chart.Items.Where(x => x.IsVisible).Sum(x => x.Size);
+            var size = Chart.Items.Where(x => x.IsVisible).Sum(x => x.TotalBytes);
             var readable = FileSizeConverter.Convert(size, true).Split(' ');
 
             SizeLabel.Text = readable[0];

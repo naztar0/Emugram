@@ -47,7 +47,7 @@ namespace Telegram.Td.Api
             DarkThemeColors = Array.Empty<Color>();
             LightThemeColors = new List<Color>
             {
-                PlaceholderImage.GetColor(builtInAccentColorId)
+                ProfilePictureSourceText.GetColor(builtInAccentColorId)
             };
 
             BuiltInAccentColorId = builtInAccentColorId;

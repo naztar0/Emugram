@@ -10,7 +10,6 @@
 #include <winrt/Telegram.Td.Api.h>
 #include <mutex>
 
-using namespace winrt::Microsoft::Graphics::Canvas::UI::Xaml;
 using namespace winrt::Telegram::Td::Api;
 using namespace winrt::Windows::Foundation::Collections;
 

@@ -56,6 +56,8 @@ namespace Telegram.Controls
             var h = 16;
 
             var back = IsPrevious;
+
+            // TODO: Name
             var target = GetTemplateChild("Target") as UIElement;
 
             var line = BootStrapper.Current.Compositor.CreateLineGeometry();

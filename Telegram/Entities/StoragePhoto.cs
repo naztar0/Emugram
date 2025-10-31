@@ -16,15 +16,18 @@ namespace Telegram.Entities
         private readonly int _width;
         private readonly int _height;
 
-        private StoragePhoto(StorageFile file, ulong fileSize, uint width, uint height)
+        private StoragePhoto(StorageFile file, ulong fileSize, uint width, uint height, bool isAnimated)
             : base(file, fileSize)
         {
             _width = (int)width;
             _height = (int)height;
+            IsAnimated = isAnimated;
         }
 
         public override int Width => _width;
         public override int Height => _height;
+
+        public bool IsAnimated { get; private set; }
 
         public static async Task<StoragePhoto> CreateAsync(StorageFile file, ulong fileSize)
         {
@@ -40,7 +43,7 @@ namespace Telegram.Entities
 
                     if (bitmap.PixelWidth > 0 && bitmap.PixelHeight > 0)
                     {
-                        return new StoragePhoto(file, fileSize, bitmap.PixelWidth, bitmap.PixelHeight);
+                        return new StoragePhoto(file, fileSize, bitmap.PixelWidth, bitmap.PixelHeight, bitmap.FrameCount > 1);
                     }
                 }
 

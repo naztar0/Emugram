@@ -90,6 +90,10 @@
                               IsChecked="{x:Bind ViewModel.CanRestrictMembers, Mode=TwoWay}"
                               Content="{CustomResource EditAdminBanUsers}" />
 
+                    <CheckBox x:Name="ManageDirectMessages"
+                              IsChecked="{x:Bind ViewModel.CanManageDirectMessages, Mode=TwoWay}"
+                              Content="{CustomResource EditAdminManageDirect}" />
+
                     <CheckBox x:Name="AddUsers"
                               IsChecked="{x:Bind ViewModel.CanInviteUsers, Mode=TwoWay}"
                               Content="{CustomResource EditAdminAddUsers}" />

@@ -77,10 +77,11 @@ namespace Telegram.Controls
                 var activeStories = new ActiveStoriesViewModel(clientService, settings, aggregator, chatActiveStories, chat);
                 await activeStories.Wait;
 
-                if (activeStories.Items.Count > 0 && activeStories.SelectedItem != null)
+                if (activeStories.Items.Count > 0)
                 {
                     var viewModel = new StoryListViewModel(clientService, settings, aggregator, activeStories);
                     viewModel.NavigationService = navigationService;
+                    viewModel.UpdateSelectedItem();
 
                     var window = new StoriesWindow();
                     window.Update(viewModel, activeStories, StoryOpenOrigin.ProfilePhoto, pointz, origin);

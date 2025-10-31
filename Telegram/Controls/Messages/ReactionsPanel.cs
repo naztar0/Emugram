@@ -279,7 +279,7 @@ namespace Telegram.Controls.Messages
             var position = new Size(Padding.Left, Padding.Top);
             var count = 0;
 
-            var center = HorizontalContentAlignment == HorizontalAlignment.Center;
+            var center = HorizontalContentAlignment != HorizontalAlignment.Left;
             var rows = center
                 ? new List<List<Rect>>()
                 : null;
@@ -333,7 +333,7 @@ namespace Telegram.Controls.Messages
                 foreach (var item in rows)
                 {
                     var width = item[^1].Right;
-                    var diff = (finalSize.Width - width) / 2;
+                    var diff = HorizontalContentAlignment == HorizontalAlignment.Center ? (finalSize.Width - width) / 2 : finalSize.Width - width;
 
                     foreach (var child in item)
                     {

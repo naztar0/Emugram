@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using Telegram.Common;
 using Telegram.Converters;
 using Telegram.Navigation;
@@ -15,11 +14,9 @@ using Telegram.Services.Calls;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.Views;
-using Windows.UI.Composition;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Automation;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Media;
 
 namespace Telegram.Controls.Chats
@@ -31,12 +28,13 @@ namespace Telegram.Controls.Chats
         private readonly DispatcherTimer _scheduledTimer;
 
         private ChatView _chatView;
-        private UIElement _parent;
         private GroupCall _call;
 
         public ChatGroupCallHeader()
         {
             InitializeComponent();
+
+            _collapsed = new SlidePanel.SlideState(this, false, 40);
 
             _scheduledTimer = new DispatcherTimer();
             _scheduledTimer.Tick += OnTick;
@@ -57,26 +55,14 @@ namespace Telegram.Controls.Chats
 
         public float AnimatedHeight => _collapsed ? 0 : 40;
 
-        public void InitializeParent(ChatView chatView, UIElement parent)
+        public void InitializeParent(ChatView chatView)
         {
             _chatView = chatView;
-            ElementCompositionPreview.SetIsTranslationEnabled(_parent = parent, true);
         }
 
         private void RecentUsers_RecentUserHeadChanged(ProfilePicture photo, MessageSender sender)
         {
-            if (ViewModel.ClientService.TryGetUser(sender, out User user))
-            {
-                photo.SetUser(ViewModel.ClientService, user, 28);
-            }
-            else if (ViewModel.ClientService.TryGetChat(sender, out Chat chat))
-            {
-                photo.SetChat(ViewModel.ClientService, chat, 28);
-            }
-            else
-            {
-                photo.Clear();
-            }
+            photo.Source = ProfilePictureSource.MessageSender(ViewModel.ClientService, sender);
         }
 
         public bool UpdateGroupCall(Chat chat, GroupCall call)
@@ -155,7 +141,7 @@ namespace Telegram.Controls.Chats
             return visible;
         }
 
-        private bool _collapsed = true;
+        private SlidePanel.SlideState _collapsed;
 
         public void ShowHide(bool show)
         {
@@ -164,41 +150,8 @@ namespace Telegram.Controls.Chats
                 return;
             }
 
-            _collapsed = !show;
-            Visibility = Visibility.Visible;
-
-            var parent = ElementComposition.GetElementVisual(_parent);
-            var visual = ElementComposition.GetElementVisual(this);
-            visual.Clip = visual.Compositor.CreateInsetClip();
-
-            var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-            batch.Completed += (s, args) =>
-            {
-                visual.Clip = null;
-                parent.Properties.InsertVector3("Translation", Vector3.Zero);
-
-                if (_collapsed)
-                {
-                    Visibility = Visibility.Collapsed;
-                }
-            };
-
+            _collapsed.IsVisible = show;
             _chatView.UpdateMessagesHeaderPadding();
-
-            var clip = visual.Compositor.CreateScalarKeyFrameAnimation();
-            clip.InsertKeyFrame(show ? 0 : 1, 40);
-            clip.InsertKeyFrame(show ? 1 : 0, 0);
-            clip.Duration = Constants.FastAnimation;
-
-            var offset = visual.Compositor.CreateScalarKeyFrameAnimation();
-            offset.InsertKeyFrame(show ? 0 : 1, -40);
-            offset.InsertKeyFrame(show ? 1 : 0, 0);
-            offset.Duration = Constants.FastAnimation;
-
-            visual.Clip.StartAnimation("TopInset", clip);
-            parent.StartAnimation("Translation.Y", offset);
-
-            batch.End();
         }
 
         public IEnumerable<UIElement> GetAnimatableVisuals()

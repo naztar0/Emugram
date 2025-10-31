@@ -23,12 +23,9 @@ namespace Telegram.Controls.Messages
         public ReactionAsTagButton()
         {
             DefaultStyleKey = typeof(ReactionAsTagButton);
-
-            Connected += OnConnected;
-            Disconnected += OnDisconnected;
         }
 
-        private void OnConnected(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             if (_tag != null)
             {
@@ -36,7 +33,7 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void OnDisconnected(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             if (_tag != null)
             {

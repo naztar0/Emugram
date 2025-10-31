@@ -27,6 +27,19 @@
                                                 Margin="9,5,0,0"
                                                 Opacity="0.1"
                                                 IsTabStop="False" />
+                        <controls:AnimatedImage x:Name="ModelAnimated"
+                                                x:Load="False"
+                                                FrameSize="19,19"
+                                                DecodeFrameType="Logical"
+                                                AutoPlay="False"
+                                                IsViewportAware="False"
+                                                Source="{TemplateBinding Model}"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Top"
+                                                Width="19"
+                                                Height="19"
+                                                Margin="103,7,0,0"
+                                                IsTabStop="False" />
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -154,6 +167,7 @@
                                                          TextTrimming="CharacterEllipsis"
                                                          TextWrapping="Wrap"
                                                          Foreground="{TemplateBinding Foreground}"
+                                                         IconForeground="{TemplateBinding SubtleBrush}"
                                                          FontFamily="{ThemeResource EmojiThemeFontFamilyWithSymbols}"
                                                          Style="{StaticResource ReplyBodyFormattedTextBlockStyle}"
                                                          EmojiStyle="{StaticResource MessageCustomEmojiStyle}"

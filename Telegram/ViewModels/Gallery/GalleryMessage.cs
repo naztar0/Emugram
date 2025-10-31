@@ -21,7 +21,7 @@ namespace Telegram.ViewModels.Gallery
             : base(clientService)
         {
             // Create a copy so that content doesn't get updated while the gallery is open
-            _message = new(message.Id, message.SenderId, message.ChatId, message.SendingState, message.SchedulingState, message.IsOutgoing, message.IsPinned, message.IsFromOffline, message.CanBeSaved, message.HasTimestampedMedia, message.IsChannelPost, message.ContainsUnreadMention, message.Date, message.EditDate, message.ForwardInfo, message.ImportInfo, message.InteractionInfo, message.UnreadReactions, message.FactCheck, message.ReplyTo, message.MessageThreadId, message.TopicId, message.SelfDestructType, message.SelfDestructIn, message.AutoDeleteIn, message.ViaBotUserId, message.SenderBusinessBotUserId, message.SenderBoostCount, message.PaidMessageStarCount, message.AuthorSignature, message.MediaAlbumId, message.EffectId, message.HasSensitiveContent, message.RestrictionReason, message.Content, message.ReplyMarkup);
+            _message = new(message.Id, message.SenderId, message.ChatId, message.SendingState, message.SchedulingState, message.IsOutgoing, message.IsPinned, message.IsFromOffline, message.CanBeSaved, message.HasTimestampedMedia, message.IsChannelPost, message.IsPaidStarSuggestedPost, message.IsPaidTonSuggestedPost, message.ContainsUnreadMention, message.Date, message.EditDate, message.ForwardInfo, message.ImportInfo, message.InteractionInfo, message.UnreadReactions, message.FactCheck, message.SuggestedPostInfo, message.ReplyTo, message.TopicId, message.SelfDestructType, message.SelfDestructIn, message.AutoDeleteIn, message.ViaBotUserId, message.SenderBusinessBotUserId, message.SenderBoostCount, message.PaidMessageStarCount, message.AuthorSignature, message.MediaAlbumId, message.EffectId, message.RestrictionInfo, message.Content, message.ReplyMarkup);
             _properties = properties;
 
             if (clientService.TryGetChat(message.ChatId, out Chat chat))
@@ -45,12 +45,15 @@ namespace Telegram.ViewModels.Gallery
                 if (photo != null)
                 {
                     Thumbnail = photo.GetSmall()?.Photo;
+                    Minithumbnail = photo.Minithumbnail;
                 }
             }
             else if (thumbnail?.Format is ThumbnailFormatJpeg)
             {
                 Thumbnail = thumbnail.File;
             }
+
+            Minithumbnail = _message.GetMinithumbnail();
         }
 
         public GalleryMessage(IClientService clientService, MessageWithOwner message, MessageProperties properties)

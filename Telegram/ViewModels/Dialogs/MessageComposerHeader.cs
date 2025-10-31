@@ -9,6 +9,35 @@ using Telegram.Td.Api;
 
 namespace Telegram.ViewModels
 {
+    public record MessageComposerReplyTo(MessageViewModel Message, InputTextQuote Quote, int ChecklistTaskId, bool CanBeRepliedInAnotherChat)
+    {
+        public InputMessageReplyTo ToInput(DialogViewModel viewModel)
+        {
+            var sameTopic = (viewModel.TopicId == null || viewModel.Thread != null) || (viewModel.TopicId != null && Message.TopicId.AreTheSame(viewModel.TopicId));
+
+            var chatId = Message.ChatId;
+            if (chatId == viewModel.ChatId && sameTopic)
+            {
+                if (Message.TopicId != null && (viewModel.IsForum || viewModel.IsDirectMessagesGroup))
+                {
+                    // TODO: this should no longer be needed
+                    //if (Message.TopicId.IsForum(ForumTopicService.GeneralId))
+                    //{
+                    //    return new InputMessageReplyToTopicMessage(Message.Id, new MessageTopicForum(Message.MessageThreadId), Quote, ChecklistTaskId);
+                    //}
+
+                    return new InputMessageReplyToTopicMessage(Message.Id, Message.TopicId, Quote, ChecklistTaskId);
+                }
+
+                return new InputMessageReplyToMessage(Message.Id, Quote, ChecklistTaskId);
+            }
+
+            return new InputMessageReplyToExternalMessage(chatId, Message.Id, Quote, ChecklistTaskId);
+        }
+    }
+
+    public record MessageComposerEditing(MessageViewModel Message, InputMessageContent Media);
+
     public partial class MessageComposerHeader
     {
         public IClientService ClientService { get; }
@@ -18,11 +47,11 @@ namespace Telegram.ViewModels
             ClientService = clientService;
         }
 
-        public MessageViewModel ReplyToMessage { get; set; }
-        public InputTextQuote ReplyToQuote { get; set; }
+        public MessageComposerReplyTo ReplyTo { get; set; }
 
-        public MessageViewModel EditingMessage { get; set; }
-        public InputMessageContent EditingMessageMedia { get; set; }
+        public MessageComposerEditing Editing { get; set; }
+
+        public InputSuggestedPostInfo SuggestedPostInfo { get; set; }
 
         public LinkPreview LinkPreview { get; set; }
         public string LinkPreviewUrl { get; set; }
@@ -59,17 +88,17 @@ namespace Telegram.ViewModels
         {
             get
             {
-                return ReplyToMessage == null && EditingMessage == null;
+                return ReplyTo == null && Editing == null && SuggestedPostInfo == null;
             }
         }
 
         public bool Matches(long messageId)
         {
-            if (ReplyToMessage != null && ReplyToMessage.Id == messageId)
+            if (ReplyTo?.Message?.Id == messageId)
             {
                 return true;
             }
-            else if (EditingMessage != null && EditingMessage.Id == messageId)
+            else if (Editing?.Message?.Id == messageId)
             {
                 return true;
             }

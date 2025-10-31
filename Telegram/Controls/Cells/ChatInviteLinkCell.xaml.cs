@@ -7,6 +7,7 @@
 using System;
 using Telegram.Common;
 using Telegram.Controls.Media;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
@@ -26,7 +27,7 @@ namespace Telegram.Controls.Cells
             InitializeComponent();
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             if (_expirationTimer != null)
             {
@@ -233,7 +234,7 @@ namespace Telegram.Controls.Cells
             SubtitleText.Text = Locale.Declension(Strings.R.InviteLinkCount, inviteLinkCount.InviteLinkCount);
             StatusText.Text = string.Empty;
 
-            Photo.SetUser(clientService, user, 36);
+            Photo.Source = ProfilePictureSource.User(clientService, user);
             Identity.SetStatus(clientService, user);
         }
 

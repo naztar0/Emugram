@@ -66,12 +66,12 @@ namespace Telegram.ViewModels.Business
                 var confirm = await ShowPopupAsync(message, Strings.UnsavedChanges, Strings.ChatThemeSaveDialogApply, Strings.ChatThemeSaveDialogDiscard);
                 if (confirm == ContentDialogResult.Primary)
                 {
-                    Continue();
+                    ContinueImpl(args);
                 }
                 else if (confirm == ContentDialogResult.Secondary)
                 {
                     _completed = true;
-                    NavigationService.GoBack();
+                    NavigationService.GoBack(args);
                 }
             }
         }
@@ -90,6 +90,11 @@ namespace Telegram.ViewModels.Business
             return false;
         }
 
-        public abstract void Continue();
+        public void Continue()
+        {
+            ContinueImpl(null);
+        }
+
+        protected abstract void ContinueImpl(NavigatingEventArgs args);
     }
 }

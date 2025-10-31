@@ -99,8 +99,7 @@
                                 VerticalAlignment="Top"
                                 Margin="0,8,8,8">
                             <controls:ProfilePicture x:Name="Photo"
-                                                     Width="20"
-                                                     Height="20" />
+                                                     Size="20" />
                         </Border>
 
                         <Ellipse x:Name="CheckmarkNotDone"
@@ -144,8 +143,8 @@
                                    IsHitTestVisible="False"
                                    TextWrapping="NoWrap"
                                    TextTrimming="CharacterEllipsis"
-                                   VerticalAlignment="Top"
-                                   Margin="0,16,0,0"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,0,2"
                                    Grid.Column="1" />
 
                         <Border BorderBrush="{ThemeResource MessageSubtleForegroundBrush}"

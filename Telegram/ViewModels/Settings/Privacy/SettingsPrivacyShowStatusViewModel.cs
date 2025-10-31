@@ -49,16 +49,14 @@ namespace Telegram.ViewModels.Settings.Privacy
 
         public override bool HasChanged => _previousHideReadDate != null && (base.HasChanged || _previousHideReadDate != HideReadDate);
 
-        public override void Continue()
+        protected override void ContinueImpl(NavigatingEventArgs args)
         {
-            _completed = true;
-
             if (_previousHideReadDate.HasValue && _previousHideReadDate != HideReadDate)
             {
                 ClientService.Send(new SetReadDatePrivacySettings(new ReadDatePrivacySettings(!HideReadDate)));
             }
 
-            base.Continue();
+            base.ContinueImpl(args);
         }
     }
 }

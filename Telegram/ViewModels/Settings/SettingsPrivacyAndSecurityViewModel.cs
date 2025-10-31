@@ -121,8 +121,9 @@ namespace Telegram.ViewModels.Settings
                 {
                     BeginOnUIThread(() =>
                     {
-                        HasEmailAddress = passwordState.LoginEmailAddressPattern.Length > 0;
                         HasPassword = passwordState.HasPassword;
+                        HasEmailAddress = passwordState.LoginEmailAddressPattern.Length > 0;
+                        EmailAddressPattern = UpdateEmailAddressPattern(passwordState.LoginEmailAddressPattern);
                     });
                 }
             });
@@ -224,6 +225,33 @@ namespace Telegram.ViewModels.Settings
         {
             get => _hasEmailAddress;
             set => Set(ref _hasEmailAddress, value);
+        }
+
+        private FormattedText _emailAddressPattern;
+        public FormattedText EmailAddressPattern
+        {
+            get => _emailAddressPattern;
+            set => Set(ref _emailAddressPattern, value);
+        }
+
+        private FormattedText UpdateEmailAddressPattern(string pattern)
+        {
+            pattern ??= string.Empty;
+
+            var first = pattern.IndexOf('*');
+            var last = pattern.LastIndexOf('*');
+
+            if (first != -1 && last != -1)
+            {
+                var formatted = new FormattedText(pattern, new[]
+                {
+                    new TextEntity(first, last - first + 1, new TextEntityTypeSpoiler())
+                });
+
+                return formatted;
+            }
+
+            return pattern.AsFormattedText();
         }
 
         private bool _hasPasscode;
@@ -333,7 +361,7 @@ namespace Telegram.ViewModels.Settings
 
                         if (ContentDialogResult.Primary == await ShowPopupAsync(emailCode))
                         {
-                            await ShowPopupAsync(new SettingsPasswordDonePopup());
+                            ShowPopup(new SettingsPasswordDonePopup());
                         }
                     }
                 }
@@ -343,7 +371,7 @@ namespace Telegram.ViewModels.Settings
 
                     if (ContentDialogResult.Primary == await ShowPopupAsync(emailCode))
                     {
-                        await ShowPopupAsync(new SettingsPasswordDonePopup());
+                        ShowPopup(new SettingsPasswordDonePopup());
                     }
                 }
                 else
@@ -352,7 +380,6 @@ namespace Telegram.ViewModels.Settings
                 }
 
                 HasPassword = passwordState?.HasPassword ?? false;
-                HasEmailAddress = passwordState?.LoginEmailAddressPattern.Length > 0;
             }
         }
 
@@ -366,7 +393,27 @@ namespace Telegram.ViewModels.Settings
             var response = await ClientService.SendAsync(new GetPasswordState());
             if (response is PasswordState passwordState && passwordState.LoginEmailAddressPattern.Length > 0)
             {
-                var confirm = await ShowPopupAsync(Strings.EmailLoginChangeMessage, passwordState.LoginEmailAddressPattern, Strings.ChangeEmail, Strings.Cancel);
+                var block = new FormattedTextBlock
+                {
+                    IsTextSelectionEnabled = false,
+                    TextWrapping = TextWrapping.NoWrap,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    MaxLines = 1,
+                    FontSize = 20,
+                    AutoFontSize = false
+                };
+
+                block.SetText(ClientService, EmailAddressPattern);
+
+                var popup = new MessagePopup
+                {
+                    Title = block,
+                    Message = Strings.EmailLoginChangeMessage,
+                    PrimaryButtonText = Strings.ChangeEmail,
+                    SecondaryButtonText = Strings.Cancel
+                };
+
+                var confirm = await ShowPopupAsync(popup);
                 if (confirm == ContentDialogResult.Primary)
                 {
                     var address = new SettingsLoginEmailAddressPopup(ClientService);
@@ -374,19 +421,20 @@ namespace Telegram.ViewModels.Settings
                     var coconfirm = await ShowPopupAsync(address);
                     if (coconfirm == ContentDialogResult.Primary)
                     {
-                        await ShowPopupAsync(new SettingsLoginEmailCodePopup(ClientService, address.CodeInfo));
+                        ShowPopup(new SettingsLoginEmailCodePopup(ClientService, address.CodeInfo));
                     }
                 }
             }
             else
             {
                 HasEmailAddress = false;
+                EmailAddressPattern = UpdateEmailAddressPattern(string.Empty);
             }
         }
 
         public void ArchiveSettings()
         {
-            ShowPopupAsync(new SettingsArchivePopup(ClientService));
+            ShowPopup(new SettingsArchivePopup(ClientService));
         }
 
         public async void ClearPayments()

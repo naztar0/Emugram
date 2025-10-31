@@ -39,7 +39,7 @@ namespace Telegram.Views
             {
                 _clientService.Send(new Destroy());
             }
-            else if (Theme.Current.Update(ActualTheme, null, null))
+            else if (Theme.Current.Update(ActualTheme, null, null, null, null))
             {
                 if (_clientService == null)
                 {

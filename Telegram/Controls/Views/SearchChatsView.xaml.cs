@@ -15,6 +15,7 @@ using Telegram.Controls.Media;
 using Telegram.Navigation;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
+using Telegram.Views;
 using Telegram.Views.Profile;
 using Windows.Foundation;
 using Windows.UI.Composition;
@@ -91,6 +92,11 @@ namespace Telegram.Controls.Views
         }
 
         public event ItemClickEventHandler ItemClick;
+
+        public void RaiseItemClick(ItemClickEventArgs e)
+        {
+            ItemClick?.Invoke(this, e);
+        }
 
         public event TypedEventHandler<UIElement, ItemContextRequestedEventArgs> ItemContextRequested;
 
@@ -265,7 +271,7 @@ namespace Telegram.Controls.Views
             var photo = grid.Children[0] as ProfilePicture;
             var title = content.Children[1] as TextBlock;
 
-            photo.SetChat(ViewModel.ClientService, chat, 48);
+            photo.Source = ProfilePictureSource.Chat(ViewModel.ClientService, chat);
             title.Text = ViewModel.ClientService.GetTitle(chat, true);
 
             var badge = grid.Children[1] as BadgeControl;
@@ -417,7 +423,7 @@ namespace Telegram.Controls.Views
 
                 _prevSelectedIndex = ChatFolders.SelectedIndex;
                 MediaFrame.Navigate(page.Type, null, transition);
-                ShowHideSearch(page.Items == null);
+                ShowHideSearch(page.Type == typeof(BlankPage));
             }
         }
 
@@ -539,6 +545,11 @@ namespace Telegram.Controls.Views
             if (e.Content is not ProfileTabPage tabPage)
             {
                 return;
+            }
+
+            if (tabPage is SearchPostsTabPage)
+            {
+                tabPage.DataContext = ViewModel.Posts;
             }
 
             if (tabPage.ScrollingHost.ItemsSource != null)

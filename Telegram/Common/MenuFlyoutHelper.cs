@@ -239,7 +239,7 @@ namespace Telegram.Common
 
                 if (key.HasValue)
                 {
-                    flyoutItem.KeyboardAccelerators.Add(new KeyboardAccelerator { Modifiers = modifiers, Key = key.Value, IsEnabled = false });
+                    flyoutItem.KeyboardAcceleratorTextOverride = ShortcutsService.GetStringRepresentation(key.Value, modifiers);
                 }
 
                 items.Add(flyoutItem);
@@ -286,7 +286,7 @@ namespace Telegram.Common
 
                 if (key.HasValue)
                 {
-                    flyoutItem.KeyboardAccelerators.Add(new KeyboardAccelerator { Modifiers = modifiers, Key = key.Value, IsEnabled = false });
+                    flyoutItem.KeyboardAcceleratorTextOverride = ShortcutsService.GetStringRepresentation(key.Value, modifiers);
                 }
 
                 items.Add(flyoutItem);
@@ -320,7 +320,7 @@ namespace Telegram.Common
 
                 if (key.HasValue)
                 {
-                    flyoutItem.KeyboardAccelerators.Add(new KeyboardAccelerator { Modifiers = modifiers, Key = key.Value, IsEnabled = false });
+                    flyoutItem.KeyboardAcceleratorTextOverride = ShortcutsService.GetStringRepresentation(key.Value, modifiers);
                 }
 
                 flyout.Items.Add(flyoutItem);
@@ -365,7 +365,7 @@ namespace Telegram.Common
 
             if (key.HasValue)
             {
-                flyoutItem.KeyboardAccelerators.Add(new KeyboardAccelerator { Modifiers = modifiers, Key = key.Value, IsEnabled = false });
+                flyoutItem.KeyboardAcceleratorTextOverride = ShortcutsService.GetStringRepresentation(key.Value, modifiers);
             }
 
             items.Add(flyoutItem);
@@ -450,7 +450,7 @@ namespace Telegram.Common
 
             if (key.HasValue)
             {
-                flyoutItem.KeyboardAccelerators.Add(new KeyboardAccelerator { Modifiers = modifiers, Key = key.Value, IsEnabled = false });
+                flyoutItem.KeyboardAcceleratorTextOverride = ShortcutsService.GetStringRepresentation(key.Value, modifiers);
             }
 
             items.Add(flyoutItem);

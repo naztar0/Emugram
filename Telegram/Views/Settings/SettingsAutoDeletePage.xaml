@@ -50,10 +50,9 @@
                             </ItemsControl.ItemTemplate>
                         </controls:HeaderedControl>
                     </Border>
-                    <controls:BadgeButton Click="{x:Bind ViewModel.SetCustomTime}"
-                                          Content="{CustomResource SetCustomTime}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xE916;" />
+                    <controls:SettingsButton Click="{x:Bind ViewModel.SetCustomTime}"
+                                             Content="{CustomResource SetCustomTime}"
+                                             Glyph="&#xE916;" />
                 </controls:HeaderedControl>
             </controls:SettingsPanel>
         </ScrollViewer>

@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using Telegram.Common;
+using Telegram.Controls;
 using Telegram.Navigation;
 using Telegram.Navigation.Services;
 using Telegram.Services;
@@ -72,7 +73,7 @@ namespace Telegram.ViewModels
         public virtual bool CanBeDownloaded(object content, File file)
         {
             var chat = Chat;
-            if (chat == null || ClientService.IsDownloadFileCanceled(file.Id) || ClientService.IsDownloadFilePartial(file.Id))
+            if (chat == null || ClientService.IsDownloadFileCanceled(file.Id))
             {
                 return false;
             }
@@ -276,6 +277,45 @@ namespace Telegram.ViewModels
         /// Only available when created through DialogViewModel
         /// </summary>
         public virtual void OpenThread(MessageViewModel message) { }
+
+        public virtual void OpenSender(MessageViewModel message)
+        {
+            if (message.IsSaved || message.IsVerificationCode)
+            {
+                if (message.ForwardInfo?.Origin is MessageOriginUser fromUser)
+                {
+                    OpenUser(fromUser.SenderUserId);
+                }
+                else if (message.ForwardInfo?.Origin is MessageOriginChat fromChat)
+                {
+                    OpenChat(fromChat.SenderChatId, true);
+                }
+                else if (message.ForwardInfo?.Origin is MessageOriginChannel fromChannel)
+                {
+                    // TODO: verify if this is sufficient
+                    OpenChat(fromChannel.ChatId);
+                }
+                else if (message.ForwardInfo?.Origin is MessageOriginHiddenUser)
+                {
+                    ToastPopup.Show(XamlRoot, Strings.HidAccount);
+                }
+            }
+            else if (message.ClientService.TryGetChat(message.SenderId, out Chat senderChat))
+            {
+                if (senderChat.Type is ChatTypeSupergroup supergroup && supergroup.IsChannel)
+                {
+                    OpenChat(senderChat.Id);
+                }
+                else
+                {
+                    OpenChat(senderChat.Id, true);
+                }
+            }
+            else if (message.SenderId is MessageSenderUser senderUser)
+            {
+                OpenUser(senderUser.UserId);
+            }
+        }
 
         /// <summary>
         /// Only available when created through DialogViewModel

@@ -41,13 +41,13 @@ namespace Telegram.Services.Keyboard
                                 or VirtualKey.GamepadLeftShoulder
                                 or VirtualKey.Escape)
             {
-                BootStrapper.Current.RaiseBackRequested(null, args.VirtualKey);
+                args.Handled = BootStrapper.Current.RaiseBackRequested(null, args.VirtualKey);
             }
             else if (args.VirtualKey is VirtualKey.GoForward
                                      or VirtualKey.NavigationRight
                                      or VirtualKey.GamepadRightShoulder)
             {
-                BootStrapper.Current.RaiseForwardRequested();
+                args.Handled = BootStrapper.Current.RaiseForwardRequested();
             }
             else if (args.VirtualKey is VirtualKey.Back
                                      or VirtualKey.Left)
@@ -55,7 +55,7 @@ namespace Telegram.Services.Keyboard
                 var modifiers = WindowContext.KeyModifiers();
                 if (modifiers == VirtualKeyModifiers.Menu)
                 {
-                    BootStrapper.Current.RaiseBackRequested(null, args.VirtualKey);
+                    args.Handled = BootStrapper.Current.RaiseBackRequested(null, args.VirtualKey);
                 }
             }
             else if (args.VirtualKey is VirtualKey.Right)
@@ -63,7 +63,7 @@ namespace Telegram.Services.Keyboard
                 var modifiers = WindowContext.KeyModifiers();
                 if (modifiers == VirtualKeyModifiers.Menu)
                 {
-                    BootStrapper.Current.RaiseForwardRequested();
+                    args.Handled = BootStrapper.Current.RaiseForwardRequested();
                 }
             }
         }

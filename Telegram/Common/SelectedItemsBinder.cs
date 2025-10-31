@@ -205,7 +205,7 @@ namespace Telegram.Common
             {
                 if (target is IMvxObservableCollection collection)
                 {
-                    collection.ReplaceWith(source);
+                    collection.ReplaceWithT(source);
                 }
                 else if (target is IList<object> list && source is IList last)
                 {

@@ -5,10 +5,10 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Telegram.Collections;
 using Telegram.Td.Api;
 
 namespace Telegram.Services
@@ -29,7 +29,7 @@ namespace Telegram.Services
 
     public partial class ClientService
     {
-        private readonly ConcurrentDictionary<long, SavedMessagesTopic> _savedMessagesTopics = new();
+        private readonly ReaderWriterDictionary<long, SavedMessagesTopic> _savedMessagesTopics = new();
         private readonly SortedSet<OrderedItem> _savedMessages = new();
         private bool _haveFullSavedMessages;
 

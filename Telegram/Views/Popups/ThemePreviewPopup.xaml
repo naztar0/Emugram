@@ -68,8 +68,7 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <controls:ProfilePicture x:Name="Photo"
-                                                                 Width="{ThemeResource ChatPhotoSize}"
-                                                                 Height="{ThemeResource ChatPhotoSize}"
+                                                                 Size="36"
                                                                  Margin="12,0" />
 
                                         <StackPanel Orientation="Vertical"

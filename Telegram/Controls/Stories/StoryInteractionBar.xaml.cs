@@ -39,7 +39,7 @@ namespace Telegram.Controls.Stories
         {
             _viewModel = story;
 
-            if (story.ClientService.TryGetUser(story.ChatId, out User user) && user.Type is UserTypeBot)
+            if (story.ClientService.TryGetUser(story.PosterChatId, out User user) && user.Type is UserTypeBot)
             {
                 Visibility = Visibility.Collapsed;
             }
@@ -79,14 +79,7 @@ namespace Telegram.Controls.Stories
 
         private void Viewers_RecentUserHeadChanged(ProfilePicture sender, MessageSender messageSender)
         {
-            if (ViewModel.ClientService.TryGetUser(messageSender, out User user))
-            {
-                sender.SetUser(ViewModel.ClientService, user, 28);
-            }
-            else if (ViewModel.ClientService.TryGetChat(messageSender, out Chat chat))
-            {
-                sender.SetChat(ViewModel.ClientService, chat, 28);
-            }
+            sender.Source = ProfilePictureSource.MessageSender(ViewModel.ClientService, messageSender);
         }
     }
 }

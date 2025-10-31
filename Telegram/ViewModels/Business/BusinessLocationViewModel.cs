@@ -94,7 +94,7 @@ namespace Telegram.ViewModels.Business
 
         public override bool HasChanged => !_cached.AreTheSame(GetSettings());
 
-        public override async void Continue()
+        protected override async void ContinueImpl(NavigatingEventArgs args)
         {
             var settings = GetSettings();
             if (settings != null)
@@ -106,22 +106,22 @@ namespace Telegram.ViewModels.Business
                 }
             }
 
-            _completed = true;
-
             if (settings.AreTheSame(_cached))
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
                 return;
             }
 
             var response = await ClientService.SendAsync(new SetBusinessLocation(settings));
             if (response is Ok)
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
             }
-            else
+            else if (response is Error error)
             {
-                // TODO
+                ShowToast(error);
             }
         }
 

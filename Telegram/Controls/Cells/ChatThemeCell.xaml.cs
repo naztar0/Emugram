@@ -9,6 +9,7 @@ using Telegram.Common;
 using Telegram.Services;
 using Telegram.Services.Settings;
 using Telegram.Streams;
+using Telegram.Td.Api;
 using Telegram.ViewModels.Settings;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -22,6 +23,7 @@ namespace Telegram.Controls.Cells
     {
         private SelectorItem _container;
         private ChatThemeViewModel _theme;
+        private long _usedChatId;
 
         private long _selectionChangedToken;
 
@@ -39,22 +41,40 @@ namespace Telegram.Controls.Cells
             _container.UnregisterPropertyChangedCallback(SelectorItem.IsSelectedProperty, ref _selectionChangedToken);
         }
 
-        public void Update(SelectorItem container, ChatThemeViewModel theme)
+        public void Update(SelectorItem container, ChatThemeViewModel theme, long usedChatId = 0)
         {
             _theme = theme;
+            _usedChatId = usedChatId;
             _container = container;
 
             container.RegisterPropertyChangedCallback(SelectorItem.IsSelectedProperty, OnSelectionChanged, ref _selectionChangedToken);
 
-            if (theme.Name == "\u274C")
+            if (theme.Type is ChatThemeEmoji emoji)
             {
-                Name.Text = theme.Name;
-                Animated.Source = null;
+                Name.Text = string.Empty;
+                Animated.Source = new AnimatedEmojiFileSource(theme.ClientService, emoji.Name);
+                UsedTheme.Visibility = Visibility.Collapsed;
+            }
+            else if (theme.Type is ChatThemeGift gift)
+            {
+                Name.Text = string.Empty;
+                Animated.Source = DelayedFileSource.FromSticker(theme.ClientService, gift.GiftTheme.Gift.Model.Sticker);
+
+                if (usedChatId != gift.GiftTheme.Gift.UsedThemeChatId && theme.ClientService.TryGetChat(gift.GiftTheme.Gift.UsedThemeChatId, out Chat userChat))
+                {
+                    UsedThemePhoto.Source = ProfilePictureSource.Chat(theme.ClientService, userChat);
+                    UsedTheme.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    UsedTheme.Visibility = Visibility.Collapsed;
+                }
             }
             else
             {
-                Name.Text = string.Empty;
-                Animated.Source = new AnimatedEmojiFileSource(theme.ClientService, theme.Name);
+                Name.Text = "\u274C";
+                Animated.Source = null;
+                UsedTheme.Visibility = Visibility.Collapsed;
             }
 
             var settings = ActualTheme == ElementTheme.Light ? theme.LightSettings : theme.DarkSettings;
@@ -75,7 +95,19 @@ namespace Telegram.Controls.Cells
             Preview.Visibility = Visibility.Visible;
             Preview.UpdateSource(theme.ClientService, settings.Background, true);
 
-            Outgoing.Fill = settings.OutgoingMessageFill;
+            if (settings.OutgoingMessageFill != null)
+            {
+                Outgoing.Fill = settings.OutgoingMessageFill;
+            }
+            else
+            {
+                var accent = settings.AccentColor.ToColor();
+                var outgoing = settings.OutgoingMessageAccentColor.ToColor();
+                var info = ThemeAccentInfo.FromAccent(ActualTheme == ElementTheme.Light ? TelegramThemeType.Day : TelegramThemeType.Tinted, accent, outgoing);
+
+                Outgoing.Fill = new BackgroundFillSolid(info.Values["MessageBackgroundOutgoing"].ToValue());
+            }
+
             Incoming.Fill = new SolidColorBrush(ThemeAccentInfo.Colorize(ActualTheme == ElementTheme.Light ? TelegramThemeType.Day : TelegramThemeType.Tinted, settings.AccentColor.ToColor(), "MessageBackgroundBrush"));
         }
 
@@ -83,7 +115,7 @@ namespace Telegram.Controls.Cells
         {
             if (_theme != null)
             {
-                Update(_container, _theme);
+                Update(_container, _theme, _usedChatId);
             }
         }
 

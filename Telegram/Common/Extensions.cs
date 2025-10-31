@@ -5,8 +5,11 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using LinqToVisualTree;
+using Microsoft.Web.WebView2.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -48,6 +51,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Hosting;
+using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
@@ -129,6 +133,20 @@ namespace Telegram.Common
             return popup.ShowQueuedAsync(frame.XamlRoot);
         }
 
+        public static int FindIndex<T>(this IList<T> list, Func<T, bool> predicate)
+        {
+            for (int i = 0; i < list.Count; i++)
+                if (predicate(list[i])) return i;
+            return -1;
+        }
+
+        public static int FindLastIndex<T>(this IList<T> list, Func<T, bool> predicate)
+        {
+            for (int i = list.Count - 1; i >= 0; i--)
+                if (predicate(list[i])) return i;
+            return -1;
+        }
+
         public static void AddCubicBezier(this PathFigure figure, Point controlPoint1, Point controlPoint2, Point endPoint)
         {
             figure.Segments.Add(new BezierSegment
@@ -150,6 +168,26 @@ namespace Telegram.Common
         public static FormattedText AsFormattedText(this string str)
         {
             return new FormattedText(str, Array.Empty<TextEntity>());
+        }
+
+        public static FormattedText AsFormattedText(this string str, TextEntityType type)
+        {
+            return new FormattedText(str, new[]
+            {
+                new TextEntity(0, str.Length, type)
+            });
+        }
+
+        public static bool TryGetValue(this CoreWebView2HttpRequestHeaders headers, string key, out string value)
+        {
+            if (headers.Contains(key))
+            {
+                value = headers.GetHeader(key);
+                return true;
+            }
+
+            value = null;
+            return false;
         }
 
         public static IEnumerable<IList<T>> ToChunks<T>(this List<T> enumerable, int chunkSize)
@@ -1053,6 +1091,11 @@ namespace Telegram.Common
             return output;
         }
 
+        public static string ReplaceStar(this string str, string value)
+        {
+            return str.Replace("\u2B50\uFE0F", value + "\u200A");
+        }
+
         /// <summary>
         /// Creates a relative path from one file or folder to another.
         /// </summary>
@@ -1092,6 +1135,12 @@ namespace Telegram.Common
 
         public static bool IsRelativePath(string relativeTo, string path, out string relative)
         {
+            if (string.IsNullOrEmpty(relativeTo) || string.IsNullOrEmpty(path))
+            {
+                relative = null;
+                return false;
+            }
+
             var relativeFull = Path.GetFullPath(relativeTo);
             var pathFull = Path.GetFullPath(path);
 
@@ -1273,6 +1322,19 @@ namespace Telegram.Common
         public static Point TransformToPoint(this UIElement element, UIElement visual)
         {
             return element.TransformToVisual(visual).TransformPoint(new Point());
+        }
+
+        public static Point TransformToPointerPosition(this UIElement element)
+        {
+            var transform = element.TransformToPoint(Window.Current.Content);
+
+            var bounds = Window.Current.Bounds;
+            var point = Window.Current.CoreWindow.PointerPosition;
+
+            point = new Point(point.X - bounds.X, point.Y - bounds.Y);
+            point = new Point(point.X - transform.X, point.Y - transform.Y);
+
+            return point;
         }
 
         public static void BeginOnUIThread(this DependencyObject element, Action action)
@@ -1487,7 +1549,17 @@ namespace Telegram.Common
             return false;
         }
 
+        public static bool Empty<T>(this ISet<T> list)
+        {
+            return list.Count == 0;
+        }
+
         public static bool Empty<T>(this IList<T> list)
+        {
+            return list.Count == 0;
+        }
+
+        public static bool EmptyT(this IList list)
         {
             return list.Count == 0;
         }
@@ -1498,6 +1570,17 @@ namespace Telegram.Common
             {
                 action?.Invoke(item);
             }
+        }
+
+        public static bool Contains(this FrameworkElement element, PointerRoutedEventArgs e)
+        {
+            var point = e.GetCurrentPoint(element);
+            if (point.Position.X >= 0 && point.Position.Y >= 0 && point.Position.X <= element.ActualWidth && point.Position.Y <= element.ActualHeight)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public static T GetChild<T>(this DependencyObject parentContainer)
@@ -1612,6 +1695,22 @@ namespace Telegram.Common
         }
     }
 
+    public static class FocusManagerEx
+    {
+        public static object TryGetFocusedElement()
+        {
+            try
+            {
+                return FocusManager.GetFocusedElement();
+            }
+            catch
+            {
+                // All the remote procedure calls must be wrapped in a try-catch block
+                return null;
+            }
+        }
+    }
+
     public static class UriEx
     {
         public static BitmapImage ToBitmap(string path, int width = 0, int height = 0)
@@ -1666,6 +1765,20 @@ namespace Telegram.Common
             }
 
             return new Uri("file:///" + directory + "\\" + Uri.EscapeDataString(file));
+        }
+    }
+
+    public static class MonotonicUnixTime
+    {
+        private static readonly long startTicks = Stopwatch.GetTimestamp();
+        private static readonly double startUnixTime = (DateTime.UtcNow -
+            new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+
+        public static long Now()
+        {
+            long ticks = Stopwatch.GetTimestamp();
+            double elapsedSeconds = (double)(ticks - startTicks) / Stopwatch.Frequency;
+            return (long)(startUnixTime + elapsedSeconds);
         }
     }
 }

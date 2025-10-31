@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <Windows.Graphics.DirectX.Direct3D11.interop.h>
+#include <Windows.ui.composition.interop.h>
 #include <unknwn.h>
 #include <winrt/base.h>
 

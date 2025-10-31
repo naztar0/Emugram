@@ -38,19 +38,19 @@ namespace Telegram.Common
             }
             else if (token != 0)
             {
-                EventAggregator.Current.Unsubscribe(sender, token, false);
+                EventAggregator.Current.Unsubscribe(sender, token);
             }
 
-            EventAggregator.Current.Subscribe(sender, token = value, handler, false);
+            EventAggregator.Current.Subscribe(sender, token = value, handler);
         }
 
         #endregion
 
-        public static void Unsubscribe(object sender, ref long token, bool completionOnly = false)
+        public static void Unsubscribe(object sender, ref long token)
         {
             if (token != 0)
             {
-                EventAggregator.Current.Unsubscribe(sender, token, false);
+                EventAggregator.Current.Unsubscribe(sender, token);
                 token = 0;
             }
         }

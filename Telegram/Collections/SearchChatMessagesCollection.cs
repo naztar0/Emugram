@@ -44,6 +44,11 @@ namespace Telegram.Collections
             _filter = filter;
             _savedMessagesTag = savedMessagesTag;
 
+            if (topic is MessageTopicSavedMessages savedMessages)
+            {
+                _savedMessagesTopicId = savedMessages.SavedMessagesTopicId;
+            }
+
             if (clientService.TryGetChat(chatId, out Chat chat))
             {
                 _secretChat = chat.Type is ChatTypeSecret;

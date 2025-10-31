@@ -1080,6 +1080,7 @@
                                       ZoomMode="{TemplateBinding ScrollViewer.ZoomMode}"
                                       IsDeferredScrollingEnabled="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}"
                                       BringIntoViewOnFocusChange="{TemplateBinding ScrollViewer.BringIntoViewOnFocusChange}"
+                                      CanContentRenderOutsideBounds="{TemplateBinding ScrollViewer.CanContentRenderOutsideBounds}"
                                       AutomationProperties.AccessibilityView="Raw">
                             <ItemsPresenter Header="{TemplateBinding Header}"
                                             HeaderTemplate="{TemplateBinding HeaderTemplate}"
@@ -1111,7 +1112,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="HyperlinkButton">
-                    <ContentPresenter HorizontalAlignment="Stretch"
+                    <ContentPresenter Background="{TemplateBinding Background}"
+                                      HorizontalAlignment="Stretch"
                                       VerticalAlignment="Stretch" />
                 </ControlTemplate>
             </Setter.Value>
@@ -1897,7 +1899,7 @@
                     ResourceKey="SystemControlDisabledTransparentBrush" />
 
     <Style x:Key="StartButtonStyle"
-           TargetType="controls:BadgeButton">
+           TargetType="Button">
         <Setter Property="HorizontalAlignment"
                 Value="Center" />
         <Setter Property="VerticalAlignment"
@@ -1920,7 +1922,7 @@
                 Value="False" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="controls:BadgeButton">
+                <ControlTemplate TargetType="Button">
                     <Grid x:Name="RootGrid"
                           Background="{TemplateBinding Background}"
                           CornerRadius="{TemplateBinding CornerRadius}">
@@ -2022,8 +2024,88 @@
         </Setter>
     </Style>
 
+    <Style x:Key="PremiumButtonStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="Foreground"
+                Value="{ThemeResource StartButtonForeground}" />
+        <Setter Property="Background"
+                Value="{ThemeResource PremiumLinearGradientBrush}" />
+        <Setter Property="BorderBrush"
+                Value="{ThemeResource ButtonBorderBrush}" />
+        <Setter Property="BackgroundSizing"
+                Value="OuterBorderEdge" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <ContentPresenter x:Name="ContentPresenter"
+                                      Background="{TemplateBinding Background}"
+                                      BackgroundSizing="{TemplateBinding BackgroundSizing}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      BorderBrush="{TemplateBinding BorderBrush}"
+                                      BorderThickness="{TemplateBinding BorderThickness}"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      ContentTransitions="{TemplateBinding ContentTransitions}"
+                                      CornerRadius="{TemplateBinding CornerRadius}"
+                                      Padding="{TemplateBinding Padding}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource StartButtonBorderBrushPointerOver}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter"
+                                                                       Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource StartButtonForegroundPointerOver}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource StartButtonBorderBrushPressed}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter"
+                                                                       Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource StartButtonForegroundPressed}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource StartButtonBorderBrushDisabled}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter"
+                                                                       Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AccentButtonForegroundDisabled}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </ContentPresenter>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="PillButtonStyle"
-           TargetType="controls:BadgeButton">
+           TargetType="controls:SettingsButton">
         <Setter Property="HorizontalAlignment"
                 Value="Center" />
         <Setter Property="VerticalAlignment"
@@ -2046,7 +2128,7 @@
                 Value="False" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="controls:BadgeButton">
+                <ControlTemplate TargetType="controls:SettingsButton">
                     <Grid x:Name="RootGrid"
                           Background="{TemplateBinding Background}"
                           CornerRadius="{TemplateBinding CornerRadius}">
@@ -2149,7 +2231,7 @@
     </Style>
 
     <Style x:Key="SmallPillButtonStyle"
-           TargetType="controls:BadgeButton">
+           TargetType="Button">
         <Setter Property="HorizontalAlignment"
                 Value="Center" />
         <Setter Property="VerticalAlignment"
@@ -2174,7 +2256,7 @@
                 Value="False" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="controls:BadgeButton">
+                <ControlTemplate TargetType="Button">
                     <Grid x:Name="RootGrid"
                           Background="{TemplateBinding Background}"
                           CornerRadius="{TemplateBinding CornerRadius}">
@@ -2235,15 +2317,15 @@
                                 <VisualState x:Name="PointerFocused" />
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
-                        <TextBlock x:Name="ContentPresenter"
-                                   Margin="{TemplateBinding Padding}"
-                                   Text="{TemplateBinding Glyph}"
-                                   TextLineBounds="Tight"
-                                   TextAlignment="Center"
-                                   OpticalMarginAlignment="TrimSideBearings"
-                                   FontSize="11"
-                                   VerticalAlignment="Center"
-                                   Typography.NumeralAlignment="Tabular" />
+                        <ContentPresenter x:Name="ContentPresenter"
+                                          Margin="{TemplateBinding Padding}"
+                                          Content="{TemplateBinding Content}"
+                                          TextLineBounds="Tight"
+                                          HorizontalContentAlignment="Center"
+                                          OpticalMarginAlignment="TrimSideBearings"
+                                          FontSize="11"
+                                          VerticalAlignment="Center"
+                                          Typography.NumeralAlignment="Tabular" />
 
                         <Border x:Name="FocusEllipse"
                                 CornerRadius="{TemplateBinding CornerRadius}"
@@ -2260,7 +2342,7 @@
     </Style>
 
     <Style x:Key="SmallButtonStyle"
-           TargetType="controls:BadgeButton">
+           TargetType="controls:SettingsButton">
         <Setter Property="HorizontalAlignment"
                 Value="Center" />
         <Setter Property="VerticalAlignment"
@@ -2283,7 +2365,7 @@
                 Value="False" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="controls:BadgeButton">
+                <ControlTemplate TargetType="controls:SettingsButton">
                     <Grid>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
@@ -3600,7 +3682,7 @@
                           BorderBrush="{TemplateBinding BorderBrush}"
                           BorderThickness="{TemplateBinding BorderThickness}"
                           CornerRadius="{TemplateBinding CornerRadius}"
-                          Margin="{TemplateBinding Padding}">
+                          Padding="{TemplateBinding Padding}">
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
@@ -3681,7 +3763,7 @@
                           BorderBrush="{TemplateBinding BorderBrush}"
                           BorderThickness="{TemplateBinding BorderThickness}"
                           CornerRadius="{TemplateBinding CornerRadius}"
-                          Margin="{TemplateBinding Padding}">
+                          Padding="{TemplateBinding Padding}">
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />

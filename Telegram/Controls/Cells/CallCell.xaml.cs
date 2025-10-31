@@ -30,7 +30,7 @@ namespace Telegram.Controls.Cells
             DateLabel.Text = Formatter.DateExtended(call.Message.Date);
             TypeLabel.Text = call.DisplayType;
 
-            Photo.SetUser(clientService, call.Peer, 36);
+            Photo.Source = ProfilePictureSource.User(clientService, call.Peer);
 
             VisualStateManager.GoToState(LayoutRoot, call.IsFailed ? "Missed" : "Default", false);
         }

@@ -55,12 +55,12 @@ namespace Telegram.ViewModels.Settings
                 var confirm = await ShowPopupAsync(Strings.PrivacySettingsChangedAlert, Strings.UnsavedChanges, Strings.ApplyTheme, Strings.PassportDiscard);
                 if (confirm == ContentDialogResult.Primary)
                 {
-                    Continue();
+                    ContinueImpl(args);
                 }
                 else if (confirm == ContentDialogResult.Secondary)
                 {
                     _completed = true;
-                    NavigationService.GoBack();
+                    NavigationService.GoBack(args);
                 }
             }
         }
@@ -361,8 +361,7 @@ namespace Telegram.ViewModels.Settings
             {
                 var cell = new ChatShareCell
                 {
-                    PhotoSource = new PlaceholderImage(Icons.Premium16, true, Color.FromArgb(0xFF, 0x97, 0x6F, 0xFF), Color.FromArgb(0xFF, 0xE4, 0x6A, 0xCE)),
-                    PhotoShape = ProfilePictureShape.Superellipse,
+                    PhotoSource = new ProfilePictureSourceText(Icons.Premium16, true, Color.FromArgb(0xFF, 0x97, 0x6F, 0xFF), Color.FromArgb(0xFF, 0xE4, 0x6A, 0xCE), ProfilePictureShape.Superellipse),
                     Title = Strings.PrivacyPremium,
                     SelectionStroke = BootStrapper.Current.Resources["ContentDialogBackground"] as SolidColorBrush,
                     Stroke = BootStrapper.Current.Resources["ChatLastMessageStateBrush"] as SolidColorBrush,
@@ -397,8 +396,7 @@ namespace Telegram.ViewModels.Settings
             {
                 var cell = new ChatShareCell
                 {
-                    PhotoSource = PlaceholderImage.GetGlyph(Icons.BotFilled),
-                    PhotoShape = ProfilePictureShape.Superellipse,
+                    PhotoSource = ProfilePictureSourceText.GetGlyph(Icons.BotFilled, shape: ProfilePictureShape.Superellipse),
                     Title = Strings.PrivacyMiniapps,
                     SelectionStroke = BootStrapper.Current.Resources["ContentDialogBackground"] as SolidColorBrush,
                     Stroke = BootStrapper.Current.Resources["ChatLastMessageStateBrush"] as SolidColorBrush,
@@ -514,8 +512,7 @@ namespace Telegram.ViewModels.Settings
             {
                 var cell = new ChatShareCell
                 {
-                    PhotoSource = PlaceholderImage.GetGlyph(Icons.BotFilled),
-                    PhotoShape = ProfilePictureShape.Superellipse,
+                    PhotoSource = ProfilePictureSourceText.GetGlyph(Icons.BotFilled, shape: ProfilePictureShape.Superellipse),
                     Title = Strings.PrivacyMiniapps,
                     SelectionStroke = BootStrapper.Current.Resources["ContentDialogBackground"] as SolidColorBrush,
                     Stroke = BootStrapper.Current.Resources["ChatLastMessageStateBrush"] as SolidColorBrush,
@@ -590,18 +587,22 @@ namespace Telegram.ViewModels.Settings
             RestrictedBadge = GetBadge(_restrictedUsers.UserIds, _restrictedChatMembers.ChatIds, false, _restrictedBots);
         }
 
-        public virtual async void Continue()
+        public void Continue()
         {
-            _completed = true;
+            ContinueImpl(null);
+        }
 
+        protected virtual async void ContinueImpl(NavigatingEventArgs args)
+        {
             var response = await SendAsync();
             if (response is Ok)
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
             }
             else if (response is Error error)
             {
-
+                ShowToast(error);
             }
         }
 

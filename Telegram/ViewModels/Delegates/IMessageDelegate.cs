@@ -43,6 +43,7 @@ namespace Telegram.ViewModels.Delegates
 
         void OpenReply(MessageViewModel message);
         void OpenThread(MessageViewModel message);
+        void OpenSender(MessageViewModel message);
 
         void OpenFile(File file);
         void OpenWebPage(MessageViewModel message);

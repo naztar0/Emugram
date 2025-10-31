@@ -3,13 +3,11 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
       xmlns:icons="using:Telegram.Assets.Icons"
       xmlns:controls="using:Telegram.Controls"
+      xmlns:converters="using:Telegram.Converters"
       xmlns:services="using:Telegram.Services"
       xmlns:settings="using:Telegram.Views.Settings"
-      xmlns:converters="using:Telegram.Converters"
-      muxc:BackdropMaterial.ApplyToRootOrPageBackground="True"
       mc:Ignorable="d"
       d:DesignHeight="300"
       d:DesignWidth="400"
@@ -99,8 +97,7 @@
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <controls:ProfilePicture Width="28"
-                                         Height="28"
+                <controls:ProfilePicture Size="28"
                                          Margin="10,0,10,0" />
                 <Rectangle x:Name="SelectionIndicator"
                            Visibility="{x:Bind IsActive, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
@@ -217,8 +214,7 @@
 
                 <controls:ProfilePicture x:Name="Photo"
                                          Margin="0,0,12,0"
-                                         Width="48"
-                                         Height="48" />
+                                         Size="48" />
 
                 <Grid x:Name="Info"
                       Grid.Column="1">

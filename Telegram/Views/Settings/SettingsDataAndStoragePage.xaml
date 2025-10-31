@@ -15,17 +15,17 @@
                       VerticalScrollMode="Auto">
             <controls:SettingsPanel>
                 <controls:HeaderedControl Header="{CustomResource DataUsage}">
-                    <controls:BadgeButton Content="{CustomResource StorageUsage}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xEB05;"
-                                          Click="{x:Bind ViewModel.OpenStorage}"
-                                          IsChevronVisible="True" />
+                    <controls:SettingsButton Content="{CustomResource StorageUsage}"
+                                             Badge="{x:Bind ViewModel.StorageUsage, Mode=OneWay}"
+                                             Glyph="&#xEB05;"
+                                             Click="{x:Bind ViewModel.OpenStorage}"
+                                             IsChevronVisible="True" />
 
-                    <controls:BadgeButton Content="{CustomResource NetworkUsage}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xE91F;"
-                                          Click="{x:Bind ViewModel.OpenStats}"
-                                          IsChevronVisible="True" />
+                    <controls:SettingsButton Content="{CustomResource NetworkUsage}"
+                                             Badge="{x:Bind ViewModel.NetworkUsage, Mode=OneWay}"
+                                             Glyph="&#xE91F;"
+                                             Click="{x:Bind ViewModel.OpenStats}"
+                                             IsChevronVisible="True" />
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl Header="{CustomResource AutomaticMediaDownload}"
@@ -34,34 +34,30 @@
                               Content="{CustomResource AutoDownloadMedia}"
                               Style="{StaticResource SettingsCheckBoxStyle}" />
 
-                    <controls:BadgeButton Badge="{x:Bind ConvertAutoDownload(settings:AutoDownloadType.Photos, ViewModel.AutoDownload.Photos, 0), Mode=OneWay}"
-                                          Click="{x:Bind ViewModel.AutoDownloadPhotos}"
-                                          IsEnabled="{x:Bind ViewModel.AutoDownloadEnabled, Mode=OneWay}"
-                                          Content="{CustomResource AutoDownloadPhotos}"
-                                          Style="{StaticResource GlyphSubbadgeBadgeButtonStyle}"
-                                          Glyph="&#xEB9F;" />
+                    <controls:SettingsButton Description="{x:Bind ConvertAutoDownload(settings:AutoDownloadType.Photos, ViewModel.AutoDownload.Photos, 0), Mode=OneWay}"
+                                             Click="{x:Bind ViewModel.AutoDownloadPhotos}"
+                                             IsEnabled="{x:Bind ViewModel.AutoDownloadEnabled, Mode=OneWay}"
+                                             Content="{CustomResource AutoDownloadPhotos}"
+                                             Glyph="&#xEB9F;" />
 
-                    <controls:BadgeButton Badge="{x:Bind ConvertAutoDownload(settings:AutoDownloadType.Videos, ViewModel.AutoDownload.Videos, ViewModel.AutoDownload.MaximumVideoSize), Mode=OneWay}"
-                                          Click="{x:Bind ViewModel.AutoDownloadVideos}"
-                                          IsEnabled="{x:Bind ViewModel.AutoDownloadEnabled, Mode=OneWay}"
-                                          Content="{CustomResource AutoDownloadVideos}"
-                                          Style="{StaticResource GlyphSubbadgeBadgeButtonStyle}"
-                                          Glyph="&#xE714;" />
+                    <controls:SettingsButton Description="{x:Bind ConvertAutoDownload(settings:AutoDownloadType.Videos, ViewModel.AutoDownload.Videos, ViewModel.AutoDownload.MaximumVideoSize), Mode=OneWay}"
+                                             Click="{x:Bind ViewModel.AutoDownloadVideos}"
+                                             IsEnabled="{x:Bind ViewModel.AutoDownloadEnabled, Mode=OneWay}"
+                                             Content="{CustomResource AutoDownloadVideos}"
+                                             Glyph="&#xE714;" />
 
-                    <controls:BadgeButton Badge="{x:Bind ConvertAutoDownload(settings:AutoDownloadType.Documents, ViewModel.AutoDownload.Documents, ViewModel.AutoDownload.MaximumDocumentSize), Mode=OneWay}"
-                                          Click="{x:Bind ViewModel.AutoDownloadDocuments}"
-                                          IsEnabled="{x:Bind ViewModel.AutoDownloadEnabled, Mode=OneWay}"
-                                          Content="{CustomResource AutoDownloadFiles}"
-                                          Style="{StaticResource GlyphSubbadgeBadgeButtonStyle}"
-                                          Glyph="&#xE7C3;" />
+                    <controls:SettingsButton Description="{x:Bind ConvertAutoDownload(settings:AutoDownloadType.Documents, ViewModel.AutoDownload.Documents, ViewModel.AutoDownload.MaximumDocumentSize), Mode=OneWay}"
+                                             Click="{x:Bind ViewModel.AutoDownloadDocuments}"
+                                             IsEnabled="{x:Bind ViewModel.AutoDownloadEnabled, Mode=OneWay}"
+                                             Content="{CustomResource AutoDownloadFiles}"
+                                             Glyph="&#xE7C3;" />
 
-                    <controls:BadgeButton x:Name="ResetAutoDownload"
-                                          x:Load="{x:Bind ConvertResetAutoDownload(ViewModel.AutoDownloadDefault), Mode=OneWay}"
-                                          Click="{x:Bind ViewModel.ResetAutoDownload}"
-                                          Content="{CustomResource ResetAutomaticMediaDownload}"
-                                          Foreground="{ThemeResource DangerButtonBackground}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xEA09;" />
+                    <controls:SettingsButton x:Name="ResetAutoDownload"
+                                             x:Load="{x:Bind ConvertResetAutoDownload(ViewModel.AutoDownloadDefault), Mode=OneWay}"
+                                             Click="{x:Bind ViewModel.ResetAutoDownload}"
+                                             Content="{CustomResource ResetAutomaticMediaDownload}"
+                                             Foreground="{ThemeResource DangerButtonBackground}"
+                                             Glyph="&#xEA09;" />
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl x:Name="DownloadFolder"
@@ -79,12 +75,12 @@
                                      Tag="{x:Bind ViewModel.DownloadFolder, Mode=OneWay}"
                                      Style="{StaticResource SettingsSubRadioButtonStyle}"
                                      GroupName="DownloadFolder" />
-                        <controls:BadgeButton Click="{x:Bind ViewModel.ChooseDownloadFolder}"
-                                              Content="{CustomResource Change}"
-                                              Style="{StaticResource PillButtonStyle}"
-                                              HorizontalAlignment="Right"
-                                              VerticalAlignment="Center"
-                                              Margin="0,0,12,0" />
+                        <controls:SettingsButton Click="{x:Bind ViewModel.ChooseDownloadFolder}"
+                                                 Content="{CustomResource Change}"
+                                                 Style="{StaticResource PillButtonStyle}"
+                                                 HorizontalAlignment="Right"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,12,0" />
                     </Grid>
                 </controls:HeaderedControl>
 
@@ -106,19 +102,17 @@
                 </controls:HeaderedControl>-->
 
                 <controls:HeaderedControl Header="{CustomResource Proxy}">
-                    <controls:BadgeButton Content="{CustomResource ProxySettings}"
-                                          Click="{x:Bind ViewModel.OpenProxy}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xEA1A;"
-                                          IsChevronVisible="True" />
+                    <controls:SettingsButton Content="{CustomResource ProxySettings}"
+                                             Click="{x:Bind ViewModel.OpenProxy}"
+                                             Glyph="&#xEA1A;"
+                                             IsChevronVisible="True" />
                 </controls:HeaderedControl>
 
                 <controls:HeaderedControl>
-                    <controls:BadgeButton Content="{CustomResource PrivacyDeleteCloudDrafts}"
-                                          Click="{x:Bind ViewModel.ClearDrafts}"
-                                          Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Foreground="{ThemeResource DangerButtonBackground}"
-                                          Glyph="&#xE74D;" />
+                    <controls:SettingsButton Content="{CustomResource PrivacyDeleteCloudDrafts}"
+                                             Click="{x:Bind ViewModel.ClearDrafts}"
+                                             Foreground="{ThemeResource DangerButtonBackground}"
+                                             Glyph="&#xE74D;" />
                 </controls:HeaderedControl>
             </controls:SettingsPanel>
         </ScrollViewer>

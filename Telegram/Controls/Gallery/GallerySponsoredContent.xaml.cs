@@ -9,6 +9,7 @@ using System;
 using System.Numerics;
 using Telegram.Common;
 using Telegram.Composition;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Gallery;
@@ -39,17 +40,14 @@ namespace Telegram.Controls.Gallery
         {
             InitializeComponent();
             InitializeRemoveIcon();
-
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             _strokeBrush?.Register();
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _strokeBrush?.Unregister();
 

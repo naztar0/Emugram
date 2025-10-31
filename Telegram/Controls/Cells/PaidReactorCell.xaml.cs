@@ -22,17 +22,17 @@ namespace Telegram.Controls.Cells
         {
             if (reactor.IsAnonymous)
             {
-                Photo.Source = PlaceholderImage.GetGlyph(Icons.AuthorHiddenFilled, long.MinValue);
+                Photo.Source = ProfilePictureSourceText.GetGlyph(Icons.AuthorHiddenFilled, long.MinValue);
                 Title.Text = Strings.StarsReactionAnonymous;
             }
             else if (clientService.TryGetChat(reactor.SenderId, out Chat chat))
             {
-                Photo.SetChat(clientService, chat, 48);
+                Photo.Source = ProfilePictureSource.Chat(clientService, chat);
                 Title.Text = chat.Title;
             }
             else if (clientService.TryGetUser(reactor.SenderId, out User user))
             {
-                Photo.SetUser(clientService, user, 48);
+                Photo.Source = ProfilePictureSource.User(clientService, user);
                 Title.Text = user.FullName();
             }
 

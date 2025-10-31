@@ -84,6 +84,7 @@ namespace Telegram.ViewModels.Supergroups
                     CanDeleteMessages = administrator.Rights.CanDeleteMessages;
                     CanEditMessages = administrator.Rights.CanEditMessages;
                     CanInviteUsers = administrator.Rights.CanInviteUsers;
+                    CanManageDirectMessages = administrator.Rights.CanManageDirectMessages;
                     CanPinMessages = administrator.Rights.CanPinMessages;
                     CanPostMessages = administrator.Rights.CanPostMessages;
                     CanPostStories = administrator.Rights.CanPostStories;
@@ -102,6 +103,7 @@ namespace Telegram.ViewModels.Supergroups
                     CanDeleteMessages = true;
                     CanEditMessages = true;
                     CanInviteUsers = true;
+                    CanManageDirectMessages = true;
                     CanPinMessages = true;
                     CanPostMessages = true;
                     CanPostStories = true;
@@ -124,6 +126,9 @@ namespace Telegram.ViewModels.Supergroups
                         CustomTitle = string.Empty;
                     }
                 }
+
+                UpdateCanManageMessages();
+                UpdateCanManageStories();
             }
         }
 
@@ -169,6 +174,7 @@ namespace Telegram.ViewModels.Supergroups
                     (!supergroup.IsChannel || _canEditMessages) &&
                     (supergroup.IsChannel || _canPinMessages) &&
                     (!supergroup.IsChannel || _canPostMessages) &&
+                    (!supergroup.IsChannel || _canManageDirectMessages) &&
                     _canPostStories &&
                     _canEditStories &&
                     _canDeleteStories &&
@@ -189,9 +195,10 @@ namespace Telegram.ViewModels.Supergroups
 
                 if (value.HasValue)
                 {
-                    CanPostMessages = value.Value;
-                    CanEditMessages = value.Value;
-                    CanDeleteMessages = value.Value;
+                    Set(ref _canPostMessages, value.Value, nameof(CanPostMessages));
+                    Set(ref _canEditMessages, value.Value, nameof(CanEditMessages));
+                    Set(ref _canDeleteMessages, value.Value, nameof(CanDeleteMessages));
+                    Set(ref _canManageMessagesCount, value.Value ? 3 : 0, nameof(CanManageMessagesCount));
                 }
             }
         }
@@ -244,9 +251,10 @@ namespace Telegram.ViewModels.Supergroups
 
                 if (value.HasValue)
                 {
-                    CanPostStories = value.Value;
-                    CanEditStories = value.Value;
-                    CanDeleteStories = value.Value;
+                    Set(ref _canPostStories, value.Value, nameof(CanPostStories));
+                    Set(ref _canEditStories, value.Value, nameof(CanEditStories));
+                    Set(ref _canDeleteStories, value.Value, nameof(CanDeleteStories));
+                    Set(ref _canManageStoriesCount, value.Value ? 3 : 0, nameof(CanManageStoriesCount));
                 }
             }
         }
@@ -262,15 +270,15 @@ namespace Telegram.ViewModels.Supergroups
         private int CountStories()
         {
             var count = 0;
-            if (_canPostMessages)
+            if (_canPostStories)
             {
                 count++;
             }
-            if (_canEditMessages)
+            if (_canEditStories)
             {
                 count++;
             }
-            if (_canDeleteMessages)
+            if (_canDeleteStories)
             {
                 count++;
             }
@@ -295,8 +303,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canChangeInfo;
             set
             {
-                Set(ref _canChangeInfo, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
+                if (Set(ref _canChangeInfo, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                }
             }
         }
 
@@ -306,9 +316,11 @@ namespace Telegram.ViewModels.Supergroups
             get => _canPostMessages;
             set
             {
-                Set(ref _canPostMessages, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
-                UpdateCanManageMessages();
+                if (Set(ref _canPostMessages, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                    UpdateCanManageMessages();
+                }
             }
         }
 
@@ -318,9 +330,11 @@ namespace Telegram.ViewModels.Supergroups
             get => _canEditMessages;
             set
             {
-                Set(ref _canEditMessages, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
-                UpdateCanManageMessages();
+                if (Set(ref _canEditMessages, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                    UpdateCanManageMessages();
+                }
             }
         }
 
@@ -330,9 +344,11 @@ namespace Telegram.ViewModels.Supergroups
             get => _canDeleteMessages;
             set
             {
-                Set(ref _canDeleteMessages, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
-                UpdateCanManageMessages();
+                if (Set(ref _canDeleteMessages, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                    UpdateCanManageMessages();
+                }
             }
         }
 
@@ -342,9 +358,11 @@ namespace Telegram.ViewModels.Supergroups
             get => _canPostStories;
             set
             {
-                Set(ref _canPostStories, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
-                UpdateCanManageStories();
+                if (Set(ref _canPostStories, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                    UpdateCanManageStories();
+                }
             }
         }
 
@@ -354,9 +372,11 @@ namespace Telegram.ViewModels.Supergroups
             get => _canEditStories;
             set
             {
-                Set(ref _canEditStories, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
-                UpdateCanManageStories();
+                if (Set(ref _canEditStories, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                    UpdateCanManageStories();
+                }
             }
         }
 
@@ -366,9 +386,11 @@ namespace Telegram.ViewModels.Supergroups
             get => _canDeleteStories;
             set
             {
-                Set(ref _canDeleteStories, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
-                UpdateCanManageStories();
+                if (Set(ref _canDeleteStories, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                    UpdateCanManageStories();
+                }
             }
         }
 
@@ -379,8 +401,23 @@ namespace Telegram.ViewModels.Supergroups
             get => _canRestrictMembers;
             set
             {
-                Set(ref _canRestrictMembers, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
+                if (Set(ref _canRestrictMembers, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                }
+            }
+        }
+
+        private bool _canManageDirectMessages;
+        public bool CanManageDirectMessages
+        {
+            get => _canManageDirectMessages;
+            set
+            {
+                if (Set(ref _canManageDirectMessages, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                }
             }
         }
 
@@ -390,8 +427,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canInviteUsers;
             set
             {
-                Set(ref _canInviteUsers, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
+                if (Set(ref _canInviteUsers, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                }
             }
         }
 
@@ -401,8 +440,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canPinMessages;
             set
             {
-                Set(ref _canPinMessages, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
+                if (Set(ref _canPinMessages, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                }
             }
         }
 
@@ -412,8 +453,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canManageVideoChats;
             set
             {
-                Set(ref _canManageVideoChats, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
+                if (Set(ref _canManageVideoChats, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                }
             }
         }
 
@@ -430,8 +473,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canPromoteMembers;
             set
             {
-                Set(ref _canPromoteMembers, value);
-                RaisePropertyChanged(nameof(CanTransferOwnership));
+                if (Set(ref _canPromoteMembers, value))
+                {
+                    RaisePropertyChanged(nameof(CanTransferOwnership));
+                }
             }
         }
 
@@ -488,6 +533,7 @@ namespace Telegram.ViewModels.Supergroups
                         CanDeleteMessages = _canDeleteMessages,
                         CanEditMessages = channel && _canEditMessages,
                         CanInviteUsers = _canInviteUsers,
+                        CanManageDirectMessages = channel && _canManageDirectMessages,
                         CanPinMessages = !channel && _canPinMessages,
                         CanPostMessages = channel && _canPostMessages,
                         CanPostStories = _canPostStories,
@@ -497,7 +543,8 @@ namespace Telegram.ViewModels.Supergroups
                         CanRestrictMembers = !channel && _canRestrictMembers,
                         CanManageVideoChats = !channel && _canManageVideoChats
                     },
-                    CustomTitle = _customTitle ?? string.Empty
+                    CustomTitle = _customTitle ?? string.Empty,
+                    CanBeEdited = true
                 };
             }
 
@@ -507,9 +554,9 @@ namespace Telegram.ViewModels.Supergroups
                 Aggregator.Publish(new UpdateChatMember(chat.Id, 0, 0, null, false, false, Member, new ChatMember(member.MemberId, ClientService.Options.MyId, member.JoinedChatDate, status)));
                 Delegate?.Hide();
             }
-            else
+            else if (response is Error error)
             {
-                // TODO: ...
+                ShowToast(error);
             }
         }
 
@@ -585,6 +632,14 @@ namespace Telegram.ViewModels.Supergroups
                 {
 
                 }
+                else if (response is Error error)
+                {
+                    ShowToast(error);
+                }
+            }
+            else if (canTransfer is Error error)
+            {
+                ShowToast(error);
             }
         }
 
@@ -608,9 +663,9 @@ namespace Telegram.ViewModels.Supergroups
                 Aggregator.Publish(new UpdateChatMember(chat.Id, 0, 0, null, false, false, Member, new ChatMember(member.MemberId, ClientService.Options.MyId, member.JoinedChatDate, new ChatMemberStatusMember())));
                 Delegate?.Hide();
             }
-            else
+            else if (response is Error error)
             {
-                // TODO: ...
+                ShowToast(error);
             }
         }
     }

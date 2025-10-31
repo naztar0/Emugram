@@ -5,12 +5,12 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 
-using LibVLCSharp;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using Telegram.Native.Media;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
@@ -108,8 +108,13 @@ namespace Telegram.Common
         {
             var token = 0L;
 
-            var player = new AsyncMediaPlayer(false, "--no-audio");
-            void handler(AsyncMediaPlayer sender, MediaPlayerBufferingEventArgs e)
+            var options = new AsyncMediaPlayerOptions
+            {
+                Mode = AsyncMediaPlayerMode.Video
+            };
+
+            var player = new AsyncMediaPlayer(options);
+            void handler(AsyncMediaPlayer sender, AsyncMediaPlayerBufferingEventArgs e)
             {
                 if (e.Cache == 100)
                 {

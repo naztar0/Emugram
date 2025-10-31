@@ -31,6 +31,7 @@ namespace Telegram.Controls.Drawers
         private long _selectedSetId;
 
         private bool _isActive;
+        private bool _paused;
 
         public EffectDrawer()
         {
@@ -41,10 +42,8 @@ namespace Telegram.Controls.Drawers
             _handler = new AnimatedListHandler(List, AnimatedListType.Stickers);
 
             _zoomer = new ZoomableListHandler(List);
-            _zoomer.Opening = UnloadVisibleItems;
-            _zoomer.Closing = ThrottleVisibleItems;
-            _zoomer.DownloadFile = fileId => ViewModel.ClientService.DownloadFile(fileId, 32);
-            _zoomer.SessionId = () => ViewModel.ClientService.SessionId;
+            _zoomer.Opening = _handler.Suspend;
+            _zoomer.Closing = _handler.Resume;
 
             //var debouncer = new EventDebouncer<TextChangedEventArgs>(Constants.TypingTimeout, handler => FieldStickers.TextChanged += new TextChangedEventHandler(handler));
             //debouncer.Invoked += async (s, args) =>
@@ -71,7 +70,7 @@ namespace Telegram.Controls.Drawers
         public void Activate()
         {
             _isActive = true;
-            _handler.ThrottleVisibleItems();
+            _handler.Resume();
 
             SearchField.SetType(ViewModel.ClientService, EmojiSearchType.Default);
             ViewModel.Update();
@@ -244,7 +243,7 @@ namespace Telegram.Controls.Drawers
                     return;
                 }
 
-                photo.SetChat(ViewModel.ClientService, chat, 24);
+                photo.Source = ProfilePictureSource.Chat(ViewModel.ClientService, chat);
                 args.Handled = true;
             }
             else if (args.Item is StickerSetViewModel sticker)

@@ -67,6 +67,9 @@ namespace Telegram.Controls
             ((SettingsExpander)d).OnExpandedChanged((bool)e.NewValue, (bool)e.OldValue);
         }
 
+        private bool _expanded;
+        private int _tracker;
+
         private void OnExpandedChanged(bool newValue, bool oldValue)
         {
             if (PopupHost == null)
@@ -76,9 +79,13 @@ namespace Telegram.Controls
 
             if (newValue != oldValue)
             {
+                VisualStateManager.GoToState(this, newValue ? "Expanded" : "Normal", false);
                 ExpandedChanged?.Invoke(this, EventArgs.Empty);
             }
 
+            var tracker = _tracker++;
+
+            _expanded = newValue;
             ActionButton.IsChecked = newValue;
 
             PopupHost.Height = newValue ? double.NaN : 0;
@@ -89,26 +96,26 @@ namespace Telegram.Controls
             visual.Clip = visual.Compositor.CreateInsetClip();
 
             var clip = visual.Compositor.CreateScalarKeyFrameAnimation();
-            clip.InsertKeyFrame(newValue ? 0 : 1, 44);
-            clip.InsertKeyFrame(newValue ? 1 : 0, 0);
+            clip.InsertKeyFrame(1, newValue ? 0 : 44);
             clip.Duration = Constants.FastAnimation;
 
             var offset = visual.Compositor.CreateScalarKeyFrameAnimation();
-            offset.InsertKeyFrame(newValue ? 0 : 1, -44);
-            offset.InsertKeyFrame(newValue ? 1 : 0, 0);
+            offset.InsertKeyFrame(1, newValue ? 0 : -44);
             offset.Duration = Constants.FastAnimation;
 
             var opacity = visual.Compositor.CreateScalarKeyFrameAnimation();
-            opacity.InsertKeyFrame(newValue ? 0 : 1, 0);
-            opacity.InsertKeyFrame(newValue ? 1 : 0, 1);
+            opacity.InsertKeyFrame(1, newValue ? 1 : 0);
             opacity.Duration = Constants.FastAnimation;
 
             var batch = visual.Compositor.CreateScopedBatch(Windows.UI.Composition.CompositionBatchTypes.Animation);
             batch.Completed += (s, args) =>
             {
-                PopupRoot.Visibility = newValue
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
+                if (_tracker == tracker)
+                {
+                    PopupRoot.Visibility = _expanded
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+                }
             };
 
             visual.Clip.StartAnimation("TopInset", clip);

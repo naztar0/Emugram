@@ -54,10 +54,15 @@ namespace Telegram.Common
             return visual;
         }
 
-        public static void ShakeView(FrameworkElement view, float x = 2)
+        public static void ShakeView(FrameworkElement element, float x = 2)
         {
-            var visual = ElementComposition.GetElementVisual(view);
-            ElementCompositionPreview.SetIsTranslationEnabled(view, true);
+            if (element == null)
+            {
+                return;
+            }
+
+            var visual = ElementComposition.GetElementVisual(element);
+            ElementCompositionPreview.SetIsTranslationEnabled(element, true);
 
             var animation = visual.Compositor.CreateScalarKeyFrameAnimation();
             animation.Duration = TimeSpan.FromMilliseconds(50 * 6);

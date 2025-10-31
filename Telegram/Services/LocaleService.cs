@@ -33,6 +33,8 @@ namespace Telegram.Services
         string GetString(string key);
         string GetString(string key, int quantity);
 
+        void GetDatePositions(out int dayPosition, out int monthPosition, out int yearPosition);
+
         void Handle(UpdateLanguagePackStrings update);
 
         event EventHandler<LocaleChangedEventArgs> Changed;
@@ -254,6 +256,36 @@ namespace Telegram.Services
 #else
             return _loader.GetString(selector);
 #endif
+        }
+
+        public void GetDatePositions(out int dayPosition, out int monthPosition, out int yearPosition)
+        {
+            dayPosition = 0;
+            monthPosition = 1;
+            yearPosition = 2;
+
+            // TODO: this isn't great because it does not respect the system locale
+            var parts = LocaleService.Current.CurrentCulture.DateTimeFormat.ShortDatePattern.Split(LocaleService.Current.CurrentCulture.DateTimeFormat.DateSeparator);
+            if (parts.Length != 3)
+            {
+                parts = new[] { "dd", "MM", "yyyy" };
+            }
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (parts[i].StartsWith("d", StringComparison.OrdinalIgnoreCase))
+                {
+                    dayPosition = i;
+                }
+                else if (parts[i].StartsWith("M", StringComparison.OrdinalIgnoreCase))
+                {
+                    monthPosition = i;
+                }
+                else if (parts[i].StartsWith("y", StringComparison.OrdinalIgnoreCase))
+                {
+                    yearPosition = i;
+                }
+            }
         }
 
         #region Handle

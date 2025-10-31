@@ -26,7 +26,7 @@ namespace Telegram.Controls.Cells
                 return;
             }
 
-            Photo.SetUser(clientService, bot, 36);
+            Photo.Source = ProfilePictureSource.User(clientService, bot);
 
             Domain.Text = bot.FullName();
             Title.Text = string.Format("{0}, {1}, {2}", session.DomainName, session.Browser, session.Platform);

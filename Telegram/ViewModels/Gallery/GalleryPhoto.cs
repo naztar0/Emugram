@@ -26,6 +26,7 @@ namespace Telegram.ViewModels.Gallery
 
             File = _photo.GetBig()?.Photo;
             Thumbnail = _photo?.GetSmall()?.Photo;
+            Minithumbnail = _photo.Minithumbnail;
         }
 
         public override object Constraint => _photo;

@@ -11,7 +11,6 @@ using System.Linq;
 using System.Numerics;
 using Telegram.Common;
 using Telegram.Controls.Media;
-using Telegram.Native;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
@@ -84,7 +83,7 @@ namespace Telegram.Controls.Messages
                     new TextEntity(ForwardText.Text.Length, ForwardLink.Text.Length, new TextEntityTypeBold())
                 };
 
-                var rectangles2 = PlaceholderImageHelper.Foreground.LineMetrics(ForwardLabel.Text, entities, 12, double.MaxValue, false);
+                var rectangles2 = PlaceholderHelper.Foreground.LineMetrics(ForwardLabel.Text, entities, 12, double.MaxValue, false);
 
                 //var contentEnd = ForwardLabel.ContentEnd.GetCharacterRect(ForwardLabel.ContentEnd.LogicalDirection);
                 //if (contentEnd.Right <= 0)
@@ -304,7 +303,7 @@ namespace Telegram.Controls.Messages
                 }
 
                 ForwardLink.Text = "\uEA4F\u00A0" + storyChat.Title;
-                ForwardPhoto.SetChat(message.ClientService, storyChat, 16);
+                ForwardPhoto.Source = ProfilePictureSource.Chat(message.ClientService, storyChat);
 
                 Visibility = Visibility.Visible;
             }
@@ -334,31 +333,31 @@ namespace Telegram.Controls.Messages
                 {
                     line2 = fromUserUser.FullName();
                     ForwardLink.FontWeight = FontWeights.SemiBold;
-                    ForwardPhoto.SetUser(message.ClientService, fromUserUser, 16);
+                    ForwardPhoto.Source = ProfilePictureSource.User(message.ClientService, fromUserUser);
                 }
                 else if (message.ForwardInfo?.Origin is MessageOriginChat fromChat && message.ClientService.TryGetChat(fromChat.SenderChatId, out Chat fromChatChat))
                 {
                     line2 = fromChatChat.Title;
                     ForwardLink.FontWeight = FontWeights.SemiBold;
-                    ForwardPhoto.SetChat(message.ClientService, fromChatChat, 16);
+                    ForwardPhoto.Source = ProfilePictureSource.Chat(message.ClientService, fromChatChat);
                 }
                 else if (message.ForwardInfo?.Origin is MessageOriginChannel fromChannel && message.ClientService.TryGetChat(fromChannel.ChatId, out Chat fromChannelChat))
                 {
                     line2 = fromChannelChat.Title;
                     ForwardLink.FontWeight = FontWeights.SemiBold;
-                    ForwardPhoto.SetChat(message.ClientService, fromChannelChat, 16);
+                    ForwardPhoto.Source = ProfilePictureSource.Chat(message.ClientService, fromChannelChat);
                 }
                 else if (message.ForwardInfo?.Origin is MessageOriginHiddenUser fromHiddenUser)
                 {
                     line2 = fromHiddenUser.SenderName;
                     ForwardLink.FontWeight = FontWeights.Normal;
-                    ForwardPhoto.Source = PlaceholderImage.GetNameForUser(fromHiddenUser.SenderName, long.MinValue);
+                    ForwardPhoto.Source = ProfilePictureSourceText.GetNameForUser(fromHiddenUser.SenderName, long.MinValue);
                 }
                 else if (message.ImportInfo != null)
                 {
                     line2 = message.ImportInfo.SenderName;
                     ForwardLink.FontWeight = FontWeights.Normal;
-                    ForwardPhoto.Source = PlaceholderImage.GetNameForUser(message.ImportInfo.SenderName, long.MinValue);
+                    ForwardPhoto.Source = ProfilePictureSourceText.GetNameForUser(message.ImportInfo.SenderName, long.MinValue);
                 }
 
                 ForwardText.Text = line1;

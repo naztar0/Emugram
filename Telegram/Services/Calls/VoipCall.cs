@@ -222,14 +222,14 @@ namespace Telegram.Services.Calls
                 if (_manager != null && _manager.IsMuted != (value == VoipAudioState.Muted))
                 {
                     _manager.IsMuted = value == VoipAudioState.Muted;
-                    MediaStateChanged?.Invoke(this, new VoipCallMediaStateChangedEventArgs(value, _videoState, IsScreenSharing));
-
                     _coordinator?.TryNotifyMutedChanged(value == VoipAudioState.Muted);
                 }
                 else
                 {
                     _coordinator?.TryNotifyMutedChanged(true);
                 }
+
+                MediaStateChanged?.Invoke(this, new VoipCallMediaStateChangedEventArgs(value, _videoState, IsScreenSharing));
             }
         }
 
@@ -623,7 +623,11 @@ namespace Telegram.Services.Calls
             lock (_managerLock)
             {
                 _manager = manager;
-                _audioState = manager.IsMuted ? VoipAudioState.Muted : VoipAudioState.Active;
+
+                if (_manager.IsMuted != (_audioState == VoipAudioState.Muted))
+                {
+                    _manager.IsMuted = _audioState == VoipAudioState.Muted;
+                }
 
                 while (_signalingData.TryDequeue(out var data))
                 {

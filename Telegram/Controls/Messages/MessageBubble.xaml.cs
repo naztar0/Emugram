@@ -18,6 +18,7 @@ using Telegram.Controls.Messages.Content;
 using Telegram.Controls.Stories;
 using Telegram.Converters;
 using Telegram.Native;
+using Telegram.Native.Composition;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td;
@@ -37,6 +38,7 @@ using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Shapes;
 
 namespace Telegram.Controls.Messages
 {
@@ -59,7 +61,7 @@ namespace Telegram.Controls.Messages
 
         public long MessageId { get; }
 
-        public int ChecklistTaskId { get; } = -1;
+        public int ChecklistTaskId { get; } = 0;
 
         public TextQuote Quote { get; }
 
@@ -79,6 +81,8 @@ namespace Telegram.Controls.Messages
 
         private bool _hasReplyMarkup;
 
+        private LayerVisual _layerVisual;
+        private bool _corners;
         private float _topLeft;
         private float _topRight;
         private float _bottomRight;
@@ -122,10 +126,51 @@ namespace Telegram.Controls.Messages
             }
         }
 
+        private ThemeShadow _shadow;
+
+        public bool NeedShadow => (ContentPanel?.Shadow ?? _shadow) == null;
+
+        public void UpdateShadow(ThemeShadow shadow)
+        {
+            if (ShadowCaster != null)
+            {
+                ShadowCaster.Shadow = shadow;
+
+                var radius = _topLeft == 0 && _topRight == 0 && _bottomRight == 0 && _bottomLeft == 0;
+                if (radius)
+                {
+                    ShadowCaster.Translation = Vector3.Zero;
+                }
+                else
+                {
+                    ShadowCaster.Translation = new Vector3(0, 0, Constants.BubbleElevation);
+                }
+            }
+            else
+            {
+                _shadow = shadow;
+            }
+        }
+
+        private FormattedTextBlockRecyclePool _recyclePool;
+
+        public void UpdateRecyclePool(FormattedTextBlockRecyclePool recyclePool)
+        {
+            if (Message != null)
+            {
+                Message.RecyclePool = recyclePool;
+            }
+            else
+            {
+                _recyclePool = recyclePool;
+            }
+        }
+
         #region InitializeComponent
 
         private ColumnDefinition PhotoColumn;
 
+        private Rectangle ShadowCaster;
         private Grid ContentPanel;
         private Grid Header;
         private MessageBubblePanel Panel;
@@ -169,6 +214,7 @@ namespace Telegram.Controls.Messages
         protected override void OnApplyTemplate()
         {
             PhotoColumn = GetTemplateChild(nameof(PhotoColumn)) as ColumnDefinition;
+            ShadowCaster = GetTemplateChild(nameof(ShadowCaster)) as Rectangle;
             ContentPanel = GetTemplateChild(nameof(ContentPanel)) as Grid;
             Header = GetTemplateChild(nameof(Header)) as Grid;
             Panel = GetTemplateChild(nameof(Panel)) as MessageBubblePanel;
@@ -179,8 +225,24 @@ namespace Telegram.Controls.Messages
             //ContentPanel.CanDrag = true;
             //ContentPanel.DragStarting += OnDragStarting;
             ContentPanel.SizeChanged += OnSizeChanged;
-            Message.ContextMenuOpening += Message_ContextMenuOpening;
             Message.TextEntityClick += Message_TextEntityClick;
+
+            _layerVisual = CompositionDevice.GetElementLayerVisual(ContentPanel);
+            
+            // Forces ParentForTransform with LayerVisual
+            var media = ElementComposition.GetElementVisual(Media);
+
+            if (_shadow != null)
+            {
+                ShadowCaster.Shadow = _shadow;
+                _shadow = null;
+            }
+
+            if (_recyclePool != null)
+            {
+                Message.RecyclePool = _recyclePool;
+                _recyclePool = null;
+            }
 
             ElementCompositionPreview.SetIsTranslationEnabled(Header, true);
             ElementCompositionPreview.SetIsTranslationEnabled(Message, true);
@@ -393,21 +455,36 @@ namespace Telegram.Controls.Messages
                 builder.Append($"{Strings.EditedMessage}, ");
             }
 
-            var date = string.Format(Strings.TodayAtFormatted, Formatter.Time(message.Date));
-            if (message.IsOutgoing)
+            if (message.SendingState is MessageSendingStatePending)
             {
-                if (message.SendingState is MessageSendingStatePending)
-                {
-                    builder.Append(Strings.AccDescrMsgSending);
-                }
-                else
-                {
-                    builder.Append(string.Format(Strings.AccDescrSentDate, date));
-                }
+                builder.Append(Strings.AccDescrMsgSending);
             }
             else
             {
-                builder.Append(string.Format(Strings.AccDescrReceivedDate, date));
+                if (message.SchedulingState is MessageSchedulingStateSendAtDate sendAtDate)
+                {
+                    builder.Append(string.Format(Strings.MessageScheduledOn, Formatter.Time(sendAtDate.SendDate)));
+                }
+                else if (message.SchedulingState is MessageSchedulingStateSendWhenVideoProcessed sendWhenVideoProcessed)
+                {
+                    builder.Append(string.Format(Strings.MessageScheduledOn, string.Format(Strings.ScheduledTimeApprox, Formatter.Time(sendWhenVideoProcessed.SendDate))));
+                }
+                else if (message.SchedulingState is MessageSchedulingStateSendWhenOnline)
+                {
+                    builder.Append(Strings.MessageScheduledUntilOnline);
+                }
+                else
+                {
+                    var date = string.Format(Strings.TodayAtFormatted, Formatter.Time(message.Date));
+                    if (message.IsOutgoing)
+                    {
+                        builder.Append(string.Format(Strings.AccDescrSentDate, date));
+                    }
+                    else
+                    {
+                        builder.Append(string.Format(Strings.AccDescrReceivedDate, date));
+                    }
+                }
             }
 
             if (message.SendingState is MessageSendingStateFailed)
@@ -477,12 +554,11 @@ namespace Telegram.Controls.Messages
             var isFirst = message.Delegate.IsSavedMessagesTab ? message.IsLast : message.IsFirst;
             var isLast = message.Delegate.IsSavedMessagesTab ? message.IsFirst : message.IsLast;
 
-            var outgoing = (message.IsOutgoing && !message.IsChannelPost) || (message.IsSaved && message.ForwardInfo?.Source is { IsOutgoing: true });
-            if (outgoing)
+            if (message.IsVisuallyOutgoing)
             {
                 if (isFirst && isLast)
                 {
-                    bottomOutgoing = SettingsService.Current.Diagnostics.BubbleTailDebug;
+                    bottomOutgoing = true;
                 }
                 else if (isFirst)
                 {
@@ -491,7 +567,7 @@ namespace Telegram.Controls.Messages
                 else if (isLast)
                 {
                     topRight = small;
-                    bottomOutgoing = SettingsService.Current.Diagnostics.BubbleTailDebug;
+                    bottomOutgoing = true;
                 }
                 else
                 {
@@ -503,7 +579,7 @@ namespace Telegram.Controls.Messages
             {
                 if (isFirst && isLast)
                 {
-                    bottomIncoming = SettingsService.Current.Diagnostics.BubbleTailDebug;
+                    bottomIncoming = true;
                 }
                 else if (isFirst)
                 {
@@ -512,7 +588,7 @@ namespace Telegram.Controls.Messages
                 else if (isLast)
                 {
                     topLeft = small;
-                    bottomIncoming = SettingsService.Current.Diagnostics.BubbleTailDebug;
+                    bottomIncoming = true;
                 }
                 else
                 {
@@ -556,7 +632,7 @@ namespace Telegram.Controls.Messages
 
             if (message.Delegate != null && message.Delegate.IsDialog)
             {
-                var top = isFirst ? 4 : 2;
+                var top = isFirst ? 8 : 2;
                 var action = message.IsSaved || message.CanBeShared;
 
                 if (message.IsSaved || (chat != null && (chat.Type is ChatTypeBasicGroup || chat.Type is ChatTypeSupergroup)) && !message.IsChannelPost)
@@ -592,7 +668,7 @@ namespace Telegram.Controls.Messages
                     }
                     else
                     {
-                        if (message.IsOutgoing && !message.IsChannelPost)
+                        if (message.IsVisuallyOutgoing)
                         {
                             Margin = new Thickness(50, top, 12, 0);
                         }
@@ -619,21 +695,36 @@ namespace Telegram.Controls.Messages
             _bottomRight = bottomRight;
             _bottomLeft = bottomLeft;
 
-            var width = (float)Math.Truncate(ContentPanel.ActualWidth);
-            var height = (float)Math.Truncate(ContentPanel.ActualHeight);
-
             var radius = topLeft == 0 && topRight == 0 && bottomRight == 0 && bottomLeft == 0;
+            if (radius)
+            {
+                ShadowCaster.Translation = Vector3.Zero;
+            }
+            else
+            {
+                ShadowCaster.Translation = new Vector3(0, 0, Constants.BubbleElevation);
+            }
+
             radius |= bottomLeft != 0 && bottomRight != 0;
-            radius |= width == 0 && height == 0;
+            radius |= _layerVisual == null;
 
             if (radius)
             {
-                if (_tail != null)
+                if (_layerVisual != null)
                 {
-                    _tail = null;
+                    _layerVisual.Effect = null;
+                }
+                else
+                {
+                    if (bottomRight == 0 && topRight != 0)
+                    {
+                        bottomRight = 15;
+                    }
 
-                    var visual = ElementComposition.GetElementVisual(ContentPanel);
-                    visual.Clip = null;
+                    if (bottomLeft == 0 && topLeft != 0)
+                    {
+                        bottomLeft = 15;
+                    }
                 }
 
                 _corners = true;
@@ -641,19 +732,29 @@ namespace Telegram.Controls.Messages
             }
             else
             {
-                var compositor = BootStrapper.Current.Compositor;
-
-                _tail ??= compositor.CreatePathGeometry();
-                _tail.Path = PlaceholderImageHelper.Foreground.GetTail(width, height, _topLeft, _topRight, _bottomRight, _bottomLeft);
-
-                var visual = ElementComposition.GetElementVisual(ContentPanel);
-                visual.Clip ??= compositor.CreateGeometricClip(_tail);
+                _layerVisual.Effect = PlaceholderHelper.Foreground.GetTail(topLeft, topRight, bottomRight, bottomLeft); //PlaceholderHelper.Foreground.GetTail3(XamlRoot, topLeft, topRight, bottomRight, bottomLeft);
 
                 if (_corners)
                 {
                     _corners = false;
                     ContentPanel.CornerRadius = new CornerRadius();
                 }
+            }
+        }
+
+        private bool _photoCollapsed = false;
+
+        public void ShowHidePhoto(bool show)
+        {
+            if (PhotoRoot != null)
+            {
+                if (_photoCollapsed != show)
+                {
+                    return;
+                }
+
+                _photoCollapsed = !show;
+                PhotoRoot.Opacity = show ? 1 : 0;
             }
         }
 
@@ -676,7 +777,7 @@ namespace Telegram.Controls.Messages
 
                         _photoId = message.Id;
                         PhotoRoot.Visibility = Visibility.Visible;
-                        Photo.SetMessage(message);
+                        Photo.Source = ProfilePictureSource.Message(message);
                     }
                 }
                 else if (PhotoRoot != null)
@@ -684,7 +785,7 @@ namespace Telegram.Controls.Messages
                     _photoId = null;
 
                     PhotoRoot.Visibility = Visibility.Collapsed;
-                    Photo.Clear();
+                    Photo.Source = null;
                 }
 
                 if (PhotoColumn.Width.IsAuto)
@@ -697,8 +798,10 @@ namespace Telegram.Controls.Messages
                 if (PhotoRoot != null)
                 {
                     _photoId = null;
+                    _photoCollapsed = false;
+
                     Photo = null;
-                    UnloadObject(ref PhotoRoot);
+                    UnloadTemplateChild(ref PhotoRoot);
                 }
 
                 if (PhotoColumn.Width.IsAbsolute)
@@ -716,41 +819,7 @@ namespace Telegram.Controls.Messages
                 return;
             }
 
-            if (message.IsSaved || message.IsVerificationCode)
-            {
-                if (message.ForwardInfo?.Origin is MessageOriginUser fromUser)
-                {
-                    message.Delegate.OpenUser(fromUser.SenderUserId);
-                }
-                else if (message.ForwardInfo?.Origin is MessageOriginChat fromChat)
-                {
-                    message.Delegate.OpenChat(fromChat.SenderChatId, true);
-                }
-                else if (message.ForwardInfo?.Origin is MessageOriginChannel fromChannel)
-                {
-                    // TODO: verify if this is sufficient
-                    message.Delegate.OpenChat(fromChannel.ChatId);
-                }
-                else if (message.ForwardInfo?.Origin is MessageOriginHiddenUser)
-                {
-                    ToastPopup.Show(XamlRoot, Strings.HidAccount);
-                }
-            }
-            else if (message.ClientService.TryGetChat(message.SenderId, out Chat senderChat))
-            {
-                if (senderChat.Type is ChatTypeSupergroup supergroup && supergroup.IsChannel)
-                {
-                    message.Delegate.OpenChat(senderChat.Id);
-                }
-                else
-                {
-                    message.Delegate.OpenChat(senderChat.Id, true);
-                }
-            }
-            else if (message.SenderId is MessageSenderUser senderUser)
-            {
-                message.Delegate.OpenUser(senderUser.UserId);
-            }
+            message.Delegate.OpenSender(message);
         }
 
         private bool _outgoingAction;
@@ -763,8 +832,6 @@ namespace Telegram.Controls.Messages
                 return;
             }
 
-            // TODO: this probably needs to go in MessageViewModel
-            var outgoing = (message.IsOutgoing && !message.IsChannelPost) || (message.IsSaved && message.ForwardInfo?.Source is { IsOutgoing: true });
             var content = message.GeneratedContent ?? message.Content;
             var light = content is MessageSticker
                 or MessageDice
@@ -775,7 +842,7 @@ namespace Telegram.Controls.Messages
             var info = message.InteractionInfo?.ReplyInfo;
             if (info != null && light && message.IsChannelPost && message.InteractionInfo.ReplyInfo != null)
             {
-                FindAction(outgoing);
+                FindAction(message.IsVisuallyOutgoing);
 
                 ActionButton.Glyph = Icons.ChatEmptyFilled16;
                 Action.Visibility = Visibility.Visible;
@@ -788,7 +855,7 @@ namespace Telegram.Controls.Messages
             {
                 if (light || message.Delegate?.IsForum is true)
                 {
-                    FindAction(outgoing);
+                    FindAction(message.IsVisuallyOutgoing);
 
                     ActionButton.Glyph = light ? Icons.ChatEmptyFilled16 : Icons.ArrowRightFilled16;
                     Action.Visibility = Visibility.Visible;
@@ -808,7 +875,7 @@ namespace Telegram.Controls.Messages
                 }
                 else
                 {
-                    FindAction(outgoing);
+                    FindAction(message.IsVisuallyOutgoing);
 
                     ActionButton.Glyph = Icons.ArrowRightFilled16;
                     Action.Visibility = Visibility.Visible;
@@ -818,7 +885,7 @@ namespace Telegram.Controls.Messages
             }
             else if (message.CanBeShared)
             {
-                FindAction(outgoing);
+                FindAction(message.IsVisuallyOutgoing);
 
                 ActionButton.Glyph = Icons.ShareFilled;
                 Action.Visibility = Visibility.Visible;
@@ -922,7 +989,7 @@ namespace Telegram.Controls.Messages
                 return;
             }
 
-            // TODO: this probably needs to go in MessageViewModel
+            // IsVisuallyOutgoing here can't be used
             var outgoing = (message.IsOutgoing && !message.IsChannelPost && message.SenderId is MessageSenderUser) || (message.IsSaved && message.ForwardInfo?.Source is { IsOutgoing: true });
             var content = message.GeneratedContent ?? message.Content;
             var light = content is MessageSticker
@@ -945,17 +1012,17 @@ namespace Telegram.Controls.Messages
                 if (message.ForwardInfo?.Origin is MessageOriginUser fromUser && message.ClientService.TryGetUser(fromUser.SenderUserId, out User fromUserUser))
                 {
                     title = fromUserUser.FullName();
-                    foreground = message.ClientService.GetAccentBrush(fromUserUser.AccentColorId);
+                    foreground = message.ClientService.GetAccentBrush(fromUserUser);
                 }
                 else if (message.ForwardInfo?.Origin is MessageOriginChat fromChat && message.ClientService.TryGetChat(fromChat.SenderChatId, out Chat fromChatChat))
                 {
                     title = message.ClientService.GetTitle(fromChatChat);
-                    foreground = message.ClientService.GetAccentBrush(fromChatChat.AccentColorId);
+                    foreground = message.ClientService.GetAccentBrush(fromChatChat);
                 }
                 else if (message.ForwardInfo?.Origin is MessageOriginChannel fromChannel && message.ClientService.TryGetChat(fromChannel.ChatId, out Chat fromChannelChat))
                 {
                     title = message.ClientService.GetTitle(fromChannelChat);
-                    foreground = message.ClientService.GetAccentBrush(fromChannelChat.AccentColorId);
+                    foreground = message.ClientService.GetAccentBrush(fromChannelChat);
                 }
                 else if (message.ForwardInfo?.Origin is MessageOriginHiddenUser fromHiddenUser)
                 {
@@ -993,7 +1060,7 @@ namespace Telegram.Controls.Messages
                     var title = senderUser.FullName();
                     var foreground = message.IsOutgoing && !message.IsChannelPost
                         ? null
-                        : message.ClientService.GetAccentBrush(senderUser.AccentColorId);
+                        : message.ClientService.GetAccentBrush(senderUser);
 
                     if (foreground != null)
                     {
@@ -1018,7 +1085,7 @@ namespace Telegram.Controls.Messages
                     var title = senderChat.Title;
                     var foreground = message.IsOutgoing && !message.IsChannelPost
                         ? null
-                        : message.ClientService.GetAccentBrush(senderChat.AccentColorId);
+                        : message.ClientService.GetAccentBrush(senderChat);
 
                     if (foreground != null)
                     {
@@ -1041,7 +1108,7 @@ namespace Telegram.Controls.Messages
                 header = true;
                 shown = true;
 
-                var foreground = message.ClientService.GetAccentBrush(chat.AccentColorId);
+                var foreground = message.ClientService.GetAccentBrush(chat);
                 var title = chat.Title;
 
                 HeaderLink.Foreground = foreground;
@@ -1142,17 +1209,17 @@ namespace Telegram.Controls.Messages
 
                 if (shown && !outgoing && !string.IsNullOrEmpty(title))
                 {
-                    LoadObject(ref AdminLabel, nameof(AdminLabel));
+                    LoadTemplateChild(ref AdminLabel);
                     AdminLabel.Text = title;
                 }
                 else if (shown && !message.IsChannelPost && message.SenderId is MessageSenderChat && message.ForwardInfo != null)
                 {
-                    LoadObject(ref AdminLabel, nameof(AdminLabel));
+                    LoadTemplateChild(ref AdminLabel);
                     AdminLabel.Text = Strings.DiscussChannel;
                 }
                 else if (AdminLabel != null)
                 {
-                    UnloadObject(ref AdminLabel);
+                    UnloadTemplateChild(ref AdminLabel);
                 }
 
                 if (header is false)
@@ -1170,7 +1237,7 @@ namespace Telegram.Controls.Messages
             }
             else
             {
-                UnloadObject(ref AdminLabel);
+                UnloadTemplateChild(ref AdminLabel);
 
                 //if (HeaderPanel != null)
                 //{
@@ -1311,7 +1378,7 @@ namespace Telegram.Controls.Messages
 
         private void UpdateMessageReplyMarkup(MessageViewModel message)
         {
-            if (message.ReplyMarkup is ReplyMarkupInlineKeyboard)
+            if (message.ReplyMarkup is ReplyMarkupInlineKeyboard || message.SuggestedPostInfo is SuggestedPostInfo { State: SuggestedPostStateApproved })
             {
                 if (Markup == null)
                 {
@@ -1320,7 +1387,7 @@ namespace Telegram.Controls.Messages
                 }
 
                 Markup.Visibility = Visibility.Visible;
-                Markup.Update(message, message.ReplyMarkup);
+                Markup.Update(message);
 
                 if (!_hasReplyMarkup)
                 {
@@ -1479,14 +1546,7 @@ namespace Telegram.Controls.Messages
 
         private void RecentRepliers_RecentUserHeadChanged(ProfilePicture sender, MessageSender messageSender)
         {
-            if (_message.ClientService.TryGetUser(messageSender, out User user))
-            {
-                sender.SetUser(_message.ClientService, user, 24);
-            }
-            else if (_message.ClientService.TryGetChat(messageSender, out Chat chat))
-            {
-                sender.SetChat(_message.ClientService, chat, 24);
-            }
+            sender.Source = ProfilePictureSource.MessageSender(_message.ClientService, messageSender);
         }
 
         public void UpdateMessageReactions(MessageViewModel message, bool animate)
@@ -1501,7 +1561,8 @@ namespace Telegram.Controls.Messages
 
                 if (message.InteractionInfo?.Reactions?.Reactions.Count > 0)
                 {
-                    LoadObject(ref MediaReactions, nameof(MediaReactions));
+                    LoadTemplateChild(ref MediaReactions);
+                    MediaReactions.HorizontalContentAlignment = message.IsVisuallyOutgoing ? HorizontalAlignment.Right : HorizontalAlignment.Left;
                     MediaReactions.UpdateMessageReactions(message, animate);
                 }
                 else
@@ -1515,7 +1576,7 @@ namespace Telegram.Controls.Messages
 
                 if (message.InteractionInfo?.Reactions?.Reactions.Count > 0)
                 {
-                    LoadObject(ref Reactions, nameof(Reactions));
+                    LoadTemplateChild(ref Reactions);
                     Reactions.UpdateMessageReactions(message, animate);
                 }
                 else
@@ -1544,6 +1605,16 @@ namespace Telegram.Controls.Messages
             UpdateMessageContent(message);
         }
 
+        public void UpdateMessageSuggestedPostInfo(MessageViewModel message)
+        {
+            if (Parent is MessageSelector selector)
+            {
+                selector.UpdateMessageSuggestedPostInfo(message);
+            }
+
+            UpdateMessageReplyMarkup(message);
+        }
+
         public void UpdateMessageContent(MessageViewModel message)
         {
             var chat = message?.Chat;
@@ -1553,9 +1624,6 @@ namespace Telegram.Controls.Messages
             }
 
             Panel.ForceNewLine = message?.GeneratedContent is MessageBigEmoji;
-
-            // TODO: this probably needs to go in MessageViewModel
-            var outgoing = (message.IsOutgoing && !message.IsChannelPost && message.SenderId is MessageSenderUser) || (message.IsSaved && message.ForwardInfo?.Source is { IsOutgoing: true });
 
             var aboveMedia = message.ShowCaptionAboveMedia();
             var factCheck = message.FactCheck == null ? 0 : 1;
@@ -1591,7 +1659,7 @@ namespace Telegram.Controls.Messages
 
                 var isFirst = message.Delegate.IsSavedMessagesTab ? message.IsLast : message.IsFirst;
 
-                if (isFirst && !outgoing && !message.IsChannelPost && (chat.Type is ChatTypeBasicGroup || chat.Type is ChatTypeSupergroup))
+                if (isFirst && !message.IsVisuallyOutgoing && !message.IsChannelPost && !message.IsDirectMessagesChatTopicMessage && (chat.Type is ChatTypeBasicGroup || chat.Type is ChatTypeSupergroup))
                 {
                     top = 4;
                 }
@@ -1634,7 +1702,7 @@ namespace Telegram.Controls.Messages
                 ContentPanel.Padding = new Thickness(0);
                 Media.Margin = new Thickness(0);
 
-                if (outgoing)
+                if (message.IsVisuallyOutgoing)
                 {
                     FooterToLightMedia(true);
                     Grid.SetRow(Footer, 3);
@@ -1995,7 +2063,7 @@ namespace Telegram.Controls.Messages
 
         private void Message_TextEntityClick(object sender, TextEntityClickEventArgs e)
         {
-            if (_message is not MessageViewModel message || message.Delegate == null || message.PlaybackService == null)
+            if (_message is not MessageViewModel message || message.Delegate == null)
             {
                 return;
             }
@@ -2021,27 +2089,27 @@ namespace Telegram.Controls.Messages
             {
                 OpenUrl(textUrl.Url, true);
             }
-            else if (e.Type is TextEntityTypeUrl && e.Data is string url)
+            else if (e.Type is TextEntityTypeUrl && e.Text is string url)
             {
                 OpenUrl(url, false);
             }
-            if (e.Type is TextEntityTypeBotCommand && e.Data is string command)
+            if (e.Type is TextEntityTypeBotCommand && e.Text is string command)
             {
                 message.Delegate.SendBotCommand(command);
             }
             else if (e.Type is TextEntityTypeEmailAddress)
             {
-                message.Delegate.OpenUrl("mailto:" + e.Data, false);
+                message.Delegate.OpenUrl("mailto:" + e.Text, false);
             }
             else if (e.Type is TextEntityTypePhoneNumber)
             {
-                message.Delegate.OpenUrl("tel:" + e.Data, false);
+                message.Delegate.OpenUrl("tel:" + e.Text, false);
             }
-            else if (e.Type is TextEntityTypeHashtag or TextEntityTypeCashtag && e.Data is string hashtag)
+            else if (e.Type is TextEntityTypeHashtag or TextEntityTypeCashtag && e.Text is string hashtag)
             {
                 message.Delegate.OpenHashtag(hashtag);
             }
-            else if (e.Type is TextEntityTypeMention && e.Data is string username)
+            else if (e.Type is TextEntityTypeMention && e.Text is string username)
             {
                 message.Delegate.OpenUsername(username);
             }
@@ -2049,7 +2117,7 @@ namespace Telegram.Controls.Messages
             {
                 message.Delegate.OpenUser(mentionName.UserId);
             }
-            else if (e.Type is TextEntityTypeBankCardNumber && e.Data is string cardNumber)
+            else if (e.Type is TextEntityTypeBankCardNumber && e.Text is string cardNumber)
             {
                 message.Delegate.OpenBankCardNumber(cardNumber);
             }
@@ -2081,14 +2149,6 @@ namespace Telegram.Controls.Messages
                 {
                     // TODO
                 }
-            }
-            else if (e.Type is TextEntityTypeCode or TextEntityTypePre or TextEntityTypePreCode && e.Data is string code)
-            {
-                MessageHelper.CopyText(textBlock.XamlRoot, code);
-            }
-            else if (e.Type is TextEntityTypeSpoiler)
-            {
-                textBlock.IgnoreSpoilers = true;
             }
         }
 
@@ -2144,39 +2204,6 @@ namespace Telegram.Controls.Messages
         public void UnregisterEvents()
         {
             _ignoreSizeChanged = true;
-        }
-
-        private CompositionPathGeometry _tail;
-        private bool _corners;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateClip(Size newSize)
-        {
-            var width = (float)Math.Truncate(newSize.Width);
-            var height = (float)Math.Truncate(newSize.Height);
-
-            var radius = _topLeft == 0 && _topRight == 0 && _bottomRight == 0 && _bottomLeft == 0;
-            radius |= _bottomLeft != 0 && _bottomRight != 0;
-            radius |= width == 0 && height == 0;
-
-            if (radius)
-            {
-                return;
-            }
-
-            var compositor = BootStrapper.Current.Compositor;
-
-            _tail ??= compositor.CreatePathGeometry();
-            _tail.Path = PlaceholderImageHelper.Foreground.GetTail(width, height, _topLeft, _topRight, _bottomRight, _bottomLeft);
-
-            var visual = ElementComposition.GetElementVisual(ContentPanel);
-            visual.Clip ??= compositor.CreateGeometricClip(_tail);
-
-            if (_corners)
-            {
-                _corners = false;
-                ContentPanel.CornerRadius = new CornerRadius();
-            }
         }
 
         public void AnimateSendout(float xTranslate, float xScale, float yScale, float fontScale, double outer, double inner, double delay, bool reply)
@@ -2341,8 +2368,6 @@ namespace Telegram.Controls.Messages
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
-            UpdateClip(e.NewSize);
-
             var message = _message;
             if (message == null || _ignoreSizeChanged || e.PreviousSize.Width < 1 || e.PreviousSize.Height < 1)
             {
@@ -2358,36 +2383,16 @@ namespace Telegram.Controls.Messages
             var prev = e.PreviousSize.ToVector2();
             var next = e.NewSize.ToVector2();
 
-            // TODO: this probably needs to go in MessageViewModel
-            var outgoing = (message.IsOutgoing && !message.IsChannelPost) || (message.IsSaved && message.ForwardInfo?.Source is { IsOutgoing: true });
-
             var anim = BootStrapper.Current.Compositor.CreateVector3KeyFrameAnimation();
             anim.InsertKeyFrame(0, new Vector3(prev / next, 1));
             anim.InsertKeyFrame(1, Vector3.One);
 
             var panel = ElementComposition.GetElementVisual(ContentPanel);
-            panel.CenterPoint = new Vector3(outgoing ? next.X : 0, 0, 0);
+            panel.CenterPoint = new Vector3(message.IsVisuallyOutgoing ? next.X : 0, 0, 0);
             panel.StartAnimation("Scale", anim);
 
             var factor = BootStrapper.Current.Compositor.CreateExpressionAnimation("Vector3(1 / content.Scale.X, 1 / content.Scale.Y, 1)");
             factor.SetReferenceParameter("content", panel);
-
-            // It crashes...
-            //if (_tail != null && ApiInfo.IsWindows11 && panel.Clip is CompositionGeometricClip clip2 && clip2.Geometry is CompositionPathGeometry path2)
-            //{
-            //    var width = (float)Math.Truncate(ContentPanel.ActualWidth);
-            //    var height = (float)Math.Truncate(ContentPanel.ActualHeight);
-            //    var compositor = BootStrapper.Current.Compositor;
-
-            //    var path = compositor.CreatePathKeyFrameAnimation();
-            //    path.InsertKeyFrame(0, GetTail(prev.X, prev.Y, _topLeft, _topRight, _bottomRight, _bottomLeft));
-            //    path.InsertKeyFrame(1, GetTail(next.X, next.Y, _topLeft, _topRight, _bottomRight, _bottomLeft));
-            //    path.Duration = TimeSpan.FromSeconds(3);
-
-            //    path2.StartAnimation("Path", anim);
-
-            //    //panel.Clip.StartAnimation("Scale", factor);
-            //}
 
             var header = ElementComposition.GetElementVisual(Header);
             var text = ElementComposition.GetElementVisual(Message);
@@ -2517,7 +2522,7 @@ namespace Telegram.Controls.Messages
                     var fontSize = Theme.Current.MessageFontSize * BootStrapper.Current.TextScaleFactor;
                     var quoteSize = Theme.Current.CaptionFontSize * BootStrapper.Current.TextScaleFactor;
 
-                    var width = Math.Ceiling(rich.ActualWidth + 1); //Panel.MeasuredWidth; //Message.ActualWidth;
+                    var width = Message.LastAvailableWidth;
                     var inset = 0;
 
                     var minX = double.MaxValue;
@@ -2563,7 +2568,7 @@ namespace Telegram.Controls.Messages
                             ? quoteSize
                             : fontSize;
 
-                        var rectangles = PlaceholderImageHelper.Foreground.RangeMetrics(partial, xoffset, xlength, entities, size, width - paragraph.Margin.Left - paragraph.Margin.Right, styled.Direction == TextDirectionality.RightToLeft, true);
+                        var rectangles = PlaceholderHelper.Foreground.RangeMetrics(partial, xoffset, xlength, entities, size, width - paragraph.Margin.Left - paragraph.Margin.Right, styled.Direction == TextDirectionality.RightToLeft, true);
                         var relative = paragraph.ContentStart.GetCharacterRect(paragraph.ContentStart.LogicalDirection);
 
                         var point = new Windows.Foundation.Point(paragraph.Margin.Left + position.X, relative.Y + position.Y + inset);
@@ -2584,10 +2589,10 @@ namespace Telegram.Controls.Messages
                             current.Add(rect);
                             last = rect;
 
-                            minX = Math.Min(minX, point.X + rect.Left);
-                            minY = Math.Min(minY, point.Y + rect.Top);
-                            maxX = Math.Max(maxX, point.X + rect.Right);
-                            maxY = Math.Max(maxY, point.Y + rect.Bottom);
+                            minX = Math.Min(minX, rect.Left);
+                            minY = Math.Min(minY, rect.Top);
+                            maxX = Math.Max(maxX, rect.Right);
+                            maxY = Math.Max(maxY, rect.Bottom);
                         }
                     }
 
@@ -2743,7 +2748,7 @@ namespace Telegram.Controls.Messages
                     solid.Size = area.ToSizeF();
                 }
             }
-            else if (Media.Child is ChecklistContent checklist && options.ChecklistTaskId != -1)
+            else if (Media.Child is ChecklistContent checklist && options.ChecklistTaskId != 0)
             {
                 var area = checklist.Highlight(options);
                 if (!area.IsEmpty)
@@ -2822,13 +2827,10 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        public void OpenStory(MessageViewModel message, Story item)
+        public void OpenStory(MessageViewModel message, Story story)
         {
-            var story = new StoryViewModel(message.ClientService, item);
             var activeStories = new ActiveStoriesViewModel(message.ClientService, message.Delegate.Settings, message.Delegate.Aggregator, story);
-
-            var viewModel = new StoryListViewModel(message.ClientService, message.Delegate.Settings, message.Delegate.Aggregator, activeStories);
-            viewModel.NavigationService = message.Delegate.NavigationService;
+            var viewModel = StoryListViewModel.Create(message.Delegate.NavigationService, activeStories);
 
             var origin = GetStoryOrigin(null);
 
@@ -2872,8 +2874,6 @@ namespace Telegram.Controls.Messages
                 return;
             }
 
-            UpdateMockup(outgoing, first, last);
-
             Header.Visibility = Visibility.Collapsed;
 
             Footer.Mockup(outgoing, date);
@@ -2887,7 +2887,7 @@ namespace Telegram.Controls.Messages
 
             Message.SetText(null, message, Array.Empty<TextEntity>());
 
-            UpdateMockup();
+            UpdateMockup(outgoing, first, last);
         }
 
         public void Mockup(string message, string sender, string reply, bool outgoing, DateTime date, bool first = true, bool last = true)
@@ -2903,8 +2903,6 @@ namespace Telegram.Controls.Messages
                 Loaded += loaded;
                 return;
             }
-
-            UpdateMockup(outgoing, first, last);
 
             Header.Visibility = Visibility.Visible;
 
@@ -2938,7 +2936,7 @@ namespace Telegram.Controls.Messages
 
             Message.SetText(null, message, Array.Empty<TextEntity>());
 
-            UpdateMockup();
+            UpdateMockup(outgoing, first, last);
         }
 
         public void Mockup(IClientService clientService, string message, object sender, string reply, bool outgoing, DateTime date, bool first = true, bool last = true)
@@ -2954,8 +2952,6 @@ namespace Telegram.Controls.Messages
                 Loaded += loaded;
                 return;
             }
-
-            UpdateMockup(outgoing, first, last);
 
             Header.Visibility = Visibility.Visible;
 
@@ -2975,11 +2971,11 @@ namespace Telegram.Controls.Messages
 
                     if (sender is User user)
                     {
-                        Reply.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId);
+                        Reply.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId, user.UpgradedGiftColors);
                     }
                     else if (sender is Chat chat)
                     {
-                        Reply.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId);
+                        Reply.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId, chat.UpgradedGiftColors);
                     }
                 }
 
@@ -2995,11 +2991,11 @@ namespace Telegram.Controls.Messages
 
                 if (sender is User user)
                 {
-                    Reply.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId);
+                    Reply.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId, user.UpgradedGiftColors);
                 }
                 else if (sender is Chat chat)
                 {
-                    Reply.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId);
+                    Reply.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId, chat.UpgradedGiftColors);
                 }
             }
 
@@ -3014,7 +3010,7 @@ namespace Telegram.Controls.Messages
 
             Message.SetText(null, message, Array.Empty<TextEntity>());
 
-            UpdateMockup();
+            UpdateMockup(outgoing, first, last);
         }
 
         public void Mockup(IClientService clientService, string message, MessageSender sender, string reply, LinkPreview linkPreview, bool outgoing, DateTime date, bool first = true, bool last = true)
@@ -3030,8 +3026,6 @@ namespace Telegram.Controls.Messages
                 Loaded += loaded;
                 return;
             }
-
-            UpdateMockup(outgoing, first, last);
 
             Header.Visibility = Visibility.Visible;
 
@@ -3052,11 +3046,11 @@ namespace Telegram.Controls.Messages
 
                     if (obj is User user)
                     {
-                        Reply.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId);
+                        Reply.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId, user.UpgradedGiftColors);
                     }
                     else if (obj is Chat chat)
                     {
-                        Reply.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId);
+                        Reply.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId, chat.UpgradedGiftColors);
                     }
                 }
 
@@ -3081,11 +3075,11 @@ namespace Telegram.Controls.Messages
 
                     if (obj is User user)
                     {
-                        presenter.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId);
+                        presenter.UpdateMockup(clientService, user.BackgroundCustomEmojiId, user.AccentColorId, user.UpgradedGiftColors);
                     }
                     else if (obj is Chat chat)
                     {
-                        presenter.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId);
+                        presenter.UpdateMockup(clientService, chat.BackgroundCustomEmojiId, chat.AccentColorId, chat.UpgradedGiftColors);
                     }
                 }
 
@@ -3105,8 +3099,8 @@ namespace Telegram.Controls.Messages
 
             Message.SetText(null, message, Array.Empty<TextEntity>());
 
-            LoadObject(ref HeaderPanel, nameof(HeaderPanel));
-            LoadObject(ref HeaderLabel, nameof(HeaderLabel));
+            LoadTemplateChild(ref HeaderPanel);
+            LoadTemplateChild(ref HeaderLabel);
 
             var hyperlink = HeaderLabel.Inlines[0] as Hyperlink;
             var run = hyperlink.Inlines[0] as Run;
@@ -3128,16 +3122,16 @@ namespace Telegram.Controls.Messages
 
             if (obj is User user)
             {
-                Photo.SetUser(clientService, user, 30);
+                Photo.Source = ProfilePictureSource.User(clientService, user);
             }
             else if (obj is Chat chat)
             {
-                Photo.SetChat(clientService, chat, 30);
+                Photo.Source = ProfilePictureSource.Chat(clientService, chat);
             }
 
             PhotoColumn.Width = new GridLength(38, GridUnitType.Pixel);
 
-            UpdateMockup();
+            UpdateMockup(outgoing, first, last);
         }
 
         public void Mockup(MessageContent content, bool outgoing, DateTime date, bool first = true, bool last = true)
@@ -3153,8 +3147,6 @@ namespace Telegram.Controls.Messages
                 Loaded += loaded;
                 return;
             }
-
-            UpdateMockup(outgoing, first, last);
 
             Header.Visibility = Visibility.Collapsed;
             Message.Visibility = Visibility.Collapsed;
@@ -3197,7 +3189,7 @@ namespace Telegram.Controls.Messages
 
             Message.Clear();
 
-            UpdateMockup();
+            UpdateMockup(outgoing, first, last);
         }
 
         public void Mockup(MessageContent content, string caption, bool outgoing, DateTime date, bool first = true, bool last = true)
@@ -3213,8 +3205,6 @@ namespace Telegram.Controls.Messages
                 Loaded += loaded;
                 return;
             }
-
-            UpdateMockup(outgoing, first, last);
 
             Header.Visibility = Visibility.Collapsed;
 
@@ -3243,23 +3233,17 @@ namespace Telegram.Controls.Messages
 
             Message.SetText(null, caption, Array.Empty<TextEntity>());
 
-            UpdateMockup();
+            UpdateMockup(outgoing, first, last);
         }
 
-        public void UpdateMockup()
-        {
-            Message.SetFontSize(Theme.Current.MessageFontSize);
-            ContentPanel.CornerRadius = new CornerRadius(SettingsService.Current.Appearance.BubbleRadius);
-        }
-
-        public void UpdateMockup(IClientService clientService, long customEmojiId, int color)
+        public void UpdateMockup(IClientService clientService, long customEmojiId, int color, UpgradedGiftColors upgradedGift)
         {
             if (!_templateApplied)
             {
                 void loaded(object o, RoutedEventArgs e)
                 {
                     Loaded -= loaded;
-                    UpdateMockup(clientService, customEmojiId, color);
+                    UpdateMockup(clientService, customEmojiId, color, upgradedGift);
                 }
 
                 Loaded += loaded;
@@ -3268,65 +3252,80 @@ namespace Telegram.Controls.Messages
 
             if (Media.Child is WebPageContent webPageContent)
             {
-                webPageContent.UpdateMockup(clientService, customEmojiId, color);
+                webPageContent.UpdateMockup(clientService, customEmojiId, color, upgradedGift);
             }
 
-            Reply?.UpdateMockup(clientService, customEmojiId, color);
+            Reply?.UpdateMockup(clientService, customEmojiId, color, upgradedGift);
 
             if (HeaderLabel?.Inlines.Count > 0 && HeaderLabel.Inlines[0] is Hyperlink hyperlink)
             {
-                hyperlink.Foreground = clientService.GetAccentBrush(color);
+                if (upgradedGift != null)
+                {
+                    hyperlink.Foreground = new SolidColorBrush(upgradedGift.LightThemeAccentColor.ToColor());
+                }
+                else
+                {
+                    hyperlink.Foreground = clientService.GetAccentBrush(color);
+                }
             }
         }
 
-        private void UpdateMockup(bool outgoing, bool first, bool last)
+        public void UpdateMockup(bool outgoing, bool first, bool last)
         {
-            var topLeft = 15d;
-            var topRight = 15d;
-            var bottomRight = 15d;
-            var bottomLeft = 15d;
+            var radius = SettingsService.Current.Appearance.BubbleRadius;
+            var small = radius < 4 ? radius : 4;
+
+            var topLeft = radius;
+            var topRight = radius;
+            var bottomRight = radius;
+            var bottomLeft = radius;
 
             if (outgoing)
             {
                 if (first && last)
                 {
+                    bottomRight = 0;
                 }
                 else if (first)
                 {
-                    bottomRight = 4;
+                    bottomRight = small;
                 }
                 else if (last)
                 {
-                    topRight = 4;
+                    topRight = small;
+                    bottomRight = 0;
                 }
                 else
                 {
-                    topRight = 4;
-                    bottomRight = 4;
+                    topRight = small;
+                    bottomRight = small;
                 }
             }
             else
             {
                 if (first && last)
                 {
+                    bottomLeft = 0;
                 }
                 else if (first)
                 {
-                    bottomLeft = 4;
+                    bottomLeft = small;
                 }
                 else if (last)
                 {
-                    topLeft = 4;
+                    topLeft = small;
+                    bottomLeft = 0;
                 }
                 else
                 {
-                    topLeft = 4;
-                    bottomLeft = 4;
+                    topLeft = small;
+                    bottomLeft = small;
                 }
             }
 
-            ContentPanel.CornerRadius = new CornerRadius(topLeft, topRight, bottomRight, bottomLeft);
             Margin = new Thickness(outgoing ? 50 : 12, first ? 2 : 1, outgoing ? 12 : 50, last ? 2 : 1);
+            Message.SetFontSize(Theme.Current.MessageFontSize);
+            SetCorners(topLeft, topRight, bottomRight, bottomLeft);
         }
 
 
@@ -3616,11 +3615,6 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void Message_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
-            e.Handled = true;
-        }
-
         private static bool IsFullMedia(MessageContent content, bool width = false)
         {
             switch (content)
@@ -3647,14 +3641,14 @@ namespace Telegram.Controls.Messages
         #region XamlMarkupHelper
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void LoadObject<T>(ref T element, /*[CallerArgumentExpression("element")]*/string name)
+        private void LoadTemplateChild<T>(ref T element, [CallerArgumentExpression("element")] string name = null)
             where T : DependencyObject
         {
             element ??= GetTemplateChild(name) as T;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UnloadObject<T>(ref T element)
+        private void UnloadTemplateChild<T>(ref T element)
             where T : DependencyObject
         {
             if (element != null)

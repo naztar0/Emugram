@@ -91,7 +91,7 @@ namespace Telegram.Views.Stars.Popups
             hyperlink.Click += Buy_Click;
 
             var content = new TextBlock();
-            content.Inlines.Add(string.Format(Strings.Gift2MessageStarsInfo.Replace("\u2B50", Icons.Premium + "\u200A"), _clientService.OwnedStarCount.ToValue()));
+            content.Inlines.Add(string.Format(Strings.Gift2MessageStarsInfo.ReplaceStar(Icons.Premium), _clientService.OwnedStarCount.ToValue()));
             content.Inlines.Add(new LineBreak());
             content.Inlines.Add(hyperlink);
             content.HorizontalTextAlignment = TextAlignment.Center;
@@ -150,7 +150,8 @@ namespace Telegram.Views.Stars.Popups
 
             if (PurchaseText != null)
             {
-                PurchaseText.Text = string.Format(Strings.StarsReactionSend, StarCount.ToString("N0")).Replace("\u2B50", Icons.Premium);
+                PurchaseText.Text = string.Format(Strings.StarsReactionSend.ReplaceStar(Icons.Premium), StarCount.ToString("N0"));
+                AutomationProperties.SetName(PurchaseCommand, PurchaseText.Text);
             }
         }
 
@@ -258,11 +259,11 @@ namespace Telegram.Views.Stars.Popups
 
             if (_clientService.TryGetUser(senderId, out User senderUser))
             {
-                Photo.SetUser(_clientService, senderUser, 28);
+                Photo.Source = ProfilePictureSource.User(_clientService, senderUser);
             }
             else if (_clientService.TryGetChat(senderId, out Chat senderChat))
             {
-                Photo.SetChat(_clientService, senderChat, 28);
+                Photo.Source = ProfilePictureSource.Chat(_clientService, senderChat);
             }
         }
 
@@ -298,8 +299,7 @@ namespace Telegram.Views.Stars.Popups
                 foreach (var messageSender in senders.Senders)
                 {
                     var picture = new ProfilePicture();
-                    picture.Width = 36;
-                    picture.Height = 36;
+                    picture.Size = 36;
                     picture.Margin = new Thickness(-4, -2, 0, -2);
 
                     var item = new MenuFlyoutProfile();
@@ -311,14 +311,14 @@ namespace Telegram.Views.Stars.Popups
 
                     if (_clientService.TryGetUser(messageSender, out User senderUser))
                     {
-                        picture.SetUser(_clientService, senderUser, 36);
+                        picture.Source = ProfilePictureSource.User(_clientService, senderUser);
 
                         item.Text = senderUser.FullName();
                         item.Info = Strings.VoipGroupPersonalAccount;
                     }
                     else if (_clientService.TryGetChat(messageSender, out Chat senderChat))
                     {
-                        picture.SetChat(_clientService, senderChat, 36);
+                        picture.Source = ProfilePictureSource.Chat(_clientService, senderChat);
 
                         item.Text = senderChat.Title;
 

@@ -16,7 +16,7 @@ using Windows.UI.Xaml.Controls;
 
 namespace Telegram.Controls.Messages.Content
 {
-    public sealed partial class ChecklistContent : ControlEx, IContent, IDiffEqualityComparer<ChecklistTask>
+    public sealed partial class ChecklistContent : Control, IContent, IDiffEqualityComparer<ChecklistTask>
     {
         private MessageViewModel _message;
         public MessageViewModel Message => _message;
@@ -75,7 +75,7 @@ namespace Telegram.Controls.Messages.Content
             {
                 Type.Text = string.Format(Strings.MessagePersonalTodoList, message.ClientService.GetTitle(message.SenderId, true));
             }
-            else if (message.Chat.Type is ChatTypePrivate)
+            else if (message.Chat.Type is ChatTypePrivate || !checklist.List.CanMarkTasksAsDone || message.ForwardInfo != null)
             {
                 Type.Text = Strings.MessageTodoList;
             }

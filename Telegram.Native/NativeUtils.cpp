@@ -39,20 +39,30 @@ namespace winrt::Telegram::Native::implementation
         Callback = callback;
     }
 
-    IXamlDirectObject NativeUtils::AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, FlowDirection direction, bool italic, TextDecorations decorations, FontFamily fontFamily, double fontSize, bool transparent)
+    IXamlDirectObject NativeUtils::AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, FlowDirection direction, TextStyle style, FontFamily fontFamily, double fontSize, bool transparent)
     {
         auto run = direct.CreateInstance(XamlTypeIndex::Run);
         direct.SetStringProperty(run, XamlPropertyIndex::Run_Text, text);
         direct.SetEnumProperty(run, XamlPropertyIndex::Run_FlowDirection, (uint32_t)direction);
 
-        //if (bold)
-        //{
-        //    direct.SetEnumProperty(run, XamlPropertyIndex::TextElement_FontWeight, FontWeights::SemiBold().Weight);
-        //}
+        if ((style & TextStyle::Bold) != TextStyle::None)
+        {
+            direct.SetObjectProperty(run, XamlPropertyIndex::TextElement_FontWeight, winrt::box_value(FontWeights::SemiBold()));
+        }
 
-        if (italic)
+        if ((style & TextStyle::Italic) != TextStyle::None)
         {
             direct.SetEnumProperty(run, XamlPropertyIndex::TextElement_FontStyle, (uint32_t)FontStyle::Italic);
+        }
+
+        auto decorations = TextDecorations::None;
+        if ((style & TextStyle::Underline) != TextStyle::None)
+        {
+            decorations |= TextDecorations::Underline;
+        }
+        if ((style & TextStyle::Strikethrough) != TextStyle::None)
+        {
+            decorations |= TextDecorations::Strikethrough;
         }
 
         if (decorations != TextDecorations::None)
@@ -80,21 +90,31 @@ namespace winrt::Telegram::Native::implementation
         return run;
     }
 
-    IXamlDirectObject NativeUtils::AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, int32_t offset, int32_t length, FlowDirection direction, bool italic, TextDecorations decorations, FontFamily fontFamily, double fontSize, bool transparent)
+    IXamlDirectObject NativeUtils::AddRunToCollection(XamlDirect direct, IXamlDirectObject inlines, hstring text, int32_t offset, int32_t length, FlowDirection direction, TextStyle style, FontFamily fontFamily, double fontSize, bool transparent)
     {
         std::wstring wstr = text.c_str();
         auto run = direct.CreateInstance(XamlTypeIndex::Run);
         direct.SetStringProperty(run, XamlPropertyIndex::Run_Text, hstring(wstr.substr(offset, length)));
         direct.SetEnumProperty(run, XamlPropertyIndex::Run_FlowDirection, (uint32_t)direction);
 
-        //if (bold)
-        //{
-        //    direct.SetObjectProperty(run, XamlPropertyIndex::TextElement_FontWeight, FontWeights::Normal());
-        //}
+        if ((style & TextStyle::Bold) != TextStyle::None)
+        {
+            direct.SetObjectProperty(run, XamlPropertyIndex::TextElement_FontWeight, winrt::box_value(FontWeights::SemiBold()));
+        }
 
-        if (italic)
+        if ((style & TextStyle::Italic) != TextStyle::None)
         {
             direct.SetEnumProperty(run, XamlPropertyIndex::TextElement_FontStyle, (uint32_t)FontStyle::Italic);
+        }
+
+        auto decorations = TextDecorations::None;
+        if ((style & TextStyle::Underline) != TextStyle::None)
+        {
+            decorations |= TextDecorations::Underline;
+        }
+        if ((style & TextStyle::Strikethrough) != TextStyle::None)
+        {
+            decorations |= TextDecorations::Strikethrough;
         }
 
         if (decorations != TextDecorations::None)
@@ -243,18 +263,6 @@ namespace winrt::Telegram::Native::implementation
                 if (moduleFilenamePos >= 0)
                 {
                     moduleFilename = moduleFilename.substr(moduleFilenamePos + 1);
-                }
-
-                if (moduleFilename.rfind(L"Telegram", 0) != 0)
-                {
-                    skipping = true;
-                    continue;
-                }
-
-                if (skipping)
-                {
-                    skipping = false;
-                    trace += L"    ...\n";
                 }
 
                 trace += wstrprintf(L"   at %s+0x%08lx\n", moduleFilename.c_str(), (uint32_t)((unsigned char*)pointer - moduleBase));

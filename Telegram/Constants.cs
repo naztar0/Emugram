@@ -22,14 +22,16 @@ namespace Telegram
 
         public static readonly ushort BuildNumber;
 
+        public static readonly string TextRecognizerModelKey;
+
         public static readonly Size SecretSize = new(320, 200);
 
         public const int TypingTimeout = 300;
         public const int HoldingThrottle = 500;
         public const int AnimatedThrottle = 200;
 
-        public static readonly string[] MediaTypes = new[] { ".jpg", ".jpeg", ".png", ".gif", ".mp4", ".mov", ".m4v" };
-        public static readonly string[] PhotoTypes = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+        public static readonly string[] MediaTypes = new[] { ".jpg", ".jpeg", ".png", ".gif", ".heic", ".heif", ".mp4", ".mov", ".m4v" };
+        public static readonly string[] PhotoTypes = new[] { ".jpg", ".jpeg", ".png", ".gif", ".heic", ".heif" };
         public static readonly string[] VideoTypes = new[] { ".mp4", ".mov", ".m4v" };
         public static readonly string[] AudioTypes = new[] { ".mp3", ".wav", ".m4a", ".flac" };
 
@@ -48,8 +50,12 @@ namespace Telegram
 
         public const string DefaultDeviceId = "";
 
+        public const string WebAppHostName = "windows";
+
         public const int FontSize = 14;
         public const int CaptionFontSize = 12;
+
+        public const float BubbleElevation = 8.0f;
 
         public static readonly string[] TelegramHosts = new string[]
         {
@@ -67,7 +73,7 @@ namespace Telegram
             DetectMoves = true
         };
 
-        public static MessageSendOptions PreviewOnly = new(0, false, false, false, false, 0, false, null, 0, 0, true);
+        public static MessageSendOptions PreviewOnly = new(null, false, false, false, false, 0, false, null, 0, 0, true);
 
 #if DEBUG
         // We use properties in debug so that the duration is re-evaluated

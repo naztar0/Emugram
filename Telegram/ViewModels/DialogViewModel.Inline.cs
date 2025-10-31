@@ -209,12 +209,12 @@ namespace Telegram.ViewModels
             SetText(null, false);
             ClearInlineBot();
 
-            var reply = GetReply(true);
+            var replyTo = GetReply(true);
             Function function;
 
             if (QuickReplyShortcut != null)
             {
-                if (reply is InputMessageReplyToMessage replyToMessage)
+                if (replyTo is InputMessageReplyToMessage replyToMessage)
                 {
                     function = new AddQuickReplyShortcutInlineQueryResultMessage(QuickReplyShortcut.Name, replyToMessage.MessageId, queryId, queryResult.GetId(), false);
                 }
@@ -225,7 +225,14 @@ namespace Telegram.ViewModels
             }
             else
             {
-                function = new SendInlineQueryResultMessage(chat.Id, OutgoingThreadId, reply, options, queryId, queryResult.GetId(), false);
+                var topicId = OutgoingTopicId;
+                if (replyTo is InputMessageReplyToTopicMessage replyToTopicMessage)
+                {
+                    topicId = replyToTopicMessage.TopicId;
+                    replyTo = new InputMessageReplyToMessage(replyToTopicMessage.MessageId, replyToTopicMessage.Quote, replyToTopicMessage.ChecklistTaskId);
+                }
+
+                function = new SendInlineQueryResultMessage(chat.Id, topicId, replyTo, options, queryId, queryResult.GetId(), false);
             }
 
             var response = await ClientService.SendAsync(function);

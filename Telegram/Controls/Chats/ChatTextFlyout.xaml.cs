@@ -5,6 +5,7 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using Telegram.Common;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Streams;
@@ -33,10 +34,8 @@ namespace Telegram.Controls.Chats
             _handler = new AnimatedListHandler(ScrollingHost, AnimatedListType.Stickers);
 
             _zoomer = new ZoomableListHandler(ScrollingHost);
-            _zoomer.Opening = _handler.UnloadVisibleItems;
-            _zoomer.Closing = _handler.ThrottleVisibleItems;
-            _zoomer.DownloadFile = fileId => ViewModel.ClientService.DownloadFile(fileId, 32);
-            _zoomer.SessionId = () => ViewModel.ClientService.SessionId;
+            _zoomer.Opening = _handler.Suspend;
+            _zoomer.Closing = _handler.Resume;
 
             _textBox = textBox;
             ScrollingHost.ItemsSource = itemsSource;
@@ -69,7 +68,7 @@ namespace Telegram.Controls.Chats
             }
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _handler.UnloadItems();
             _zoomer.Release();
@@ -114,7 +113,7 @@ namespace Telegram.Controls.Chats
                 var content = args.ItemContainer.ContentTemplateRoot as Grid;
 
                 var animated = content.Children[0] as AnimatedImage;
-                animated.Source = new DelayedFileSource(ViewModel.ClientService, sticker);
+                animated.Source = DelayedFileSource.FromSticker(ViewModel?.ClientService, sticker);
 
                 AutomationProperties.SetName(args.ItemContainer, sticker.Emoji);
             }

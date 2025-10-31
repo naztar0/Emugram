@@ -116,19 +116,19 @@ namespace Telegram.ViewModels
                     if (message.ForwardInfo?.Origin is MessageOriginUser or MessageOriginChat && message.ForwardInfo?.Source != null)
                     {
                         chatId = message.ForwardInfo.Source.ChatId;
-                        messageTopic = new MessageTopicForum(message.ForwardInfo.Source.MessageId);
+                        messageTopic = new MessageTopicThread(message.ForwardInfo.Source.MessageId);
                     }
                     else if (message.ForwardInfo?.Origin is MessageOriginChannel fromChannel)
                     {
                         chatId = fromChannel.ChatId;
-                        messageTopic = new MessageTopicForum(fromChannel.MessageId);
+                        messageTopic = new MessageTopicThread(fromChannel.MessageId);
                     }
 
-                    if (messageTopic is MessageTopicForum messageTopicForum)
+                    if (messageTopic is MessageTopicThread messageTopicThread)
                     {
-                        await ClientService.SendAsync(new GetMessage(chatId, messageTopicForum.ForumTopicId));
+                        await ClientService.SendAsync(new GetMessage(chatId, messageTopicThread.MessageThreadId));
 
-                        var response = await ClientService.SendAsync(new GetMessageThread(chatId, messageTopicForum.ForumTopicId));
+                        var response = await ClientService.SendAsync(new GetMessageThread(chatId, messageTopicThread.MessageThreadId));
                         if (response is not MessageThreadInfo)
                         {
                             return;
@@ -136,7 +136,7 @@ namespace Telegram.ViewModels
                     }
                 }
 
-                NavigationService.NavigateToChat(chatId, messageId, topic: messageTopic, state: new NavigationState { { "highlight", replyToMessage.Quote } });
+                NavigationService.NavigateToChat(chatId, messageId, topic: messageTopic, state: new NavigationState { { "highlight", replyToMessage.Quote }, { "checklist_task_id", replyToMessage.ChecklistTaskId } });
             }
             else if (replyToMessage.Origin != null && replyToMessage.MessageId == 0)
             {
@@ -146,7 +146,7 @@ namespace Telegram.ViewModels
             }
             else if (replyToMessage.ChatId == message.ChatId || replyToMessage.ChatId == 0)
             {
-                await LoadMessageSliceAsync(message.Id, replyToMessage.MessageId, highlight: replyToMessage.Quote);
+                await LoadMessageSliceAsync(message.Id, replyToMessage.MessageId, highlight: replyToMessage.Quote, checklistTaskId: replyToMessage.ChecklistTaskId);
             }
         }
 
@@ -188,7 +188,7 @@ namespace Telegram.ViewModels
             var response = await ClientService.SendAsync(new GetMessageThread(chatId, threadId));
             if (response is MessageThreadInfo)
             {
-                NavigationService.NavigateToChat(chatId, messageId, topic: new MessageTopicForum(threadId));
+                NavigationService.NavigateToChat(chatId, messageId, topic: new MessageTopicThread(threadId));
             }
         }
 
@@ -385,7 +385,7 @@ namespace Telegram.ViewModels
         {
             if (message.Content is MessageAudio or MessageVoiceNote)
             {
-                TypeResolver.Current.Playback.Play(message, Topic);
+                TypeResolver.Current.Playback.Play(XamlRoot, message, TopicId);
 
                 if (timestamp > 0)
                 {
@@ -424,11 +424,8 @@ namespace Telegram.ViewModels
                 var point = transform.TransformPoint(new Point());
                 var origin = new Rect(point.X, point.Y, target.ActualWidth, target.ActualHeight);
 
-                var storyViewModel = new StoryViewModel(ClientService, story.Story);
-                var activeStories = new ActiveStoriesViewModel(ClientService, Settings, Aggregator, storyViewModel);
-
-                var viewModel = new StoryListViewModel(ClientService, Settings, Aggregator, activeStories);
-                viewModel.NavigationService = NavigationService;
+                var activeStories = new ActiveStoriesViewModel(ClientService, Settings, Aggregator, story.Story);
+                var viewModel = StoryListViewModel.Create(NavigationService, activeStories);
 
                 var window = new StoriesWindow();
                 window.Update(viewModel, activeStories, StoryOpenOrigin.Card, origin, GetOrigin);
@@ -464,19 +461,19 @@ namespace Telegram.ViewModels
                             };
                         }
 
-                        var response = await ClientService.SendAsync(new GetMessageProperties(message.ChatId, message.Id));
-                        if (response is not MessageProperties properties)
+                        var properties = await ClientService.SendAsync(new GetMessageProperties(message.ChatId, message.Id)) as MessageProperties;
+                        if (properties == null && Type != DialogType.EventLog)
                         {
                             return;
                         }
 
-                        if (IsSingle(message.Content))
+                        if (Type == DialogType.EventLog || IsSingle(message.Content))
                         {
                             viewModel = new StandaloneGalleryViewModel(ClientService, _storageService, Aggregator, new GalleryMessage(ClientService, message, properties));
                         }
                         else
                         {
-                            viewModel = new ChatGalleryViewModel(ClientService, _storageService, Aggregator, message.ChatId, Topic, message, properties);
+                            viewModel = new ChatGalleryViewModel(ClientService, _storageService, Aggregator, message.ChatId, TopicId, message, properties);
                         }
                     }
 
@@ -526,7 +523,7 @@ namespace Telegram.ViewModels
 
         public void PlayMessage(MessageViewModel message)
         {
-            TypeResolver.Current.Playback.Play(message, Topic);
+            TypeResolver.Current.Playback.Play(XamlRoot, message, TopicId);
         }
 
         public bool RecognizeSpeech(MessageViewModel message)

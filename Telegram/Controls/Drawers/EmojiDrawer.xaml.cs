@@ -101,10 +101,8 @@ namespace Telegram.Controls.Drawers
             _toolbarHandler = new AnimatedListHandler(Toolbar2, AnimatedListType.Emoji);
 
             _zoomer = new ZoomableListHandler(List);
-            _zoomer.Opening = UnloadVisibleItems;
-            _zoomer.Closing = ThrottleVisibleItems;
-            _zoomer.DownloadFile = fileId => ViewModel.ClientService.DownloadFile(fileId, 32);
-            _zoomer.SessionId = () => ViewModel.ClientService.SessionId;
+            _zoomer.Opening = _handler.Suspend;
+            _zoomer.Closing = _handler.Resume;
 
             _typeToItemHashSetMapping.Add("EmojiSkinTemplate", new HashSet<SelectorItem>());
             _typeToItemHashSetMapping.Add("EmojiTemplate", new HashSet<SelectorItem>());
@@ -160,6 +158,13 @@ namespace Telegram.Controls.Drawers
             };
         }
 
+        public void HideNavigation()
+        {
+            ToolbarContainer.Visibility = Visibility.Collapsed;
+            SearchField.Visibility = Visibility.Collapsed;
+            List.Padding = new Thickness(8, 8, 0, 0);
+        }
+
         public void UpdateTopicIcon(string name, int color)
         {
             var brush = ForumTopicCell.GetIconGradient(new ForumTopicIcon(color, 0));
@@ -188,7 +193,7 @@ namespace Telegram.Controls.Drawers
         public void Activate(Chat chat, EmojiSearchType type = EmojiSearchType.Default)
         {
             _isActive = true;
-            _handler.ThrottleVisibleItems();
+            _handler.Resume();
             _toolbarHandler.ThrottleVisibleItems();
 
             if (ViewModel.IsPremium)
@@ -199,6 +204,7 @@ namespace Telegram.Controls.Drawers
                     EmojiDrawerMode.UserPhoto => EmojiSearchType.ChatPhoto,
                     EmojiDrawerMode.EmojiStatus => EmojiSearchType.EmojiStatus,
                     EmojiDrawerMode.ChatEmojiStatus => EmojiSearchType.EmojiStatus,
+                    EmojiDrawerMode.Reactions => EmojiSearchType.Combined,
                     _ => EmojiSearchType.Default
                 });
             }
@@ -609,7 +615,7 @@ namespace Telegram.Controls.Drawers
                         animation.Source = null;
                     }
 
-                    if (_mode == EmojiDrawerMode.Reactions && args.ItemIndex > 5 && args.ItemIndex < 8 * 6)
+                    if (false && _mode == EmojiDrawerMode.Reactions && args.ItemIndex > 5 && args.ItemIndex < 8 * 6)
                     {
                         var x1 = 4;
                         var y1 = 0;

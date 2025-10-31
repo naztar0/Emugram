@@ -459,5 +459,23 @@ namespace Telegram.Common
 
             return Color.FromArgb(color.A, (byte)red, (byte)green, (byte)blue);
         }
+
+        public static Color WithSatuation(this Color color, float saturation, float value)
+        {
+            var hsv = color.ToHSV();
+            if (hsv.S > .1f && hsv.S < .9f)
+            {
+                // otherwise, saturation would reveal some random hue there
+                hsv.S = Math.Clamp(hsv.S + saturation, 0, 1);
+            }
+            hsv.V = Math.Clamp(hsv.V + value, 0, 1);
+            return hsv.ToRGB(color.A);
+        }
+
+        public static Color Darken(this Color color, float satuation = 0.05f, float value = -0.1f)
+        {
+            // OLD: .WithBrightness(-0.2f)
+            return color.WithSatuation(satuation, value);
+        }
     }
 }

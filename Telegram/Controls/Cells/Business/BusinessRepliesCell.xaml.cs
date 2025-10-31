@@ -36,7 +36,7 @@ namespace Telegram.Controls.Cells.Business
         {
             if (clientService.TryGetUser(clientService.Options.MyId, out User user))
             {
-                Photo.SetUser(clientService, user, 36);
+                Photo.Source = ProfilePictureSource.User(clientService, user);
             }
 
             if (template)

@@ -121,7 +121,7 @@ namespace Telegram.Views.Calls
             if (call.ClientService.TryGetUser(call.UserId, out User user))
             {
                 Title.Text = user.FullName();
-                Photo.SetUser(call.ClientService, user, 280);
+                Photo.Source = ProfilePictureSource.User(call.ClientService, user);
 
                 RemoteAudioOff.Text = string.Format(Strings.VoipUserMicrophoneIsOff, user.FirstName);
                 RemoteBatteryOff.Text = string.Format(Strings.VoipUserBatteryIsLow, user.FirstName);

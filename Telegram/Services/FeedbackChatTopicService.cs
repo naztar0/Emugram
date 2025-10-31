@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Telegram.Collections;
 using Telegram.Td.Api;
 
 namespace Telegram.Services
@@ -19,7 +20,7 @@ namespace Telegram.Services
 
         private readonly long _chatId;
 
-        private readonly Dictionary<long, DirectMessagesChatTopic> _topics = new();
+        private readonly ReaderWriterDictionary<long, DirectMessagesChatTopic> _topics = new();
 
         private readonly SortedSet<OrderedItem> _order = new();
         private bool _haveFullList;

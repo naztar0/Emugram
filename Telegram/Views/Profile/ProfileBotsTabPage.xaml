@@ -7,11 +7,11 @@
                       xmlns:controls="using:Telegram.Controls"
                       xmlns:cells="using:Telegram.Controls.Cells"
                       xmlns:local="using:Telegram.Views.Profile"
-                      mc:Ignorable="d">
+                      mc:Ignorable="d"
+                      ItemsSource="{x:Bind ViewModel.BotsTab.Items}">
 
     <Grid>
         <controls:TableListView x:Name="ScrollingHost"
-                                ItemsSource="{x:Bind ViewModel.BotsTab.Items}"
                                 ItemClick="ListView_ItemClick"
                                 IsItemClickEnabled="True"
                                 ChoosingItemContainer="OnChoosingItemContainer"

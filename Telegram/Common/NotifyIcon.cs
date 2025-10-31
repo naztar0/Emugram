@@ -26,13 +26,28 @@ namespace Telegram.Common
 
         private static readonly DisposableMutex _lock = new();
 
+        public static async Task AddLoopbackExemptionAsync()
+        {
+            if (ApiInformation.IsTypePresent("Windows.ApplicationModel.FullTrustProcessLauncher"))
+            {
+                try
+                {
+                    await FullTrustProcessLauncher.LaunchFullTrustProcessForCurrentAppAsync("LoopbackExemptGroup");
+                }
+                catch
+                {
+                    // The app has been compiled without desktop bridge
+                }
+            }
+        }
+
         public static async Task LaunchAsync()
         {
             if (ApiInformation.IsTypePresent("Windows.ApplicationModel.FullTrustProcessLauncher"))
             {
                 try
                 {
-                    await FullTrustProcessLauncher.LaunchFullTrustProcessForCurrentAppAsync();
+                    await FullTrustProcessLauncher.LaunchFullTrustProcessForCurrentAppAsync("SystemTrayGroup");
                 }
                 catch
                 {

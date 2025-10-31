@@ -12,7 +12,7 @@ namespace Telegram.Controls.Chats
 {
     public partial class ChatSendButton : GlyphButton
     {
-        private TextBlock _expiresInLabel;
+        private TextBlock ExpiresInLabel;
 
         public ChatSendButton()
         {
@@ -21,7 +21,7 @@ namespace Telegram.Controls.Chats
 
         protected override void OnApplyTemplate()
         {
-            _expiresInLabel = GetTemplateChild("ExpiresInLabel") as TextBlock;
+            ExpiresInLabel = GetTemplateChild(nameof(ExpiresInLabel)) as TextBlock;
 
             OnSlowModeDelayChanged(SlowModeDelay, SlowModeDelayExpiresIn);
 
@@ -66,12 +66,12 @@ namespace Telegram.Controls.Chats
 
         private void OnSlowModeDelayChanged(int delay, double expiresIn)
         {
-            if (_expiresInLabel == null)
+            if (ExpiresInLabel == null)
             {
                 return;
             }
 
-            _expiresInLabel.Text = TimeSpan.FromSeconds(expiresIn).ToString("mm\\:ss");
+            ExpiresInLabel.Text = TimeSpan.FromSeconds(expiresIn).ToString("mm\\:ss");
             VisualStateManager.GoToState(this, expiresIn > 0 ? "ExpiresIn" : "Expired", false);
         }
     }

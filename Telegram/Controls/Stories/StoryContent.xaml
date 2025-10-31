@@ -60,7 +60,12 @@
 
     <Grid Background="Black">
         <Grid x:Name="LayoutRoot">
-
+            <Grid.Background>
+                <ImageBrush x:Name="ThumbnailTexture"
+                            Stretch="UniformToFill"
+                            AlignmentX="Center"
+                            AlignmentY="Center" />
+            </Grid.Background>
             <Image x:Name="Texture1"
                    Stretch="UniformToFill"
                    ImageOpened="Texture_ImageOpened" />
@@ -121,8 +126,7 @@
                                  Margin="8,0,8,0"
                                  Canvas.ZIndex="1">
                     <controls:ProfilePicture x:Name="Photo"
-                                             Width="32"
-                                             Height="32" />
+                                             Size="32" />
                 </HyperlinkButton>
 
                 <Grid Grid.Column="1"
@@ -293,8 +297,7 @@
                                                     Width="48"
                                                     Height="48">
                         <controls:ProfilePicture x:Name="PhotoMini"
-                                                 Width="48"
-                                                 Height="48" />
+                                                 Size="48" />
                     </controls:ActiveStoriesSegments>
                     <TextBlock x:Name="TitleMini"
                                Margin="0,4,0,0"

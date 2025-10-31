@@ -106,12 +106,14 @@ namespace Telegram.Controls
             _shape3 = shape3;
             _visual = visual1;
 
+            // TODO: Name
             var layoutRoot = GetTemplateChild("LayoutRoot") as UIElement;
             if (layoutRoot != null)
             {
                 ElementCompositionPreview.SetElementChildVisual(layoutRoot, visual1);
             }
 
+            // TODO: Name
             var presenter = GetTemplateChild("Presenter") as UIElement;
             if (presenter != null)
             {

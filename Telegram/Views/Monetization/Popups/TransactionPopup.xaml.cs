@@ -28,7 +28,7 @@ namespace Telegram.Views.Monetization.Popups
 
             _info = info;
 
-            if (info.Type is ChatRevenueTransactionTypeEarnings earnings)
+            if (info.Type is ChatRevenueTransactionTypeSponsoredMessageEarnings earnings)
             {
                 Pill.SetChat(clientService, chat);
                 Pill.Visibility = Visibility.Visible;
@@ -37,7 +37,7 @@ namespace Telegram.Views.Monetization.Popups
                 Message.Text = Strings.MonetizationTransactionDetailProceed;
                 LearnCommand.Content = Strings.OK;
             }
-            else if (info.Type is ChatRevenueTransactionTypeWithdrawal withdrawal)
+            else if (info.Type is ChatRevenueTransactionTypeFragmentWithdrawal withdrawal)
             {
                 Pill.Visibility = Visibility.Collapsed;
 
@@ -60,7 +60,7 @@ namespace Telegram.Views.Monetization.Popups
                     LearnCommand.Content = Strings.OK;
                 }
             }
-            else if (info.Type is ChatRevenueTransactionTypeRefund refund)
+            else if (info.Type is ChatRevenueTransactionTypeFragmentRefund refund)
             {
                 Pill.Visibility = Visibility.Collapsed;
 
@@ -93,7 +93,7 @@ namespace Telegram.Views.Monetization.Popups
         {
             Hide(ContentDialogResult.Primary);
 
-            if (_info?.Type is ChatRevenueTransactionTypeWithdrawal withdrawal && withdrawal.State is RevenueWithdrawalStateSucceeded succeeded)
+            if (_info?.Type is ChatRevenueTransactionTypeFragmentWithdrawal withdrawal && withdrawal.State is RevenueWithdrawalStateSucceeded succeeded)
             {
                 MessageHelper.OpenUrl(null, null, succeeded.Url);
             }

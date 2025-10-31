@@ -5,10 +5,10 @@
                       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                       xmlns:common="using:Telegram.Common"
                       xmlns:controls="using:Telegram.Controls"
-                      xmlns:messages="using:Telegram.Controls.Messages"
-                      xmlns:selectors="using:Telegram.Selectors"
+                      xmlns:cells="using:Telegram.Controls.Cells"
                       xmlns:local="using:Telegram.Views.Profile"
-                      mc:Ignorable="d">
+                      mc:Ignorable="d"
+                      ItemsSource="{x:Bind ViewModel.Media.ItemsView, Mode=OneWay}">
 
     <Grid>
         <Grid x:Name="TestGrid"
@@ -17,7 +17,6 @@
               Margin="24,0,16,0" />
 
         <controls:SelectGridView x:Name="ScrollingHost"
-                                 ItemsSource="{x:Bind ViewModel.Media.ItemsView, Mode=OneWay}"
                                  IsItemClickEnabled="True"
                                  ItemClick="OnItemClick"
                                  SelectionMode="None"
@@ -28,7 +27,8 @@
                                  common:FluidGridView.MaxLength="1008"
                                  common:FluidGridView.OrientationOnly="False">
             <common:SelectedItemsBinder.Attached>
-                <common:SelectedItemsBinder SelectionMode="Auto"
+                <common:SelectedItemsBinder IsItemClickEnabled="True"
+                                            SelectionMode="Auto"
                                             SelectedItems="{x:Bind ViewModel.SelectedItems}" />
             </common:SelectedItemsBinder.Attached>
             <common:FluidGridView.Triggers>
@@ -83,44 +83,7 @@
             </GridView.Footer>
             <GridView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Background="{ThemeResource SettingsItemBackground}">
-                        <controls:ImageView HorizontalContentAlignment="Center"
-                                            VerticalContentAlignment="Center"
-                                            Stretch="UniformToFill" />
-
-                        <!--<controls:BadgeControl Text="00:08"
-                                               Background="{ThemeResource MessageOverlayBackgroundBrush}"
-                                               HorizontalAlignment="Left"
-                                               VerticalAlignment="Bottom"
-                                               Margin="4" />-->
-
-                        <controls:AnimatedImage x:Name="Particles"
-                                                IsViewportAware="True"
-                                                FrameSize="0,0"
-                                                FitToSize="True"
-                                                DecodeFrameType="Logical"
-                                                Stretch="UniformToFill" />
-
-                        <Border x:Name="Overlay"
-                                Background="{ThemeResource MessageOverlayBackgroundBrush}"
-                                CornerRadius="{ThemeResource MessageOverlayCornerRadius}"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Top"
-                                Padding="6,1,6,3"
-                                Margin="4">
-                            <TextBlock x:Name="Subtitle"
-                                       Style="{StaticResource CaptionTextBlockStyle}"
-                                       Foreground="White"
-                                       TextAlignment="Right"
-                                       TextWrapping="NoWrap"
-                                       Typography.NumeralAlignment="Tabular" />
-                        </Border>
-
-                        <Border BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                BorderThickness="1"
-                                CornerRadius="2">
-                        </Border>
-                    </Grid>
+                    <cells:SharedMediaCell />
                 </DataTemplate>
             </GridView.ItemTemplate>
             <GridView.ItemsPanel>

@@ -785,5 +785,21 @@ namespace Telegram.Common
 
             return builder.ToString();
         }
+
+        public static string GetSummary(AudioWithOwner audio, bool details = false)
+        {
+            var result = Strings.AttachMusic + ", " + audio.GetTitle() + ", ";
+            if (details)
+            {
+                result += audio.Duration.ToDuration() + ", ";
+            }
+
+            if (details && !audio.AudioValue.Local.IsDownloadingCompleted)
+            {
+                result += FileSizeConverter.Convert(audio.AudioValue.Size) + ", ";
+            }
+
+            return result;
+        }
     }
 }

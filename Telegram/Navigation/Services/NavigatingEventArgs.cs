@@ -21,6 +21,7 @@ namespace Telegram.Navigation.Services
         public NavigatingEventArgs(NavigatingCancelEventArgs e, Page page, Type targetPageType, object parameter, object targetPageParameter)
         {
             NavigationMode = e.NavigationMode;
+            NavigationTransitionInfo = e.NavigationTransitionInfo;
             SourcePageType = e.SourcePageType;
             Content = page;
             Parameter = parameter;

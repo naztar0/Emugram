@@ -60,18 +60,18 @@ namespace Telegram.Views.Create
 
         #region Binding
 
-        private object ConvertPhoto(string title, BitmapImage preview)
+        private ProfilePictureSource ConvertPhoto(string title, BitmapImage preview)
         {
             if (preview != null)
             {
-                return preview;
+                return new ProfilePictureSourceBitmap(preview);
             }
             else if (string.IsNullOrWhiteSpace(title))
             {
-                return PlaceholderImage.GetGlyph(Icons.CameraAddFilled);
+                return ProfilePictureSourceText.GetGlyph(Icons.CameraAddFilled);
             }
 
-            return PlaceholderImage.GetNameForChat(title);
+            return ProfilePictureSourceText.GetNameForChat(title);
         }
 
         #endregion

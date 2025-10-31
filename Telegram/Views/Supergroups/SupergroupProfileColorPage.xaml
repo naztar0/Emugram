@@ -41,8 +41,8 @@
                 <controls:HeaderedControl x:Name="EmojiStatusRoot"
                                           Footer="{CustomResource ChannelEmojiStatusInfo}">
                     <Grid>
-                        <controls:BadgeButton x:Name="EmojiStatus"
-                                              Click="EmojiStatus_Click">
+                        <controls:SettingsButton x:Name="EmojiStatus"
+                                                 Click="EmojiStatus_Click">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition />
@@ -60,7 +60,7 @@
                                                        Margin="4,0,0,0"
                                                        Grid.Column="1" />
                             </Grid>
-                        </controls:BadgeButton>
+                        </controls:SettingsButton>
                         <controls:CustomEmojiIcon x:Name="AnimatedStatus"
                                                   FrameSize="20,20"
                                                   DecodeFrameType="Logical"
@@ -76,8 +76,8 @@
                                           Visibility="Collapsed"
                                           Footer="{CustomResource GroupEmojiPackInfo}">
                     <Grid>
-                        <controls:BadgeButton x:Name="EmojiPack"
-                                              Click="EmojiPack_Click">
+                        <controls:SettingsButton x:Name="EmojiPack"
+                                                 Click="EmojiPack_Click">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition />
@@ -95,7 +95,7 @@
                                                        Margin="4,0,0,0"
                                                        Grid.Column="1" />
                             </Grid>
-                        </controls:BadgeButton>
+                        </controls:SettingsButton>
                         <controls:CustomEmojiIcon x:Name="EmojiPackAnimated"
                                                   FrameSize="20,20"
                                                   DecodeFrameType="Logical"
@@ -111,9 +111,9 @@
                                           Visibility="Collapsed"
                                           Footer="{CustomResource GroupStickersInfo}">
                     <Grid>
-                        <controls:BadgeButton x:Name="StickerPack"
-                                              Content="{CustomResource GroupStickers}"
-                                              Click="StickerPack_Click" />
+                        <controls:SettingsButton x:Name="StickerPack"
+                                                 Content="{CustomResource GroupStickers}"
+                                                 Click="StickerPack_Click" />
                         <controls:AnimatedImage x:Name="StickerPackAnimated"
                                                 FrameSize="20,20"
                                                 DecodeFrameType="Logical"
@@ -191,9 +191,8 @@
                         </GridView.Footer>
                     </GridView>
 
-                    <controls:BadgeButton Style="{StaticResource GlyphBadgeButtonStyle}"
-                                          Glyph="&#xE9E7;"
-                                          IsChevronVisible="True">
+                    <controls:SettingsButton Glyph="&#xE9E7;"
+                                             IsChevronVisible="True">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
@@ -211,7 +210,7 @@
                                                    Margin="4,0,0,0"
                                                    Grid.Column="1" />
                         </Grid>
-                    </controls:BadgeButton>
+                    </controls:SettingsButton>
                 </controls:HeaderedControl>
             </controls:SettingsPanel>
         </ScrollViewer>

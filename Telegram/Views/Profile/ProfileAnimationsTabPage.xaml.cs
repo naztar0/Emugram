@@ -5,8 +5,7 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System;
-using Telegram.Common;
-using Telegram.Controls;
+using Telegram.Controls.Cells;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.ViewModels.Chats;
@@ -14,7 +13,6 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Media.Animation;
-using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 namespace Telegram.Views.Profile
@@ -45,30 +43,19 @@ namespace Telegram.Views.Profile
         {
             try
             {
-                if (args.InRecycleQueue)
+                if (args.InRecycleQueue || ViewModel == null)
                 {
                     return;
                 }
-                else if (args.ItemContainer.ContentTemplateRoot is Grid content)
+                else if (args.ItemContainer.ContentTemplateRoot is SharedMediaCell cell)
                 {
-                    var photo = content.Children[0] as ImageView;
-
-                    if (args.Item is MessageWithOwner message && message.Content is MessageAnimation animation)
+                    if (args.Item is MessageWithOwner message)
                     {
-                        if (animation.Animation.Thumbnail is { Format: ThumbnailFormatJpeg })
-                        {
-                            photo.SetSource(message.ClientService, animation.Animation.Thumbnail.File, animation.Animation.Minithumbnail);
-                        }
-                        else if (animation.Animation.Minithumbnail != null)
-                        {
-                            var bitmap = new BitmapImage();
-                            PlaceholderHelper.GetBlurred(bitmap, animation.Animation.Minithumbnail.Data);
-                            photo.Source = bitmap;
-                        }
+                        cell.UpdateMessage(message, true);
                     }
                     else
                     {
-                        photo.Clear();
+                        cell.Hide();
                     }
 
                     args.Handled = true;
@@ -76,7 +63,7 @@ namespace Telegram.Views.Profile
             }
             catch (Exception ex)
             {
-                Logger.Error(ex);
+                Logger.Exception(ex);
             }
         }
 

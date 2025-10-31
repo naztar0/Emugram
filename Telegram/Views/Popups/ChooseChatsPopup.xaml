@@ -9,6 +9,7 @@
                        xmlns:messages="using:Telegram.Controls.Messages"
                        xmlns:views="using:Telegram.Controls.Views"
                        xmlns:viewModels="using:Telegram.ViewModels"
+                       xmlns:chats="using:Telegram.Controls.Chats"
                        mc:Ignorable="d"
                        PrimaryButtonText="OK"
                        PrimaryButtonClick="OnPrimaryButtonClick"
@@ -106,8 +107,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <controls:ProfilePicture x:Name="Photo"
-                                         Width="28"
-                                         Height="28"
+                                         Size="28"
                                          Grid.Column="2" />
 
                 <Grid Width="20"
@@ -297,15 +297,13 @@
                                   FontSize="24"
                                   Grid.Column="1" />
 
-            <controls:GlyphButton x:Name="Send"
+            <chats:ChatSendButton x:Name="Send"
                                   Click="Send_Click"
                                   ContextRequested="Send_ContextRequested"
                                   AutomationProperties.Name="{CustomResource Send}"
                                   ToolTipService.ToolTip="{CustomResource Send}"
                                   Foreground="{ThemeResource TelegramBackgroundAccentBrush}"
                                   VerticalAlignment="Bottom"
-                                  FontSize="24"
-                                  Glyph="&#xE919;"
                                   Margin="-8,0,0,0"
                                   Grid.Column="2" />
         </Grid>

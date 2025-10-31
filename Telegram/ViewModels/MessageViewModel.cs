@@ -10,7 +10,6 @@ using Telegram.Common;
 using Telegram.Services;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Delegates;
-using Telegram.Views;
 
 namespace Telegram.ViewModels
 {
@@ -89,16 +88,12 @@ namespace Telegram.ViewModels
         //    ReplyToMessage = null;
         //}
 
-        public IPlaybackService PlaybackService => TypeResolver.Current.Playback;
         public IMessageDelegate Delegate => _delegate.Target as IMessageDelegate;
 
         public bool IsInitial { get; set; } = true;
 
         public bool IsFirst { get; set; } = true;
         public bool IsLast { get; set; } = true;
-
-        // Used only by animated emojis
-        public Sticker Interaction { get; set; }
 
         // Used only in recent actions
         public ChatEvent Event { get; set; }
@@ -146,6 +141,8 @@ namespace Telegram.ViewModels
 
         public override bool CanBeAddedToDownloads => CanBeSaved && !Chat.HasProtectedContent && Content is MessageAudio or MessageDocument or MessageVideo;
 
+        public bool IsVisuallyOutgoing => (IsOutgoing && !IsChannelPost) || (IsSaved && ForwardInfo?.Source is { IsOutgoing: true });
+
         public void Replace(Message message)
         {
             Content = message.Content;
@@ -166,6 +163,9 @@ namespace Telegram.ViewModels
             ContainsUnreadMention = message.ContainsUnreadMention;
             IsFromOffline = message.IsFromOffline;
             IsChannelPost = message.IsChannelPost;
+            IsPaidStarSuggestedPost = message.IsPaidStarSuggestedPost;
+            IsPaidTonSuggestedPost = message.IsPaidTonSuggestedPost;
+            SuggestedPostInfo = message.SuggestedPostInfo;
             CanBeSaved = message.CanBeSaved;
             IsOutgoing = message.IsOutgoing;
             IsPinned = message.IsPinned;
@@ -173,7 +173,6 @@ namespace Telegram.ViewModels
             SchedulingState = message.SchedulingState;
             SendingState = message.SendingState;
             ChatId = message.ChatId;
-            MessageThreadId = message.MessageThreadId;
             TopicId = message.TopicId;
             SenderId = message.SenderId;
             SenderBoostCount = message.SenderBoostCount;
@@ -181,8 +180,7 @@ namespace Telegram.ViewModels
             Id = message.Id;
             EffectId = message.EffectId;
             PaidMessageStarCount = message.PaidMessageStarCount;
-            HasSensitiveContent = message.HasSensitiveContent;
-            RestrictionReason = message.RestrictionReason;
+            RestrictionInfo = message.RestrictionInfo;
             AutoDeleteIn = message.AutoDeleteIn;
         }
 
@@ -206,6 +204,9 @@ namespace Telegram.ViewModels
             ContainsUnreadMention = message.ContainsUnreadMention;
             IsFromOffline = message.IsFromOffline;
             IsChannelPost = message.IsChannelPost;
+            IsPaidStarSuggestedPost = message.IsPaidStarSuggestedPost;
+            IsPaidTonSuggestedPost = message.IsPaidTonSuggestedPost;
+            SuggestedPostInfo = message.SuggestedPostInfo;
             CanBeSaved = message.CanBeSaved;
             IsOutgoing = message.IsOutgoing;
             IsPinned = message.IsPinned;
@@ -213,7 +214,6 @@ namespace Telegram.ViewModels
             SchedulingState = message.SchedulingState;
             SendingState = message.SendingState;
             ChatId = message.ChatId;
-            MessageThreadId = message.MessageThreadId;
             TopicId = message.TopicId;
             SenderId = message.SenderId;
             SenderBoostCount = message.SenderBoostCount;
@@ -221,8 +221,7 @@ namespace Telegram.ViewModels
             Id = message.Id;
             EffectId = message.EffectId;
             PaidMessageStarCount = message.PaidMessageStarCount;
-            HasSensitiveContent = message.HasSensitiveContent;
-            RestrictionReason = message.RestrictionReason;
+            RestrictionInfo = message.RestrictionInfo;
             AutoDeleteIn = message.AutoDeleteIn;
         }
 
@@ -289,14 +288,14 @@ namespace Telegram.ViewModels
             return false;
         }
 
-        public bool IsDirectMessagesChatTopicMessage => _directMessagesChatTopic != null;
+        public bool IsDirectMessagesChatTopicMessage => _directMessagesChatTopic != null && _directMessagesChatTopic.SenderId.AreTheSame(SenderId);
 
         private bool? _hasSenderPhoto;
         public bool HasSenderPhoto => _hasSenderPhoto ??= GetHasSenderPhoto();
 
         private bool GetHasSenderPhoto()
         {
-            if (IsService || IsDirectMessagesChatTopicMessage)
+            if (IsService || _directMessagesChatTopic != null)
             {
                 return false;
             }
@@ -341,9 +340,11 @@ namespace Telegram.ViewModels
             Id = message.Id;
             IsFromOffline = message.IsFromOffline;
             IsChannelPost = message.IsChannelPost;
+            IsPaidStarSuggestedPost = message.IsPaidStarSuggestedPost;
+            IsPaidTonSuggestedPost = message.IsPaidTonSuggestedPost;
+            SuggestedPostInfo = message.SuggestedPostInfo;
             IsOutgoing = message.IsOutgoing;
             IsPinned = message.IsPinned;
-            MessageThreadId = message.MessageThreadId;
             MediaAlbumId = message.MediaAlbumId;
             ReplyMarkup = message.ReplyMarkup;
             ReplyTo = message.ReplyTo;
@@ -356,7 +357,7 @@ namespace Telegram.ViewModels
             ViaBotUserId = message.ViaBotUserId;
             InteractionInfo = message.InteractionInfo;
             UnreadReactions = message.UnreadReactions;
-            RestrictionReason = message.RestrictionReason;
+            RestrictionInfo = message.RestrictionInfo;
             ImportInfo = message.ImportInfo;
             TopicId = message.TopicId;
             HasTimestampedMedia = message.HasTimestampedMedia;
@@ -365,7 +366,6 @@ namespace Telegram.ViewModels
             SenderBusinessBotUserId = message.SenderBusinessBotUserId;
             EffectId = message.EffectId;
             PaidMessageStarCount = message.PaidMessageStarCount;
-            HasSensitiveContent = message.HasSensitiveContent;
 
             _isSaved = null;
 
@@ -443,6 +443,9 @@ namespace Telegram.ViewModels
             ContainsUnreadMention = message.ContainsUnreadMention;
             IsFromOffline = message.IsFromOffline;
             IsChannelPost = message.IsChannelPost;
+            IsPaidStarSuggestedPost = message.IsPaidStarSuggestedPost;
+            IsPaidTonSuggestedPost = message.IsPaidTonSuggestedPost;
+            SuggestedPostInfo = message.SuggestedPostInfo;
             CanBeSaved = message.CanBeSaved;
             IsOutgoing = message.IsOutgoing;
             IsPinned = message.IsPinned;
@@ -450,7 +453,6 @@ namespace Telegram.ViewModels
             SchedulingState = message.SchedulingState;
             SendingState = message.SendingState;
             ChatId = message.ChatId;
-            MessageThreadId = message.MessageThreadId;
             TopicId = message.TopicId;
             SenderId = message.SenderId;
             SenderBoostCount = message.SenderBoostCount;
@@ -458,8 +460,7 @@ namespace Telegram.ViewModels
             Id = message.Id;
             EffectId = message.EffectId;
             PaidMessageStarCount = message.PaidMessageStarCount;
-            HasSensitiveContent = message.HasSensitiveContent;
-            RestrictionReason = message.RestrictionReason;
+            RestrictionInfo = message.RestrictionInfo;
             AutoDeleteIn = message.AutoDeleteIn;
         }
 
@@ -520,6 +521,9 @@ namespace Telegram.ViewModels
         public bool ContainsUnreadMention { get; set; }
         public bool IsFromOffline { get; protected set; }
         public bool IsChannelPost { get; protected set; }
+        public bool IsPaidStarSuggestedPost { get; protected set; }
+        public bool IsPaidTonSuggestedPost { get; protected set; }
+        public SuggestedPostInfo SuggestedPostInfo { get; set; }
         public bool CanBeSaved { get; protected set; }
         public bool IsOutgoing { get; protected set; }
         public bool IsPinned { get; set; }
@@ -527,7 +531,6 @@ namespace Telegram.ViewModels
         public MessageSchedulingState SchedulingState { get; protected set; }
         public MessageSendingState SendingState { get; protected set; }
         public long ChatId { get; protected set; }
-        public long MessageThreadId { get; protected set; }
         public MessageTopic TopicId { get; protected set; }
         public MessageSender SenderId { get; set; }
         public int SenderBoostCount { get; protected set; }
@@ -535,8 +538,7 @@ namespace Telegram.ViewModels
         public long Id { get; protected set; }
         public long EffectId { get; protected set; }
         public long PaidMessageStarCount { get; protected set; }
-        public bool HasSensitiveContent { get; protected set; }
-        public string RestrictionReason { get; protected set; }
+        public RestrictionInfo RestrictionInfo { get; protected set; }
         public double AutoDeleteIn { get; protected set; }
 
         public MessageEffect Effect { get; set; }
@@ -592,7 +594,7 @@ namespace Telegram.ViewModels
         // TODO: Get rid of this
         public Message Get()
         {
-            return new Message(Id, SenderId, ChatId, SendingState, SchedulingState, IsOutgoing, IsPinned, IsFromOffline, CanBeSaved, HasTimestampedMedia, IsChannelPost, ContainsUnreadMention, Date, EditDate, ForwardInfo, ImportInfo, InteractionInfo, UnreadReactions, FactCheck, ReplyTo, MessageThreadId, TopicId, SelfDestructType, SelfDestructIn, AutoDeleteIn, ViaBotUserId, SenderBusinessBotUserId, SenderBoostCount, PaidMessageStarCount, AuthorSignature, MediaAlbumId, EffectId, HasSensitiveContent, RestrictionReason, Content, ReplyMarkup);
+            return new Message(Id, SenderId, ChatId, SendingState, SchedulingState, IsOutgoing, IsPinned, IsFromOffline, CanBeSaved, HasTimestampedMedia, IsChannelPost, IsPaidStarSuggestedPost, IsPaidTonSuggestedPost, ContainsUnreadMention, Date, EditDate, ForwardInfo, ImportInfo, InteractionInfo, UnreadReactions, FactCheck, SuggestedPostInfo, ReplyTo, TopicId, SelfDestructType, SelfDestructIn, AutoDeleteIn, ViaBotUserId, SenderBusinessBotUserId, SenderBoostCount, PaidMessageStarCount, AuthorSignature, MediaAlbumId, EffectId, RestrictionInfo, Content, ReplyMarkup);
         }
 
         public virtual bool CanBeAddedToDownloads

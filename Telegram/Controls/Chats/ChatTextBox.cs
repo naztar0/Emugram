@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ using Telegram.Common;
 using Telegram.Native;
 using Telegram.Navigation;
 using Telegram.Services;
+using Telegram.Td;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Windows.ApplicationModel.DataTransfer;
@@ -122,9 +124,19 @@ namespace Telegram.Controls.Chats
 
             if (collection != null)
             {
-                if (recycle && ViewModel.Autocomplete is AutocompleteCollection autocomplete)
+                if (ViewModel.Autocomplete is AutocompleteCollection autocomplete)
                 {
-                    autocomplete.Update(collection);
+                    if (autocomplete.Source != collection)
+                    {
+                        if (recycle)
+                        {
+                            autocomplete.Update(collection);
+                        }
+                        else
+                        {
+                            ViewModel.Autocomplete = new AutocompleteCollection(collection);
+                        }
+                    }
                 }
                 else
                 {
@@ -144,11 +156,7 @@ namespace Telegram.Controls.Chats
                 try
                 {
                     var clone = Document.Selection.GetClone();
-                    if (clone.EndPosition > Document.Selection.EndPosition && AreTheSame(clone.CharacterFormat, Document.Selection.CharacterFormat))
-                    {
-
-                    }
-                    else
+                    if (!AreTheSame(clone.CharacterFormat, Document.Selection.CharacterFormat))
                     {
                         Document.Selection.CharacterFormat = Document.GetDefaultCharacterFormat();
                     }
@@ -450,7 +458,9 @@ namespace Telegram.Controls.Chats
 
                     var members = chat.Type is ChatTypePrivate or ChatTypeSecret or ChatTypeBasicGroup or ChatTypeSupergroup { IsChannel: false };
 
-                    autocomplete = new UsernameCollection(ViewModel.ClientService, ViewModel.Chat.Id, ViewModel.ThreadId, result, index == 0, members, false);
+                    autocomplete = new UsernameCollection(ViewModel.ClientService, ViewModel.Chat.Id, ViewModel.TopicId, result, index == 0, members, false);
+                    recycle = prev is UsernameCollection;
+
                     return true;
                 }
                 else if (entity == AutocompleteEntity.Hashtag)
@@ -462,11 +472,13 @@ namespace Telegram.Controls.Chats
                     }
 
                     autocomplete = new SearchHashtagsCollection(ViewModel.ClientService, result);
+                    recycle = prev is SearchHashtagsCollection;
+
                     return true;
                 }
                 else if (entity == AutocompleteEntity.Sticker)
                 {
-                    if (index == 0 && ViewModel.ComposerHeader?.EditingMessage == null)
+                    if (index == 0 && ViewModel.ComposerHeader?.Editing == null)
                     {
                         ShowOrUpdateEmojiFlyout(0, new SearchStickersCollection(ViewModel.ClientService, ViewModel.Settings, true, text, ViewModel.Chat?.Id ?? 0));
                         inline = true;
@@ -513,6 +525,8 @@ namespace Telegram.Controls.Chats
                     }
 
                     autocomplete = GetCommands(result);
+                    recycle = prev is AutocompleteList;
+
                     return true;
                 }
             }
@@ -566,8 +580,6 @@ namespace Telegram.Controls.Chats
             var range = Document.GetRange(index, index);
             range.GetRect(PointOptions.None, out Rect rect, out _);
 
-            var diff = ContentElement.ExtentHeight - ContentElement.ViewportHeight;
-
             var style = new Style
             {
                 TargetType = typeof(FlyoutPresenter),
@@ -586,11 +598,11 @@ namespace Telegram.Controls.Chats
             };
 
             _emojiFlyout.Opened += EmojiFlyout_Opened;
-            _emojiFlyout.Closed += EmojiFlyout_Closed;
+            _emojiFlyout.Closing += EmojiFlyout_Closing;
 
             _emojiFlyout.ShowAt(this, new FlyoutShowOptions
             {
-                Position = new Windows.Foundation.Point(rect.X + Padding.Left - 8, rect.Y + 6 - diff),
+                Position = new Windows.Foundation.Point(rect.X + Padding.Left - 8, rect.Y + 6 - ContentElement.VerticalOffset),
                 Placement = FlyoutPlacementMode.TopEdgeAlignedLeft,
                 ShowMode = FlyoutShowMode.Transient
             });
@@ -606,16 +618,16 @@ namespace Telegram.Controls.Chats
                 var child = VisualTreeHelper.GetChild(flyout, 0);
                 if (child is UIElement element)
                 {
-                    element.Translation = new System.Numerics.Vector3(0, 0, 12);
+                    element.Translation = new Vector3(0, 0, 12);
                     element.Shadow = new ThemeShadow();
                 }
             }
         }
 
-        private void EmojiFlyout_Closed(object sender, object e)
+        private void EmojiFlyout_Closing(object sender, object e)
         {
-            _emojiFlyout.Opened += EmojiFlyout_Opened;
-            _emojiFlyout.Closed += EmojiFlyout_Closed;
+            _emojiFlyout.Opened -= EmojiFlyout_Opened;
+            _emojiFlyout.Closing -= EmojiFlyout_Closing;
 
             _emojiFlyout = null;
 
@@ -659,7 +671,7 @@ namespace Telegram.Controls.Chats
         {
             private readonly IClientService _clientService;
             private readonly long _chatId;
-            private readonly long _threadId;
+            private readonly MessageTopic _topicId;
             private readonly string _query;
 
             private readonly bool _bots;
@@ -668,11 +680,11 @@ namespace Telegram.Controls.Chats
 
             private bool _hasMore = true;
 
-            public UsernameCollection(IClientService clientService, long chatId, long threadId, string query, bool bots, bool members, bool self)
+            public UsernameCollection(IClientService clientService, long chatId, MessageTopic topicId, string query, bool bots, bool members, bool self)
             {
                 _clientService = clientService;
                 _chatId = chatId;
-                _threadId = threadId;
+                _topicId = topicId;
                 _query = query;
 
                 _bots = bots;
@@ -695,7 +707,7 @@ namespace Telegram.Controls.Chats
                             foreach (var id in chats.ChatIds)
                             {
                                 var user = _clientService.GetUser(_clientService.GetChat(id));
-                                if (user != null && user.HasActiveUsername(_query, out _))
+                                if (user != null && (user.HasActiveUsername(_query, out _) || ClientEx.SearchByPrefix(user.FullName(), _query)))
                                 {
                                     Add(user);
                                     count++;
@@ -712,7 +724,7 @@ namespace Telegram.Controls.Chats
                             count++;
                         }
 
-                        var response = await _clientService.SendAsync(new SearchChatMembers(_chatId, _query, 20, new ChatMembersFilterMention(_threadId)));
+                        var response = await _clientService.SendAsync(new SearchChatMembers(_chatId, _query, 20, new ChatMembersFilterMention(_topicId)));
                         if (response is ChatMembers members)
                         {
                             foreach (var member in members.Members)
@@ -758,7 +770,7 @@ namespace Telegram.Controls.Chats
             public EmojiCollection(IClientService clientService, string query, long chatId)
             {
                 _clientService = clientService;
-                _query = query;
+                _query = query.Replace('_', ' ');
                 _inputLanguage = NativeUtils.GetKeyboardCulture();
                 _chatId = chatId;
             }
@@ -907,7 +919,7 @@ namespace Telegram.Controls.Chats
 
                 return;
             }
-            else if (ViewModel.Type == DialogType.ScheduledMessages && ViewModel.ComposerHeader?.EditingMessage == null)
+            else if (ViewModel.Type == DialogType.ScheduledMessages && ViewModel.ComposerHeader?.Editing == null)
             {
                 Schedule(false);
                 return;
@@ -1190,6 +1202,10 @@ namespace Telegram.Controls.Chats
             else if (oldItem is Sticker oldSticker && newItem is Sticker newSticker)
             {
                 return oldSticker.Id == newSticker.Id && oldSticker.SetId == newSticker.SetId;
+            }
+            else if (oldItem is User oldUser && newItem is User newUser)
+            {
+                return oldUser.Id == newUser.Id;
             }
 
             return false;

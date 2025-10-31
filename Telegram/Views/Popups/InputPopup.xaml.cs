@@ -263,7 +263,7 @@ namespace Telegram.Views.Popups
             }
             else
             {
-                HeaderText.Text = Header;
+                TextBlockHelper.SetMarkdown(HeaderText, Header);
                 HeaderText.Visibility = Visibility.Visible;
             }
 
@@ -273,7 +273,7 @@ namespace Telegram.Views.Popups
             }
             else
             {
-                FooterText.Text = Footer;
+                TextBlockHelper.SetMarkdown(FooterText, Footer);
                 FooterText.Visibility = Visibility.Visible;
             }
 

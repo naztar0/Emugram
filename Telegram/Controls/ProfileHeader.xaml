@@ -9,32 +9,6 @@
              Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <UserControl.Resources>
-        <Style TargetType="controls:ProfilePatternCover">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="controls:ProfilePatternCover">
-                        <Grid Width="1000"
-                              Height="320">
-                            <Border x:Name="LayoutRoot" />
-                            <controls:AnimatedImage x:Name="Animated"
-                                                    FrameSize="36,36"
-                                                    DecodeFrameType="Logical"
-                                                    AutoPlay="False"
-                                                    IsViewportAware="False"
-                                                    ReplacementColor="{TemplateBinding Foreground}"
-                                                    Source="{TemplateBinding Source}"
-                                                    HorizontalAlignment="Center"
-                                                    VerticalAlignment="Center"
-                                                    Width="36"
-                                                    Height="36"
-                                                    Opacity="0"
-                                                    IsTabStop="False" />
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <Style x:Key="HeaderRootStyle"
                TargetType="Grid">
             <Setter Property="Background"
@@ -64,13 +38,14 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid x:Name="HeaderBackground"
                   BackgroundSizing="OuterBorderEdge"
                   Style="{StaticResource HeaderRootStyle}"
                   BorderThickness="0,0,0,1"
                   BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                  Grid.RowSpan="4"
+                  Grid.RowSpan="5"
                   Margin="-8,-16,-8,-8" />
 
             <Grid x:Name="HeaderPhotoRoot"
@@ -94,6 +69,7 @@
                                               RenderTransformOrigin="0.5,0.5" />
 
                 <controls:ProfileGiftsCover x:Name="GiftsCover"
+                                            TitleRoot="{x:Bind TitleRoot}"
                                             SizeChanged="GiftsCover_SizeChanged"
                                             VerticalAlignment="Top"
                                             HorizontalAlignment="Center"
@@ -112,9 +88,19 @@
                                                     Width="140"
                                                     Height="140"
                                                     AutomationProperties.Name="{CustomResource AccDescrProfilePicture}">
-                        <controls:ProfilePicture x:Name="Photo"
-                                                 Width="140"
-                                                 Height="140" />
+                        <Grid CornerRadius="75">
+                            <controls:ProfilePicture x:Name="Photo"
+                                                     Size="140" />
+                            <controls:AnimatedImage x:Name="AnimatedPhoto"
+                                                    Width="140"
+                                                    Height="140"
+                                                    AutoPlay="True"
+                                                    FrameSize="140,140"
+                                                    DecodeFrameType="Logical"
+                                                    IsCachingEnabled="False"
+                                                    Stretch="UniformToFill"
+                                                    IsHitTestVisible="False" />
+                        </Grid>
                     </controls:ActiveStoriesSegments>
 
                     <controls:AnimatedImage x:Name="Icon"
@@ -197,13 +183,24 @@
                   Grid.Row="2">
                 <Grid x:Name="SubtitleMain">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <HyperlinkButton x:Name="RatingRoot"
+                                     Click="Rating_Click"
+                                     Style="{StaticResource EmptyHyperlinkButtonStyle}"
+                                     Background="Transparent"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,-2,2,-4">
+                        <controls:ProfileRating x:Name="Rating" />
+                    </HyperlinkButton>
+
                     <TextBlock x:Name="Subtitle"
                                Style="{StaticResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource PageHeaderDisabledBrush}"
-                               TextAlignment="Center" />
+                               TextAlignment="Center"
+                               Grid.Column="1" />
 
                     <Button x:Name="SubtitleWhen"
                             Visibility="Collapsed"
@@ -216,7 +213,7 @@
                             Margin="4,0,0,0"
                             CornerRadius="8"
                             Height="16"
-                            Grid.Column="1">
+                            Grid.Column="2">
                         <TextBlock Text="{CustomResource StatusHiddenShow}"
                                    TextLineBounds="Tight"
                                    TextAlignment="Center"
@@ -232,6 +229,7 @@
                            TextAlignment="Center"
                            Style="{StaticResource BodyTextBlockStyle}"
                            Foreground="{ThemeResource PageHeaderDisabledBrush}"
+                           IsHitTestVisible="False"
                            Visibility="Collapsed" />
             </Grid>
 
@@ -247,81 +245,124 @@
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </controls:ProfileButtonsGrid.ColumnDefinitions>
-                <controls:BadgeButton x:Name="OpenChat"
-                                      Content="{CustomResource VoipGroupOpenChat}"
-                                      Click="{x:Bind ViewModel.SendMessage}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xE9B0;" />
+                <controls:SettingsButton x:Name="OpenChat"
+                                         Content="{CustomResource VoipGroupOpenChat}"
+                                         Click="{x:Bind ViewModel.SendMessage}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xE9B0;" />
 
                 <!-- User -->
-                <controls:BadgeButton x:Name="Call"
-                                      Content="{CustomResource Call}"
-                                      Click="{x:Bind ViewModel.VoiceCall}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xEA52;"
-                                      Grid.Column="1" />
+                <controls:SettingsButton x:Name="Call"
+                                         Content="{CustomResource Call}"
+                                         Click="{x:Bind ViewModel.VoiceCall}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xEA52;"
+                                         Grid.Column="1" />
 
-                <controls:BadgeButton x:Name="VideoChat"
-                                      Content="{CustomResource VoipGroupVoiceChat}"
-                                      Click="{x:Bind ViewModel.VoiceCall}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xEA4F;"
-                                      Grid.Column="1" />
+                <controls:SettingsButton x:Name="VideoChat"
+                                         Content="{CustomResource VoipGroupVoiceChat}"
+                                         Click="{x:Bind ViewModel.VoiceCall}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xEA4F;"
+                                         Grid.Column="1" />
 
-                <controls:BadgeButton x:Name="VideoCall"
-                                      Content="{CustomResource VideoCall}"
-                                      Click="{x:Bind ViewModel.VideoCall}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xE964;"
-                                      Grid.Column="2" />
+                <controls:SettingsButton x:Name="VideoCall"
+                                         Content="{CustomResource VideoCall}"
+                                         Click="{x:Bind ViewModel.VideoCall}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xE964;"
+                                         Grid.Column="2" />
 
-                <controls:BadgeButton x:Name="Search"
-                                      Content="{CustomResource Search}"
-                                      Click="{x:Bind ViewModel.Search}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xEA58;"
-                                      Grid.Column="2" />
+                <controls:SettingsButton x:Name="Search"
+                                         Content="{CustomResource Search}"
+                                         Click="{x:Bind ViewModel.Search}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xEA58;"
+                                         Grid.Column="2" />
 
                 <!-- Channel -->
-                <controls:BadgeButton x:Name="Edit"
-                                      Content="{CustomResource ChannelEdit}"
-                                      Click="{x:Bind ViewModel.Edit}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xEA55;"
-                                      Grid.Column="2" />
-                <controls:BadgeButton x:Name="Join"
-                                      Content="{CustomResource ChannelJoin2}"
-                                      Click="{x:Bind ViewModel.Join}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xEA57;"
-                                      Grid.Column="2" />
-                <controls:BadgeButton x:Name="Leave"
-                                      Content="{CustomResource VoipGroupLeave}"
-                                      Click="{x:Bind ViewModel.Delete}"
-                                      Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                      Glyph="&#xEA56;"
-                                      Grid.Column="2" />
+                <controls:SettingsButton x:Name="Edit"
+                                         Content="{CustomResource ChannelEdit}"
+                                         Click="{x:Bind ViewModel.Edit}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xEA55;"
+                                         Grid.Column="2" />
+                <controls:SettingsButton x:Name="Join"
+                                         Content="{CustomResource ChannelJoin2}"
+                                         Click="{x:Bind ViewModel.Join}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xEA57;"
+                                         Grid.Column="2" />
+                <controls:SettingsButton x:Name="Leave"
+                                         Content="{CustomResource VoipGroupLeave}"
+                                         Click="{x:Bind ViewModel.Delete}"
+                                         Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                         Glyph="&#xEA56;"
+                                         Grid.Column="2" />
 
                 <Grid x:Name="NotificationsRoot"
                       Grid.Column="3">
                     <Border x:Name="NotificationsTarget" />
-                    <controls:BadgeButton x:Name="Notifications"
-                                          Click="Notifications_Click"
-                                          Content="Mute"
-                                          Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                          Glyph="&#xEA54;" />
+                    <controls:SettingsButton x:Name="Notifications"
+                                             Click="Notifications_Click"
+                                             Content="Mute"
+                                             Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                             Glyph="&#xEA54;" />
                 </Grid>
 
                 <Grid x:Name="MenuRoot"
                       Grid.Column="4">
                     <Border x:Name="MenuTarget" />
-                    <controls:BadgeButton x:Name="Menu"
-                                          Content="{CustomResource PremiumMore}"
-                                          Click="Menu_ContextRequested"
-                                          Style="{StaticResource GlyphGridBadgeButtonStyle}"
-                                          Glyph="&#xEA59;" />
+                    <controls:SettingsButton x:Name="Menu"
+                                             Content="{CustomResource PremiumMore}"
+                                             Click="Menu_ContextRequested"
+                                             Style="{StaticResource GlyphGridBadgeButtonStyle}"
+                                             Glyph="&#xEA59;" />
                 </Grid>
             </controls:ProfileButtonsGrid>
+
+            <Button x:Name="UserFirstAudioRoot"
+                    Click="UserFirstAudio_Click"
+                    Margin="-8,8,-8,-8"
+                    CornerRadius="0"
+                    BorderThickness="0"
+                    HorizontalAlignment="Stretch"
+                    Visibility="Collapsed"
+                    Grid.Row="4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="&#xEADE;"
+                               FontFamily="{StaticResource SymbolThemeFontFamily}"
+                               FontSize="16"
+                               Margin="0,0,4,0"
+                               VerticalAlignment="Center"
+                               Grid.Column="1" />
+                    <TextBlock TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               FontFamily="{ThemeResource EmojiThemeFontFamily}"
+                               Grid.Column="2">
+                    <Run x:Name="UserFirstAudioTitle"
+                         FontWeight="SemiBold" />
+                    <Run x:Name="UserFirstAudioSubtitle" />
+                    </TextBlock>
+
+                    <TextBlock Text="&#xEAB9;"
+                               Foreground="#FFFFFF"
+                               FontFamily="{StaticResource SymbolThemeFontFamily}"
+                               FontSize="12"
+                               Margin="2,2,0,0"
+                               VerticalAlignment="Top"
+                               Width="12"
+                               Grid.Column="3" />
+                </Grid>
+            </Button>
         </Grid>
 
         <StackPanel x:Name="ControlsRoot"
@@ -360,11 +401,10 @@
 
             <controls:HeaderedControl x:Name="InfoPanel"
                                       IsFooterLink="True">
-                <controls:BadgeButton x:Name="Description"
-                                      Visibility="Collapsed"
-                                      Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
-                                      ContextRequested="Description_ContextRequested"
-                                      Glyph="&#xE946;">
+                <controls:SettingsButton x:Name="Description"
+                                         Visibility="Collapsed"
+                                         ContextRequested="Description_ContextRequested"
+                                         Glyph="&#xE946;">
                     <RichTextBlock x:Name="DescriptionLabel"
                                    ContextRequested="About_ContextRequested"
                                    ContextMenuOpening="About_ContextMenuOpening"
@@ -375,14 +415,13 @@
                             <Span x:Name="DescriptionSpan" />
                         </Paragraph>
                     </RichTextBlock>
-                </controls:BadgeButton>
+                </controls:SettingsButton>
 
-                <controls:BadgeButton x:Name="UserPhone"
-                                      Click="{x:Bind ViewModel.OpenPhoneInfo}"
-                                      Visibility="Collapsed"
-                                      Description="{CustomResource Phone}"
-                                      Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
-                                      Glyph="&#xE717;">
+                <controls:SettingsButton x:Name="UserPhone"
+                                         Click="{x:Bind ViewModel.OpenPhoneInfo}"
+                                         Visibility="Collapsed"
+                                         Description="{CustomResource Phone}"
+                                         Glyph="&#xE717;">
                     <Button.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="{CustomResource Copy}"
@@ -401,12 +440,12 @@
                                                       Padding="12,4" />
                         </MenuFlyout>
                     </Button.ContextFlyout>
-                </controls:BadgeButton>
+                </controls:SettingsButton>
 
-                <controls:BadgeButton x:Name="Username"
-                                      Visibility="Collapsed"
-                                      Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
-                                      Glyph="&#xE168;">
+                <controls:SettingsButton x:Name="Username"
+                                         Click="{x:Bind ViewModel.ViewUsername}"
+                                         Visibility="Collapsed"
+                                         Glyph="&#xE168;">
                     <Button.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="{CustomResource Copy}"
@@ -425,32 +464,44 @@
                             </MenuFlyoutItem>
                         </MenuFlyout>
                     </Button.ContextFlyout>
-                    <controls:BadgeButton.Badge>
+                    <controls:SettingsButton.Badge>
                         <controls:GlyphButton Content="&#xEACA;"
                                               Click="{x:Bind ViewModel.ShareUsername}"
                                               Foreground="{ThemeResource SystemColorControlAccentBrush}"
+                                              AutomationProperties.Name="{CustomResource QrCode}"
                                               VerticalAlignment="Center"
                                               Margin="0,0,-12,0" />
-                    </controls:BadgeButton.Badge>
-                    <controls:BadgeButton.Description>
+                    </controls:SettingsButton.Badge>
+                    <controls:SettingsButton.Description>
                         <TextBlock x:Name="ActiveUsernames"
                                    Style="{StaticResource InfoCaptionTextBlockStyle}"
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Top" />
-                    </controls:BadgeButton.Description>
-                </controls:BadgeButton>
+                    </controls:SettingsButton.Description>
+                </controls:SettingsButton>
 
-                <controls:BadgeButton x:Name="UserBirthday"
-                                      Visibility="Collapsed"
-                                      Click="Birthday_Click"
-                                      Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
-                                      Glyph="&#xEA84;" />
+                <controls:SettingsButton x:Name="UserBirthday"
+                                         Visibility="Collapsed"
+                                         Click="Birthday_Click"
+                                         Glyph="&#xEA84;" />
 
-                <controls:BadgeButton x:Name="Location"
-                                      Visibility="Collapsed"
-                                      Description="{CustomResource AttachLocation}"
-                                      Style="{StaticResource GlyphSubtitleBadgeButtonStyle}"
-                                      Glyph="&#xE1C4;">
+                <controls:SettingsButton x:Name="UserNote"
+                                         Description="{CustomResource ProfileNotes}"
+                                         Visibility="Collapsed"
+                                         ContextRequested="UserNote_ContextRequested"
+                                         Glyph="&#xEADF;">
+                    <controls:FormattedTextBlock x:Name="UserNoteLabel"
+                                                 FontFamily="{ThemeResource EmojiThemeFontFamily}"
+                                                 IsTextSelectionEnabled="False"
+                                                 TextTrimming="CharacterEllipsis"
+                                                 TextWrapping="Wrap"
+                                                 AutoFontSize="False" />
+                </controls:SettingsButton>
+
+                <controls:SettingsButton x:Name="Location"
+                                         Visibility="Collapsed"
+                                         Description="{CustomResource AttachLocation}"
+                                         Glyph="&#xE1C4;">
                     <Button.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="{CustomResource Copy}"
@@ -462,16 +513,22 @@
                             </MenuFlyoutItem>
                         </MenuFlyout>
                     </Button.ContextFlyout>
-                </controls:BadgeButton>
+                    <controls:SettingsButton.Badge>
+                        <controls:ImageView x:Name="LocationMap"
+                                            Width="44"
+                                            Height="44"
+                                            CornerRadius="4"
+                                            Margin="0,-3,0,-4" />
+                    </controls:SettingsButton.Badge>
+                </controls:SettingsButton>
 
                 <cells:ProfileHoursCell x:Name="BusinessHours"
                                         Visibility="Collapsed" />
 
-                <controls:BadgeButton x:Name="ChatId"
-                                      Click="{x:Bind ViewModel.CopyId}"
-                                      Visibility="Collapsed"
-                                      Style="{StaticResource GlyphBadgeButtonStyle}"
-                                      Glyph="&#xEA42;">
+                <controls:SettingsButton x:Name="ChatId"
+                                         Click="{x:Bind ViewModel.CopyId}"
+                                         Visibility="Collapsed"
+                                         Glyph="&#xEA42;">
                     <Button.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="{CustomResource Copy}"
@@ -483,7 +540,7 @@
                             </MenuFlyoutItem>
                         </MenuFlyout>
                     </Button.ContextFlyout>
-                    <controls:BadgeButton.ContentTemplate>
+                    <controls:SettingsButton.ContentTemplate>
                         <DataTemplate>
                             <TextBlock>
                             <Run Text="{Binding}"
@@ -491,8 +548,8 @@
                             <Run Text="&#x2004;&#x200A;" />
                             </TextBlock>
                         </DataTemplate>
-                    </controls:BadgeButton.ContentTemplate>
-                </controls:BadgeButton>
+                    </controls:SettingsButton.ContentTemplate>
+                </controls:SettingsButton>
 
                 <Border x:Name="BotMainApp"
                         Visibility="Collapsed"
@@ -518,34 +575,30 @@
             </Grid>
 
             <controls:HeaderedControl x:Name="AffiliateProgramRoot">
-                <controls:BadgeButton x:Name="AffiliateProgram"
-                                      Content="{CustomResource ProfileBotAffiliateProgram}"
-                                      Click="{x:Bind ViewModel.OpenAffiliate}"
-                                      Style="{StaticResource GlyphBadgeButtonStyle}"
-                                      Glyph="&#xEAA6;"
-                                      Visibility="Collapsed" />
+                <controls:SettingsButton x:Name="AffiliateProgram"
+                                         Content="{CustomResource ProfileBotAffiliateProgram}"
+                                         Click="{x:Bind ViewModel.OpenAffiliate}"
+                                         Glyph="&#xEAA6;"
+                                         Visibility="Collapsed" />
             </controls:HeaderedControl>
 
             <controls:HeaderedControl>
-                <controls:BadgeButton x:Name="Members"
-                                      Content="{CustomResource ChannelSubscribers}"
-                                      Click="{x:Bind ViewModel.OpenMembers}"
-                                      Style="{StaticResource GlyphBadgeButtonStyle}"
-                                      Glyph="&#xE716;"
-                                      Visibility="Collapsed" />
-                <controls:BadgeButton x:Name="Admins"
-                                      Content="{CustomResource ChannelAdministrators}"
-                                      Click="{x:Bind ViewModel.OpenAdmins}"
-                                      Style="{StaticResource GlyphBadgeButtonStyle}"
-                                      Glyph="&#xE983;"
-                                      Visibility="Collapsed" />
-                <controls:BadgeButton x:Name="Statistics"
-                                      Click="{x:Bind ViewModel.OpenBalance}"
-                                      Content="{CustomResource StarsBalance}"
-                                      Style="{StaticResource GlyphBadgeButtonStyle}"
-                                      Glyph="&#xEA8D;"
-                                      Visibility="Collapsed">
-                    <controls:BadgeButton.Badge>
+                <controls:SettingsButton x:Name="Members"
+                                         Content="{CustomResource ChannelSubscribers}"
+                                         Click="{x:Bind ViewModel.OpenMembers}"
+                                         Glyph="&#xE716;"
+                                         Visibility="Collapsed" />
+                <controls:SettingsButton x:Name="Admins"
+                                         Content="{CustomResource ChannelAdministrators}"
+                                         Click="{x:Bind ViewModel.OpenAdmins}"
+                                         Glyph="&#xE983;"
+                                         Visibility="Collapsed" />
+                <controls:SettingsButton x:Name="Statistics"
+                                         Click="{x:Bind ViewModel.OpenBalance}"
+                                         Content="{CustomResource StarsBalance}"
+                                         Glyph="&#xEA8D;"
+                                         Visibility="Collapsed">
+                    <controls:SettingsButton.Badge>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
@@ -582,15 +635,14 @@
                                            Grid.Column="1" />
                             </Grid>
                         </Grid>
-                    </controls:BadgeButton.Badge>
-                </controls:BadgeButton>
-                <controls:BadgeButton x:Name="ChannelSettings"
-                                      Content="{CustomResource ChannelAdminSettings}"
-                                      Click="{x:Bind ViewModel.Edit}"
-                                      Style="{StaticResource GlyphBadgeButtonStyle}"
-                                      Glyph="&#xE9E9;"
-                                      IsChevronVisible="True"
-                                      Visibility="Collapsed" />
+                    </controls:SettingsButton.Badge>
+                </controls:SettingsButton>
+                <controls:SettingsButton x:Name="ChannelSettings"
+                                         Content="{CustomResource ChannelAdminSettings}"
+                                         Click="{x:Bind ViewModel.Edit}"
+                                         Glyph="&#xE9E9;"
+                                         IsChevronVisible="True"
+                                         Visibility="Collapsed" />
             </controls:HeaderedControl>
 
             <controls:HeaderedControl x:Name="MiscPanel">
@@ -598,19 +650,21 @@
                                 Command="{x:Bind ViewModel.MediaCommand}"
                                 Badge="{x:Bind ViewModel.SharedMedia, Mode=OneWay}"/>-->
 
-                <controls:BadgeButton x:Name="SecretLifetime"
-                                      Visibility="Collapsed"
-                                      Command="{x:Bind ViewModel.SetTimerCommand}"
-                                      Content="{CustomResource MessageLifetime}" />
+                <controls:SettingsButton x:Name="SecretLifetime"
+                                         Visibility="Collapsed"
+                                         Command="{x:Bind ViewModel.SetTimerCommand}"
+                                         Content="{CustomResource MessageLifetime}"
+                                         Glyph="&#xE916;" />
 
-                <controls:BadgeButton x:Name="SecretHashKey"
-                                      Visibility="Collapsed"
-                                      Content="{CustomResource EncryptionKey}"
-                                      Click="{x:Bind ViewModel.ShowIdenticon}">
+                <controls:SettingsButton x:Name="SecretHashKey"
+                                         Visibility="Collapsed"
+                                         Content="{CustomResource EncryptionKey}"
+                                         Click="{x:Bind ViewModel.ShowIdenticon}"
+                                         Glyph="&#xEAD1;">
                     <!--<controls:BadgeButton.Badge>
                                     <Image x:Name="SecretIdenticon" Width="24" Height="24"/>
                                     </controls:BadgeButton.Badge>-->
-                </controls:BadgeButton>
+                </controls:SettingsButton>
             </controls:HeaderedControl>
         </StackPanel>
     </Grid>

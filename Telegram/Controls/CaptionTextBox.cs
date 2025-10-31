@@ -226,7 +226,7 @@ namespace Telegram.Controls
                 if (compose.Chat.Type is ChatTypeBasicGroup or ChatTypeSupergroup { IsChannel: false })
                 {
                     ClearAutocomplete();
-                    SetAutocomplete(new ChatTextBox.UsernameCollection(viewModel.ClientService, compose.Chat.Id, compose.ThreadId, result, false, true, false));
+                    SetAutocomplete(new ChatTextBox.UsernameCollection(viewModel.ClientService, compose.Chat.Id, compose.TopicId, result, false, true, false));
                     return;
                 }
             }

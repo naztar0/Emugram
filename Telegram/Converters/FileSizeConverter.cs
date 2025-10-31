@@ -52,11 +52,11 @@ namespace Telegram.Converters
         {
             if (value is long)
             {
-                return Convert((long)value);
+                return Convert((long)value, parameter != null);
             }
             if (value is int)
             {
-                return Convert((int)value);
+                return Convert((int)value, parameter != null);
             }
             return null;
         }

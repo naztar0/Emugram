@@ -57,7 +57,7 @@ namespace Telegram.Views.Popups
 
             if (clientService.TryGetUser(clientService.Options.MyId, out User self))
             {
-                Photo.SetUser(clientService, self, 28);
+                Photo.Source = ProfilePictureSource.User(clientService, self);
                 TitleText.Text = self.FullName();
             }
         }

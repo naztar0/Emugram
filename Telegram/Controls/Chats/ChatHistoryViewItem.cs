@@ -22,14 +22,16 @@ namespace Telegram.Controls.Chats
         ServiceUnread,
         ServiceForumTopic,
         ServicePhoto,
+        ServiceBirthdate,
         ServiceBackground,
         ServiceGift,
         ServiceGiftCode,
         ServiceUpgradedGift,
         ServiceAccountInfo,
+        ServiceNewThread,
     }
 
-    public partial class ChatHistoryViewItem : ListViewItemEx
+    public partial class ChatHistoryViewItem : ListViewItem
     {
         private readonly ChatHistoryView _owner;
         private ChatHistoryViewItemType _typeName;
@@ -179,7 +181,7 @@ namespace Telegram.Controls.Chats
             {
                 return child.GetAutomationName() ?? base.GetNameCore();
             }
-            
+
             var content = _parent.ItemFromContainer(_owner);
             if (content is MessageWithOwner messageWithOwner)
             {

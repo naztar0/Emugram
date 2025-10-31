@@ -6,6 +6,7 @@
 //
 using Microsoft.Graphics.Canvas.Effects;
 using Microsoft.UI.Xaml.Media;
+using System;
 using System.Linq;
 using System.Numerics;
 using Telegram.Common;
@@ -53,14 +54,16 @@ namespace Telegram.Views.Popups
 
             var customEmojiId = 0L;
             var accentColorId = 0;
+            var upgradedGift = default(EmojiStatusTypeUpgradedGift);
 
             if (clientService.TryGetUser(sender, out User user))
             {
                 customEmojiId = user.ProfileBackgroundCustomEmojiId;
                 accentColorId = user.ProfileAccentColorId;
+                upgradedGift = user.EmojiStatus?.Type as EmojiStatusTypeUpgradedGift;
 
                 Segments.UpdateSegments(140, false, true);
-                Photo.SetUser(clientService, user, 140);
+                Photo.Source = ProfilePictureSource.User(clientService, user);
 
                 Title.Text = user.FullName();
                 Subtitle.Text = Strings.Online;
@@ -76,9 +79,10 @@ namespace Telegram.Views.Popups
             {
                 customEmojiId = chat.ProfileBackgroundCustomEmojiId;
                 accentColorId = chat.ProfileAccentColorId;
+                upgradedGift = chat.EmojiStatus?.Type as EmojiStatusTypeUpgradedGift;
 
                 Segments.UpdateSegments(140, false, true);
-                Photo.SetChat(clientService, chat, 140);
+                Photo.Source = ProfilePictureSource.Chat(clientService, chat);
 
                 Title.Text = chat.Title;
 
@@ -106,9 +110,9 @@ namespace Telegram.Views.Popups
                     : Strings.GroupProfileInfo;
             }
 
-            var accent = colors.FirstOrDefault(x => x.Id == accentColorId);
+            var accent = upgradedGift == null ? colors.FirstOrDefault(x => x.Id == accentColorId) : null;
 
-            if (customEmojiId != 0)
+            if (customEmojiId != 0 && upgradedGift == null)
             {
                 Badge.Badge = null;
                 Badge.Glyph = string.Empty;
@@ -139,7 +143,7 @@ namespace Telegram.Views.Popups
             SelectedAccentColor = accent;
 
             List.SelectedItem = accent;
-            UpdateProfileAccentColor(null, accent?.Id ?? -1, customEmojiId);
+            UpdateProfileAccentColor(null, accent?.Id ?? -1, customEmojiId, upgradedGift);
 
             Reset.Visibility = SelectedAccentColor == null
                 ? Visibility.Collapsed
@@ -190,20 +194,21 @@ namespace Telegram.Views.Popups
             if (List.SelectedItem is ProfileColor accent)
             {
                 SelectedAccentColor = accent;
+                SelectedEmojiStatus = null;
 
                 var colors = accent.ForTheme(_actualTheme);
                 Animated.ReplacementColor = new SolidColorBrush(colors.PaletteColors[0]);
-                UpdateProfileAccentColor(null, accent.Id, SelectedCustomEmojiId);
+                UpdateProfileAccentColor(null, accent.Id, SelectedCustomEmojiId, null);
             }
             else
             {
                 SelectedAccentColor = null;
-                UpdateProfileAccentColor(null, -1, SelectedCustomEmojiId);
+                UpdateProfileAccentColor(null, -1, SelectedCustomEmojiId, SelectedEmojiStatus);
             }
 
-            Reset.Visibility = SelectedAccentColor == null
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+            Reset.Visibility = SelectedAccentColor != null || SelectedCustomEmojiId != 0 || SelectedEmojiStatus != null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private void Badge_Click(object sender, RoutedEventArgs e)
@@ -215,9 +220,10 @@ namespace Telegram.Views.Popups
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
             SelectedCustomEmojiId = 0;
+            SelectedEmojiStatus = null;
             List.SelectedItem = null;
 
-            UpdateProfileAccentColor(null, SelectedAccentColor?.Id ?? -1, SelectedCustomEmojiId);
+            UpdateProfileAccentColor(null, SelectedAccentColor?.Id ?? -1, SelectedCustomEmojiId, null);
 
             Animated.Source = null;
             Badge.Badge = Strings.UserReplyIconOff;
@@ -231,8 +237,9 @@ namespace Telegram.Views.Popups
             }
 
             SelectedCustomEmojiId = customEmoji.CustomEmojiId;
+            SelectedEmojiStatus = null;
 
-            UpdateProfileAccentColor(null, SelectedAccentColor?.Id ?? -1, SelectedCustomEmojiId);
+            UpdateProfileAccentColor(null, SelectedAccentColor?.Id ?? -1, SelectedCustomEmojiId, null);
 
             if (customEmoji.CustomEmojiId != 0)
             {
@@ -244,6 +251,10 @@ namespace Telegram.Views.Popups
                 Animated.Source = null;
                 Badge.Badge = Strings.UserReplyIconOff;
             }
+
+            Reset.Visibility = SelectedAccentColor != null || SelectedCustomEmojiId != 0 || SelectedEmojiStatus != null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private void NameColor_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -269,13 +280,25 @@ namespace Telegram.Views.Popups
 
         private ElementTheme _actualTheme;
 
-        private void UpdateProfileAccentColor(Chat chat, int colorId, long customEmojiId)
+        private void UpdateProfileAccentColor(Chat chat, int colorId, long customEmojiId, EmojiStatusTypeUpgradedGift upgradedGift)
         {
             _actualTheme = WindowContext.Current.ActualTheme;
 
-            if (_clientService.TryGetProfileColor(colorId, out ProfileColor color))
+            if (colorId != -1 || upgradedGift != null)
             {
-                var colors = color.ForTheme(_actualTheme);
+                ProfileColors colors;
+                if (upgradedGift != null)
+                {
+                    colors = new ProfileColors(new ProfileAccentColors(Array.Empty<int>(), new[] { upgradedGift.BackdropColors.EdgeColor, upgradedGift.BackdropColors.CenterColor }, Array.Empty<int>()));
+                }
+                else if (_clientService.TryGetProfileColor(colorId, out ProfileColor color))
+                {
+                    colors = color.ForTheme(_actualTheme);
+                }
+                else
+                {
+                    return;
+                }
 
                 Identity.Foreground = new SolidColorBrush(Colors.White);
                 BotVerified.ReplacementColor = new SolidColorBrush(Colors.White);
@@ -306,8 +329,17 @@ namespace Telegram.Views.Popups
                     HeaderRoot.Background = new SolidColorBrush(colors.BackgroundColors[0]);
                 }
 
-                Segments.TopColor = colors.StoryColors[0];
-                Segments.BottomColor = colors.StoryColors[1];
+                if (colors.StoryColors.Count > 0)
+                {
+                    Segments.TopColor = colors.StoryColors[0];
+                    Segments.BottomColor = colors.StoryColors[1];
+                }
+                else
+                {
+                    Segments.TopColor = null;
+                    Segments.BottomColor = null;
+                }
+
                 Segments.UpdateSegments(140, false, true);
 
                 UpdateProfileBackgroundCustomEmoji(colors);
@@ -327,7 +359,11 @@ namespace Telegram.Views.Popups
                 UpdateProfileBackgroundCustomEmoji(null);
             }
 
-            if (customEmojiId != 0)
+            if (upgradedGift != null)
+            {
+                Pattern.Source = new CustomEmojiFileSource(_clientService, upgradedGift.SymbolCustomEmojiId);
+            }
+            else if (customEmojiId != 0)
             {
                 Pattern.Source = new CustomEmojiFileSource(_clientService, customEmojiId);
             }
@@ -456,6 +492,44 @@ namespace Telegram.Views.Popups
 
         public static readonly DependencyProperty SelectedCustomEmojiIdProperty =
             DependencyProperty.Register("SelectedCustomEmojiId", typeof(long), typeof(ChooseProfileColorView), new PropertyMetadata(0L));
+
+        #endregion
+
+        #region SelectedEmojiStatus
+
+        public EmojiStatusTypeUpgradedGift SelectedEmojiStatus
+        {
+            get { return (EmojiStatusTypeUpgradedGift)GetValue(SelectedEmojiStatusProperty); }
+            set { SetValue(SelectedEmojiStatusProperty, value); }
+        }
+
+        public static readonly DependencyProperty SelectedEmojiStatusProperty =
+            DependencyProperty.Register("SelectedEmojiStatus", typeof(EmojiStatusTypeUpgradedGift), typeof(ChooseProfileColorView), new PropertyMetadata(null, OnSelectedEmojiStatusChanged));
+
+        private static void OnSelectedEmojiStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((ChooseProfileColorView)d).OnSelectedEmojiStatusChanged(e.NewValue as EmojiStatusTypeUpgradedGift);
+        }
+
+        private void OnSelectedEmojiStatusChanged(EmojiStatusTypeUpgradedGift upgradedGift)
+        {
+            if (upgradedGift == null)
+            {
+                return;
+            }
+
+            SelectedCustomEmojiId = 0;
+            List.SelectedItem = null;
+
+            UpdateProfileAccentColor(null, -1, 0, upgradedGift);
+
+            Animated.Source = null;
+            Badge.Badge = Strings.UserReplyIconOff;
+
+            Reset.Visibility = SelectedAccentColor != null || SelectedCustomEmojiId != 0 || SelectedEmojiStatus != null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
 
         #endregion
     }

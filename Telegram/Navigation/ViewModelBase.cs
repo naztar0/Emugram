@@ -114,6 +114,11 @@ namespace Telegram.Navigation
 
         #region Popups
 
+        public void HidePopup(Type popupType)
+        {
+            NavigationService.HidePopup(popupType);
+        }
+
         public Task<ContentDialogResult> ShowPopupAsync(ContentPopup popup, object parameter = null, ElementTheme requestedTheme = ElementTheme.Default)
         {
             return NavigationService.ShowPopupAsync(popup, parameter, requestedTheme);
@@ -182,6 +187,11 @@ namespace Telegram.Navigation
         public ToastPopup ShowToast(string text, AnimatedImageSource icon, ElementTheme requestedTheme = ElementTheme.Dark, TimeSpan? dismissAfter = null)
         {
             return ToastPopup.Show(XamlRoot, ClientEx.ParseMarkdown(text), icon, requestedTheme, dismissAfter);
+        }
+
+        public void ShowToast(Error error)
+        {
+            ToastPopup.ShowError(XamlRoot, error);
         }
 
         #endregion

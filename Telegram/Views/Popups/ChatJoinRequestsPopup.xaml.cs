@@ -103,7 +103,7 @@ namespace Telegram.Views.Popups
             else if (args.Phase == 2)
             {
                 var photo = content.Children[0] as ProfilePicture;
-                photo.SetUser(ViewModel.ClientService, user, 36);
+                photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
             }
 
             if (args.Phase < 2)

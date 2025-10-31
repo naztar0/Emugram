@@ -17,8 +17,6 @@ namespace Telegram.Controls.Cells
 {
     public sealed partial class InlineResultArticleCell : UserControl
     {
-        private long _thumbnailToken;
-
         public InlineResultArticleCell()
         {
             InitializeComponent();
@@ -27,35 +25,41 @@ namespace Telegram.Controls.Cells
         public void UpdateResult(IClientService clientService, InlineQueryResult result)
         {
             File file = null;
+            Minithumbnail minithumbnail = null;
             Uri uri = null;
 
             if (result is InlineQueryResultAnimation animation2)
             {
                 file = animation2.Animation.Thumbnail?.File;
+                minithumbnail = animation2.Animation.Minithumbnail;
                 Title.Text = animation2.Title;
                 Description.Text = string.Empty;
             }
             else if (result is InlineQueryResultArticle article)
             {
                 file = article.Thumbnail?.File;
+                minithumbnail = null;
                 Title.Text = article.Title;
                 Description.Text = article.Description;
             }
             else if (result is InlineQueryResultAudio audio)
             {
                 file = audio.Audio.AlbumCoverThumbnail?.File;
+                minithumbnail = audio.Audio.AlbumCoverMinithumbnail;
                 Title.Text = audio.Audio.GetTitle();
                 Description.Text = audio.Audio.GetDuration();
             }
             else if (result is InlineQueryResultContact contact)
             {
                 file = contact.Thumbnail?.File;
+                minithumbnail = null;
                 Title.Text = contact.Contact.GetFullName();
                 Description.Text = PhoneNumber.Format(contact.Contact.PhoneNumber);
             }
             else if (result is InlineQueryResultDocument document)
             {
                 file = document.Document.Thumbnail?.File;
+                minithumbnail = document.Document.Minithumbnail;
                 Title.Text = document.Title;
 
                 if (string.IsNullOrEmpty(document.Description))
@@ -70,6 +74,7 @@ namespace Telegram.Controls.Cells
             else if (result is InlineQueryResultGame game)
             {
                 file = game.Game.Animation?.Thumbnail?.File ?? game.Game.Photo.GetSmall().Photo;
+                minithumbnail = game.Game.Animation?.Minithumbnail ?? game.Game.Photo.Minithumbnail;
                 Title.Text = game.Game.Title;
                 Description.Text = game.Game.Description;
             }
@@ -80,12 +85,14 @@ namespace Telegram.Controls.Cells
 
                 uri = new Uri(string.Format("https://dev.virtualearth.net/REST/v1/Imagery/Map/Road/{0},{1}/{2}?mapSize={3}&key=FgqXCsfOQmAn9NRf4YJ2~61a_LaBcS6soQpuLCjgo3g~Ah_T2wZTc8WqNe9a_yzjeoa5X00x4VJeeKH48wAO1zWJMtWg6qN-u4Zn9cmrOPcL", latitude, longitude, 15, "96,96"));
                 file = location.Thumbnail?.File;
+                minithumbnail = null;
                 Title.Text = location.Title;
                 Description.Text = $"{location.Location.Latitude};{location.Location.Longitude}";
             }
             else if (result is InlineQueryResultPhoto photo)
             {
                 file = photo.Photo.GetSmall().Photo;
+                minithumbnail = photo.Photo.Minithumbnail;
                 Title.Text = photo.Title;
                 Description.Text = photo.Description;
             }
@@ -96,6 +103,7 @@ namespace Telegram.Controls.Cells
 
                 uri = new Uri(string.Format("https://dev.virtualearth.net/REST/v1/Imagery/Map/Road/{0},{1}/{2}?mapSize={3}&key=FgqXCsfOQmAn9NRf4YJ2~61a_LaBcS6soQpuLCjgo3g~Ah_T2wZTc8WqNe9a_yzjeoa5X00x4VJeeKH48wAO1zWJMtWg6qN-u4Zn9cmrOPcL", latitude, longitude, 15, "96,96"));
                 file = venue.Thumbnail?.File;
+                minithumbnail = null;
 
                 Title.Text = venue.Venue.Title;
                 Description.Text = venue.Venue.Address;
@@ -103,6 +111,7 @@ namespace Telegram.Controls.Cells
             else if (result is InlineQueryResultVideo video)
             {
                 file = video.Video.Thumbnail?.File;
+                minithumbnail = video.Video.Minithumbnail;
                 Title.Text = video.Title;
                 Description.Text = video.Description;
             }
@@ -114,39 +123,15 @@ namespace Telegram.Controls.Cells
 
             if (file != null)
             {
-                if (file.Local.IsDownloadingCompleted)
-                {
-                    Photo.Source = UriEx.ToBitmap(file.Local.Path);
-                    UpdateManager.Unsubscribe(this, ref _thumbnailToken, true);
-                }
-                else
-                {
-                    Photo.Source = null;
-                    UpdateManager.Subscribe(this, clientService, file, ref _thumbnailToken, UpdateThumbnail, true);
-
-                    if (file.Local.CanBeDownloaded && !file.Local.IsDownloadingActive)
-                    {
-                        clientService.DownloadFile(file.Id, 16);
-                    }
-                }
+                Photo.Source = new ProfilePictureSourcePhoto(clientService, result.GetHashCode(), file, minithumbnail);
             }
             else if (uri != null)
             {
-                Photo.Source = new BitmapImage(uri);
-                UpdateManager.Unsubscribe(this, ref _thumbnailToken, true);
+                Photo.Source = new ProfilePictureSourceBitmap(new BitmapImage(uri));
             }
             else
             {
-                Photo.Source = PlaceholderImage.GetNameForChat(Title.Text, Title.Text.GetHashCode());
-                UpdateManager.Unsubscribe(this, ref _thumbnailToken, true);
-            }
-        }
-
-        private void UpdateThumbnail(object target, File update)
-        {
-            if (update.Local.IsDownloadingCompleted)
-            {
-                Photo.Source = UriEx.ToBitmap(update.Local.Path);
+                Photo.Source = ProfilePictureSourceText.GetNameForChat(Title.Text, Title.Text.GetHashCode());
             }
         }
     }

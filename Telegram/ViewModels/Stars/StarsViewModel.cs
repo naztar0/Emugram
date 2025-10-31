@@ -18,7 +18,7 @@ namespace Telegram.ViewModels.Stars
         private readonly SubscriptionCollection _subscriptions;
 
         private string _nextOffset = string.Empty;
-        private StarTransactionDirection _direction;
+        private TransactionDirection _direction;
 
         public StarsViewModel(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator)
             : base(clientService, settingsService, aggregator)
@@ -139,8 +139,8 @@ namespace Telegram.ViewModels.Stars
                 _nextOffset = string.Empty;
                 _direction = _selectedIndex switch
                 {
-                    1 => new StarTransactionDirectionIncoming(),
-                    2 => new StarTransactionDirectionOutgoing(),
+                    1 => new TransactionDirectionIncoming(),
+                    2 => new TransactionDirectionOutgoing(),
                     _ => null
                 };
 

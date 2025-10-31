@@ -128,7 +128,7 @@ namespace Telegram.ViewModels.Profile
             Files = new MediaSourceCollection(SetSearch, new SearchMessagesFilterDocument());
             Links = new MediaSourceCollection(SetSearch, new SearchMessagesFilterUrl());
             Music = new MediaSourceCollection(SetSearch, new SearchMessagesFilterAudio());
-            Voice = new MediaSourceCollection(SetSearch, new SearchMessagesFilterVoiceNote());
+            Voice = new MediaSourceCollection(SetSearch, new SearchMessagesFilterVoiceAndVideoNote());
             Animations = new MediaSourceCollection(SetSearch, new SearchMessagesFilterAnimation());
 
             SelectedItems = new MvxObservableCollection<MessageWithOwner>();
@@ -137,7 +137,7 @@ namespace Telegram.ViewModels.Profile
 
         private async void OnCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var selectedItems = SelectedItems.ToList();
+            var selectedItems = SelectedItems.Where(x => x != null).ToList();
             var properties = await ClientService.GetMessagePropertiesAsync(selectedItems.Select(x => new MessageId(x)));
 
             CanDeleteSelectedMessages = properties.Count > 0 && properties.Values.All(x => x.CanBeDeletedForAllUsers || x.CanBeDeletedOnlyForSelf);
@@ -413,7 +413,10 @@ namespace Telegram.ViewModels.Profile
 
         public void ForwardSelectedMessages()
         {
-            var selectedItems = SelectedItems.ToDictionary(x => new MessageId(x));
+            var selectedItems = SelectedItems
+                .Where(x => x != null)
+                .DistinctBy(x => x.Id)
+                .ToDictionary(x => new MessageId(x));
 
             UnselectMessages();
             ForwardMessages(selectedItems);

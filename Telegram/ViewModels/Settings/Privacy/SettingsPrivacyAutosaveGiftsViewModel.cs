@@ -127,10 +127,8 @@ namespace Telegram.ViewModels.Settings.Privacy
 
         public override bool HasChanged => _cached != null && (base.HasChanged || !_cached.AreTheSame(GetSettings()));
 
-        public override async void Continue()
+        protected override async void ContinueImpl(NavigatingEventArgs args)
         {
-            _completed = true;
-
             if (ClientService.TryGetUserFull(ClientService.Options.MyId, out UserFullInfo fullInfo))
             {
                 var settings = GetSettings();
@@ -140,13 +138,13 @@ namespace Telegram.ViewModels.Settings.Privacy
                     var response = await ClientService.SendAsync(new SetGiftSettings(settings));
                     if (response is Error error)
                     {
-                        ToastPopup.ShowError(XamlRoot, error);
+                        ShowToast(error);
                         return;
                     }
                 }
             }
 
-            base.Continue();
+            base.ContinueImpl(args);
         }
 
         private GiftSettings GetSettings()

@@ -5,17 +5,14 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System.Collections.Generic;
-using System.Numerics;
 using Telegram.Common;
 using Telegram.Controls.Media;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.Views;
-using Windows.UI.Composition;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Hosting;
 
 namespace Telegram.Controls.Chats
 {
@@ -26,19 +23,19 @@ namespace Telegram.Controls.Chats
         private Chat _chat;
 
         private ChatView _chatView;
-        private UIElement _parent;
 
         public ChatConnectedBotHeader()
         {
             InitializeComponent();
+
+            _collapsed = new SlidePanel.SlideState(this, false, 48);
         }
 
         public float AnimatedHeight => _collapsed ? 0 : 48;
 
-        public void InitializeParent(ChatView chatView, UIElement parent)
+        public void InitializeParent(ChatView chatView)
         {
             _chatView = chatView;
-            ElementCompositionPreview.SetIsTranslationEnabled(_parent = parent, true);
         }
 
         public void UpdateChatBusinessBotManageBar(Chat chat, BusinessBotManageBar manageBar)
@@ -49,7 +46,7 @@ namespace Telegram.Controls.Chats
             {
                 ShowHide(true);
 
-                Photo.SetUser(ViewModel.ClientService, user, 36);
+                Photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
                 Title.Text = user.FullName();
                 Subtitle.Text = manageBar.IsBotPaused
                     ? Strings.BizBotStatusStopped
@@ -71,7 +68,7 @@ namespace Telegram.Controls.Chats
             }
         }
 
-        private bool _collapsed = true;
+        private SlidePanel.SlideState _collapsed;
 
         public void ShowHide(bool show)
         {
@@ -80,41 +77,8 @@ namespace Telegram.Controls.Chats
                 return;
             }
 
-            _collapsed = !show;
-            Visibility = Visibility.Visible;
-
-            var parent = ElementComposition.GetElementVisual(_parent);
-            var visual = ElementComposition.GetElementVisual(this);
-            visual.Clip = visual.Compositor.CreateInsetClip();
-
-            var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-            batch.Completed += (s, args) =>
-            {
-                visual.Clip = null;
-                parent.Properties.InsertVector3("Translation", Vector3.Zero);
-
-                if (_collapsed)
-                {
-                    Visibility = Visibility.Collapsed;
-                }
-            };
-
+            _collapsed.IsVisible = show;
             _chatView.UpdateMessagesHeaderPadding();
-
-            var clip = visual.Compositor.CreateScalarKeyFrameAnimation();
-            clip.InsertKeyFrame(show ? 0 : 1, 48);
-            clip.InsertKeyFrame(show ? 1 : 0, 0);
-            clip.Duration = Constants.FastAnimation;
-
-            var offset = visual.Compositor.CreateScalarKeyFrameAnimation();
-            offset.InsertKeyFrame(show ? 0 : 1, -48);
-            offset.InsertKeyFrame(show ? 1 : 0, 0);
-            offset.Duration = Constants.FastAnimation;
-
-            visual.Clip.StartAnimation("TopInset", clip);
-            parent.StartAnimation("Translation.Y", offset);
-
-            batch.End();
         }
 
         public IEnumerable<UIElement> GetAnimatableVisuals()

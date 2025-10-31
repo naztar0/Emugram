@@ -69,11 +69,11 @@
                 </Border>
 
                 <controls:ProfilePatternCover x:Name="Pattern"
-                                               Margin="-430,-22,-430,-156"
-                                               Width="1000"
-                                               Height="320"
-                                               Opacity="0"
-                                               Style="{StaticResource Yolo}" />
+                                              Margin="-430,-22,-430,-156"
+                                              Width="1000"
+                                              Height="320"
+                                              Opacity="0"
+                                              Style="{StaticResource Yolo}" />
 
                 <controls:ActiveStoriesSegments x:Name="Segments"
                                                 Width="140"
@@ -86,8 +86,7 @@
                                         ScaleY="0.85" />
                     </controls:ActiveStoriesSegments.RenderTransform>
                     <controls:ProfilePicture x:Name="Photo"
-                                             Width="140"
-                                             Height="140" />
+                                             Size="140" />
                 </controls:ActiveStoriesSegments>
             </Grid>
 
@@ -243,8 +242,8 @@
 
         <Grid BorderBrush="{ThemeResource SettingsItemBorderBrush}"
               Grid.Row="2">
-            <controls:BadgeButton x:Name="Badge"
-                                  Click="Badge_Click">
+            <controls:SettingsButton x:Name="Badge"
+                                     Click="Badge_Click">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
@@ -261,7 +260,7 @@
                                            Margin="4,0,0,0"
                                            Grid.Column="1" />
                 </Grid>
-            </controls:BadgeButton>
+            </controls:SettingsButton>
             <controls:AnimatedImage x:Name="Animated"
                                     FrameSize="20,20"
                                     DecodeFrameType="Logical"
@@ -272,9 +271,10 @@
                                     IsHitTestVisible="False" />
         </Grid>
 
-        <controls:BadgeButton x:Name="Reset"
-                              Click="Reset_Click"
-                              BorderThickness="0,1,0,1"
-                              Grid.Row="4" />
+        <controls:SettingsButton x:Name="Reset"
+                                 Click="Reset_Click"
+                                 Glyph="&#xEA09;"
+                                 BorderThickness="0,1,0,1"
+                                 Grid.Row="4" />
     </controls:HeaderedControl>
 </UserControl>

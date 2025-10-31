@@ -19,7 +19,7 @@ namespace Telegram.Services
         void Reconnect();
 
         Task<int> GetSystemProxyId();
-        Task<Proxy> UpdateSystemProxy();
+        Task UpdateProxyAsync(int proxyId);
 
         NetworkType Type { get; }
         bool IsMetered { get; }
@@ -36,6 +36,8 @@ namespace Telegram.Services
 
         private readonly HttpProxyWatcher _watcher;
         private readonly EventDebouncer<bool> _debouncer;
+
+        private TaskCompletionSource<int> _initialize = new();
 
         public NetworkService(IClientService clientService, ISettingsService settingsService, IEventAggregator aggregator)
         {
@@ -56,7 +58,26 @@ namespace Telegram.Services
             }
             catch { }
 
-            Initialize();
+            if (UseSystemProxy)
+            {
+                ProxyChanged += OnProxyChanged;
+            }
+
+            aggregator.Subscribe<UpdateAuthorizationState>(this, Handle);
+
+            Handle(new UpdateAuthorizationState(_clientService.AuthorizationState));
+        }
+
+        private void Handle(UpdateAuthorizationState update)
+        {
+            if (update.AuthorizationState is AuthorizationStateWaitPhoneNumber or AuthorizationStateReady)
+            {
+                _ = UpdateSystemProxy();
+            }
+            else if (update.AuthorizationState is AuthorizationStateClosed)
+            {
+                _initialize = new TaskCompletionSource<int>();
+            }
         }
 
         public bool UseSystemProxy
@@ -114,47 +135,31 @@ namespace Telegram.Services
             _proxyChanged?.Invoke(this, await UpdateSystemProxy());
         }
 
-        private async void Initialize()
+        public Task<int> GetSystemProxyId()
         {
-            if (UseSystemProxy)
+            return _initialize.Task;
+        }
+
+        public async Task UpdateProxyAsync(int proxyId)
+        {
+            var systemProxyId = await _initialize.Task;
+
+            if (proxyId == 0)
             {
+                UseSystemProxy = false;
+                await _clientService.SendAsync(new DisableProxy());
+            }
+            else if (proxyId == systemProxyId)
+            {
+                UseSystemProxy = true;
                 await UpdateSystemProxy();
-                ProxyChanged += OnProxyChanged;
             }
+
+            UseSystemProxy = false;
+            await _clientService.SendAsync(new EnableProxy(proxyId));
         }
 
-        public async Task<int> GetSystemProxyId()
-        {
-            var response = await _clientService.SendAsync(new GetOption("x_system_proxy"));
-            if (response is OptionValueInteger integer)
-            {
-                return (int)integer.Value;
-            }
-
-            string host;
-            int port;
-            if (TryCreateUri(_watcher.Server, out Uri result))
-            {
-                host = result.Host;
-                port = result.Port;
-            }
-            else
-            {
-                host = "localhost";
-                port = 80;
-            }
-
-            var proxy = await _clientService.SendAsync(new AddProxy(host, port, false, new ProxyTypeHttp())) as Proxy;
-            if (proxy != null)
-            {
-                _clientService.Send(new SetOption("x_system_proxy", new OptionValueInteger(proxy.Id)));
-                return proxy.Id;
-            }
-
-            return 0;
-        }
-
-        public async Task<Proxy> UpdateSystemProxy()
+        private async Task<Proxy> UpdateSystemProxy()
         {
             if (_settingsService.UseSystemProxy && !_watcher.IsEnabled)
             {
@@ -176,19 +181,22 @@ namespace Telegram.Services
 
             var enabled = _settingsService.UseSystemProxy && _watcher.IsEnabled;
 
-            var response = await _clientService.SendAsync(new GetOption("x_system_proxy"));
-            if (response is OptionValueInteger integer)
+            var proxyId = await _clientService.SendAsync(new GetOption(OptionsService.R.SystemProxy)) as OptionValueInteger;
+            if (proxyId != null)
             {
-                return await _clientService.SendAsync(new EditProxy((int)integer.Value, host, port, enabled, new ProxyTypeHttp())) as Proxy;
+                _initialize.TrySetResult((int)proxyId.Value);
+                return await _clientService.SendAsync(new EditProxy((int)proxyId.Value, host, port, enabled, new ProxyTypeHttp())) as Proxy;
             }
 
             var proxy = await _clientService.SendAsync(new AddProxy(host, port, enabled, new ProxyTypeHttp())) as Proxy;
             if (proxy != null)
             {
-                _clientService.Send(new SetOption("x_system_proxy", new OptionValueInteger(proxy.Id)));
+                _clientService.Options.SystemProxy = proxy.Id;
+                _initialize.TrySetResult(proxy.Id);
                 return proxy;
             }
 
+            _initialize.TrySetResult(0);
             return null;
         }
 

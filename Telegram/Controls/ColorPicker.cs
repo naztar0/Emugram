@@ -43,10 +43,10 @@ namespace Telegram.Controls
         {
             _current = _color.ToRGB(_alpha);
 
-            Spectrum = GetTemplateChild("Spectrum") as Border;
-            SpectrumThumb = GetTemplateChild("SpectrumThumb") as UIElement;
+            Spectrum = GetTemplateChild(nameof(Spectrum)) as Border;
+            SpectrumThumb = GetTemplateChild(nameof(SpectrumThumb)) as UIElement;
 
-            ValueSlider = GetTemplateChild("ValueSlider") as Slider;
+            ValueSlider = GetTemplateChild(nameof(ValueSlider)) as Slider;
 
             if (Spectrum != null)
             {

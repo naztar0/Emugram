@@ -215,7 +215,7 @@
 
                         <Rectangle x:Name="DropVisual"
                                    x:Load="False"
-                                   Stroke="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                                   Stroke="{ThemeResource TextFillColorPrimaryBrush}"
                                    StrokeThickness="2"
                                    RadiusX="4"
                                    RadiusY="4"

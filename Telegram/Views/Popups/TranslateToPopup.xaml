@@ -18,6 +18,7 @@
         <TextBox x:Name="SearchField"
                  PlaceholderText="{CustomResource Search}"
                  TextChanged="SearchField_TextChanged"
+                 KeyDown="SearchField_KeyDown"
                  VerticalAlignment="Center"
                  Margin="24,0" />
 

@@ -8,11 +8,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Services;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
+using Windows.Foundation;
 using Windows.UI.Xaml.Data;
 
 namespace Telegram.Collections
@@ -30,21 +32,21 @@ namespace Telegram.Collections
     /// <summary>
     /// A custom datasource over the file system that supports data virtualization
     /// </summary>
-    public class MediaDataSource : INotifyCollectionChanged, System.Collections.IList, IItemsRangeInfo
+    public class MediaDataSource : INotifyCollectionChanged, System.Collections.IList, IItemsRangeInfo, ISupportIncrementalLoading
     {
         private readonly IClientService _clientService;
         private readonly long _chatId;
         private readonly long _savedMessagesTopicId;
 
         private SearchMessagesFilter _filter;
-        private int _count = 1;
+        private int _count = 0;
 
         private ItemCacheManager<MessageWithOwner> _itemCache;
         private SortedList<int, MessagePosition> _positions;
 
         public event NotifyCollectionChangedEventHandler CollectionChanged;
 
-        private MediaDataSource(IClientService clientService, long chatId, long savedMessagesTopicId, SearchMessagesFilter filter)
+        public MediaDataSource(IClientService clientService, long chatId, long savedMessagesTopicId, SearchMessagesFilter filter)
         {
             _clientService = clientService;
             _chatId = chatId;
@@ -61,7 +63,7 @@ namespace Telegram.Collections
         public static async Task<MediaDataSource> Create(IClientService clientService, long chatId, long savedMessagesTopicId, SearchMessagesFilter filter)
         {
             MediaDataSource ds = new MediaDataSource(clientService, chatId, savedMessagesTopicId, filter);
-            await ds.UpdateCount(false);
+            await ds.UpdateCount(false, false);
             return ds;
         }
 
@@ -74,7 +76,7 @@ namespace Telegram.Collections
             }
 
             _filter = filter;
-            await UpdateCount(true);
+            await UpdateCount(true, false);
 
             _itemCache = new ItemCacheManager<MessageWithOwner>(FetchDataCallback, 50);
             _itemCache.CacheChanged += ItemCache_CacheChanged;
@@ -85,7 +87,7 @@ namespace Telegram.Collections
             }
         }
 
-        private async Task UpdateCount(bool getSparseMessages)
+        private async Task UpdateCount(bool getSparseMessages, bool raise)
         {
             await _gettingPositions.WaitAsync();
 
@@ -114,7 +116,7 @@ namespace Telegram.Collections
 
             _gettingPositions.Release();
 
-            if (CollectionChanged != null)
+            if (CollectionChanged != null && raise)
             {
                 CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
             }
@@ -177,11 +179,8 @@ namespace Telegram.Collections
         readonly struct MessagePositionRange
         {
             public readonly long FromMessageId;
-
             public readonly int Offset;
-
             public readonly int Limit;
-
             public readonly int FirstIndex;
 
             public MessagePositionRange(long fromMessageId, int offset, int limit, int firstIndex)
@@ -193,7 +192,7 @@ namespace Telegram.Collections
             }
         }
 
-        private static SemaphoreSlim _gettingPositions = new SemaphoreSlim(1);
+        private SemaphoreSlim _gettingPositions = new SemaphoreSlim(1);
 
         private async Task<MessagePositionRange> GetPositionAsync(ItemIndexRange batch, bool retry)
         {
@@ -291,10 +290,8 @@ namespace Telegram.Collections
                 throw new NotImplementedException();
             }
         }
-        public int Count
-        {
-            get { return _count; }
-        }
+
+        public int Count => _count;
 
         #endregion
 
@@ -371,11 +368,28 @@ namespace Telegram.Collections
         // Used to fire our collection changed event
         private void ItemCache_CacheChanged(object sender, CacheChangedEventArgs<MessageWithOwner> args)
         {
-            if (CollectionChanged != null)
+            if (args.ItemIndex >= _count)
+            {
+                SetFilter(_filter);
+            }
+            else if (CollectionChanged != null)
             {
                 CollectionChanged(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, args.OldItem, args.NewItem, args.ItemIndex));
             }
         }
+
+        public IAsyncOperation<LoadMoreItemsResult> LoadMoreItemsAsync(uint count)
+        {
+            return AsyncInfo.Run(async token =>
+            {
+                HasMoreItems = false;
+
+                await UpdateCount(true, true);
+                return new LoadMoreItemsResult();
+            });
+        }
+
+        public bool HasMoreItems { get; private set; } = true;
 
         #region Parts of IList Not Implemented
 
