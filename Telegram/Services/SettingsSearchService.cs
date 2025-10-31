@@ -90,11 +90,11 @@ namespace Telegram.Services
         {
             _searchIndex = new List<SettingsSearchEntry>
             {
-                BuildNotificationsAndSounds(),
+                BuildAppearance(),
                 BuildPrivacyAndSecurity(),
+                BuildNotificationsAndSounds(),
                 BuildDataAndStorage(),
                 BuildStickersAndMasks(),
-                BuildAppearance(),
                 new SettingsSearchPage(null, Strings.Language, new Assets.Icons.Language()),
                 new SettingsSearchPage(null, Strings.AskAQuestion, new Assets.Icons.AskQ()),
                 new SettingsSearchPage(typeof(FoldersPage), Strings.Filters, new Assets.Icons.Folders())

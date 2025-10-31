@@ -77,6 +77,7 @@ namespace Telegram.Controls
         {
             ProgressBar = GetTemplateChild(nameof(ProgressBar)) as ProgressBarRing;
 
+            // TODO: Name
             var target = GetTemplateChild("Target") as FrameworkElement;
             if (target != null)
             {

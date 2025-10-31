@@ -4,7 +4,6 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
-using System.Numerics;
 using Telegram.Common;
 using Telegram.Controls.Media;
 using Telegram.Services;
@@ -15,11 +14,9 @@ using Telegram.ViewModels;
 using Telegram.Views;
 using Telegram.Views.Premium.Popups;
 using Windows.Foundation;
-using Windows.UI.Composition;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Documents;
-using Windows.UI.Xaml.Hosting;
 
 namespace Telegram.Controls.Chats
 {
@@ -30,22 +27,22 @@ namespace Telegram.Controls.Chats
         private IClientService _clientService;
 
         private ChatView _chatView;
-        private UIElement _parent;
 
         private long _thumbnailToken;
 
         public ChatAccountInfoHeader()
         {
             InitializeComponent();
+
+            _collapsed = new SlidePanel.SlideState(this, false, 0);
         }
 
         private float _animatedHeight;
         public float AnimatedHeight => _collapsed ? 0 : ActualSize.Y;
 
-        public void InitializeParent(ChatView chatView, UIElement parent)
+        public void InitializeParent(ChatView chatView)
         {
             _chatView = chatView;
-            ElementCompositionPreview.SetIsTranslationEnabled(_parent = parent, true);
         }
 
         public void UpdateUser(IClientService clientService, Chat chat, User user, UserFullInfo fullInfo)
@@ -137,7 +134,7 @@ namespace Telegram.Controls.Chats
                 PayingUser.Visibility = Visibility.Visible;
                 PayingUserText.Inlines.Clear();
 
-                var text = string.Format(Strings.MessageLockedStarsRemoveFee, "{0}", fullInfo.IncomingPaidMessageStarCount.ToString("N0")).Replace("\u2B50", Icons.Premium + "\u200A");
+                var text = string.Format(Strings.MessageLockedStarsRemoveFee.ReplaceStar(Icons.Premium), "{0}", fullInfo.IncomingPaidMessageStarCount.ToString("N0"));
 
                 var markdown = ClientEx.ParseMarkdown(text);
                 if (markdown.Entities.Count == 1)
@@ -229,56 +226,17 @@ namespace Telegram.Controls.Chats
             }
         }
 
-        private bool _collapsed = true;
+        private SlidePanel.SlideState _collapsed;
 
-        private async void ShowHide(bool show)
+        private void ShowHide(bool show)
         {
             if (_collapsed != show)
             {
                 return;
             }
 
-            _collapsed = !show;
-            Visibility = Visibility.Visible;
-
-            if (show)
-            {
-                await this.UpdateLayoutAsync();
-            }
-
-            var parent = ElementComposition.GetElementVisual(_parent);
-            var visual = ElementComposition.GetElementVisual(this);
-            visual.Clip = visual.Compositor.CreateInsetClip();
-
-            var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-            batch.Completed += (s, args) =>
-            {
-                visual.Clip = null;
-                parent.Properties.InsertVector3("Translation", Vector3.Zero);
-
-                if (_collapsed)
-                {
-                    Visibility = Visibility.Collapsed;
-                }
-            };
-
-            _animatedHeight = ActualSize.Y;
+            _collapsed.IsVisible = show;
             _chatView.UpdateMessagesHeaderPadding();
-
-            var clip = visual.Compositor.CreateScalarKeyFrameAnimation();
-            clip.InsertKeyFrame(show ? 0 : 1, ActualSize.Y);
-            clip.InsertKeyFrame(show ? 1 : 0, 0);
-            clip.Duration = Constants.FastAnimation;
-
-            var offset = visual.Compositor.CreateScalarKeyFrameAnimation();
-            offset.InsertKeyFrame(show ? 0 : 1, -ActualSize.Y);
-            offset.InsertKeyFrame(show ? 1 : 0, 0);
-            offset.Duration = Constants.FastAnimation;
-
-            visual.Clip.StartAnimation("TopInset", clip);
-            parent.StartAnimation("Translation.Y", offset);
-
-            batch.End();
         }
     }
 }

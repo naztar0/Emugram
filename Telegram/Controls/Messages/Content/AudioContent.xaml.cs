@@ -7,10 +7,12 @@
 using System;
 using Telegram.Common;
 using Telegram.Converters;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
+using Telegram.Views;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -31,7 +33,6 @@ namespace Telegram.Controls.Messages.Content
             _message = message;
 
             DefaultStyleKey = typeof(AudioContent);
-            Disconnected += OnUnloaded;
         }
 
         public AudioContent()
@@ -80,21 +81,18 @@ namespace Telegram.Controls.Messages.Content
 
         #endregion
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
-            if (_message != null)
-            {
-                _message.PlaybackService.SourceChanged -= OnPlaybackStateChanged;
-                _message.PlaybackService.StateChanged -= OnPlaybackStateChanged;
-                _message.PlaybackService.PositionChanged -= OnPositionChanged;
-            }
+            TypeResolver.Current.Playback.SourceChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.StateChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.PositionChanged -= OnPositionChanged;
         }
 
         public void UpdateMessage(MessageViewModel message)
         {
             _message = message;
 
-            message.PlaybackService.SourceChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.SourceChanged -= OnPlaybackStateChanged;
 
             var audio = GetContent(message);
             if (audio == null || !_templateApplied)
@@ -102,9 +100,9 @@ namespace Telegram.Controls.Messages.Content
                 return;
             }
 
-            message.PlaybackService.SourceChanged += OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.SourceChanged += OnPlaybackStateChanged;
 
-            if (string.IsNullOrEmpty(audio.Performer) || string.IsNullOrEmpty(audio.Title))
+            if (string.IsNullOrEmpty(audio.Title))
             {
                 var index = audio.FileName.LastIndexOf('.');
                 if (index > 0)
@@ -120,7 +118,15 @@ namespace Telegram.Controls.Messages.Content
             }
             else
             {
-                Title.Text = $"{audio.Performer} - {audio.Title}";
+                if (string.IsNullOrEmpty(audio.Performer))
+                {
+                    Title.Text = audio.Title;
+                }
+                else
+                {
+                    Title.Text = $"{audio.Title} - {audio.Performer}";
+                }
+
                 TitleTrim.Text = string.Empty;
             }
 
@@ -157,7 +163,7 @@ namespace Telegram.Controls.Messages.Content
                 var audio = GetContent(_message);
                 if (audio == null)
                 {
-                    Recycle(sender);
+                    Recycle();
                     return;
                 }
 
@@ -181,7 +187,7 @@ namespace Telegram.Controls.Messages.Content
                 return;
             }
 
-            if (message.AreTheSame(message.PlaybackService.CurrentItem) /*&& !_pressed*/)
+            if (message.AreTheSame(TypeResolver.Current.Playback.CurrentItem) /*&& !_pressed*/)
             {
                 Subtitle.Text = FormatTime(position) + " / " + FormatTime(duration);
             }
@@ -214,8 +220,8 @@ namespace Telegram.Controls.Messages.Content
                 return;
             }
 
-            message.PlaybackService.StateChanged -= OnPlaybackStateChanged;
-            message.PlaybackService.PositionChanged -= OnPositionChanged;
+            TypeResolver.Current.Playback.StateChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.PositionChanged -= OnPositionChanged;
 
             if (audio.AudioValue.Id != file.Id)
             {
@@ -297,9 +303,9 @@ namespace Telegram.Controls.Messages.Content
 
         private void UpdatePlayback(MessageViewModel message, Audio audio, File file)
         {
-            if (message.AreTheSame(message.PlaybackService.CurrentItem))
+            if (message.AreTheSame(TypeResolver.Current.Playback.CurrentItem))
             {
-                if (message.PlaybackService.PlaybackState == PlaybackState.Paused)
+                if (TypeResolver.Current.Playback.PlaybackState == PlaybackState.Paused)
                 {
                     Button.SetGlyph(file.Id, MessageContentState.Play);
                 }
@@ -308,10 +314,10 @@ namespace Telegram.Controls.Messages.Content
                     Button.SetGlyph(file.Id, MessageContentState.Pause);
                 }
 
-                UpdatePosition(message.PlaybackService.Position, message.PlaybackService.Duration);
+                UpdatePosition(TypeResolver.Current.Playback.Position, TypeResolver.Current.Playback.Duration);
 
-                message.PlaybackService.StateChanged += OnPlaybackStateChanged;
-                message.PlaybackService.PositionChanged += OnPositionChanged;
+                TypeResolver.Current.Playback.StateChanged += OnPlaybackStateChanged;
+                TypeResolver.Current.Playback.PositionChanged += OnPositionChanged;
             }
             else
             {
@@ -380,22 +386,14 @@ namespace Telegram.Controls.Messages.Content
 
         public void Recycle()
         {
-            Recycle(_message?.PlaybackService);
-        }
-
-        private void Recycle(object sender)
-        {
-            if (sender is IPlaybackService playback)
-            {
-                playback.SourceChanged -= OnPlaybackStateChanged;
-                playback.StateChanged -= OnPlaybackStateChanged;
-                playback.PositionChanged -= OnPositionChanged;
-            }
+            TypeResolver.Current.Playback.SourceChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.StateChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.PositionChanged -= OnPositionChanged;
 
             _message = null;
 
             UpdateManager.Unsubscribe(this, ref _fileToken);
-            UpdateManager.Unsubscribe(this, ref _thumbnailToken, true);
+            UpdateManager.Unsubscribe(this, ref _thumbnailToken);
         }
 
         public bool IsValid(MessageContent content, bool primary)
@@ -462,15 +460,15 @@ namespace Telegram.Controls.Messages.Content
                     _message.ClientService.Send(new CancelPreliminaryUploadFile(file.Id));
                 }
             }
-            else if (_message.AreTheSame(_message.PlaybackService.CurrentItem))
+            else if (_message.AreTheSame(TypeResolver.Current.Playback.CurrentItem))
             {
-                if (_message.PlaybackService.PlaybackState == PlaybackState.Paused)
+                if (TypeResolver.Current.Playback.PlaybackState == PlaybackState.Paused)
                 {
-                    _message.PlaybackService.Play();
+                    TypeResolver.Current.Playback.Play();
                 }
                 else
                 {
-                    _message.PlaybackService.Pause();
+                    TypeResolver.Current.Playback.Pause();
                 }
             }
             else
@@ -521,15 +519,15 @@ namespace Telegram.Controls.Messages.Content
             }
             else
             {
-                if (_message.AreTheSame(_message.PlaybackService.CurrentItem))
+                if (_message.AreTheSame(TypeResolver.Current.Playback.CurrentItem))
                 {
-                    if (_message.PlaybackService.PlaybackState == PlaybackState.Paused)
+                    if (TypeResolver.Current.Playback.PlaybackState == PlaybackState.Paused)
                     {
-                        _message.PlaybackService.Play();
+                        TypeResolver.Current.Playback.Play();
                     }
                     else
                     {
-                        _message.PlaybackService.Pause();
+                        TypeResolver.Current.Playback.Pause();
                     }
                 }
                 else

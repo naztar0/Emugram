@@ -10,6 +10,7 @@ using Telegram.Common;
 using Telegram.Controls.Chats;
 using Telegram.Controls.Media;
 using Telegram.Converters;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Navigation.Services;
 using Telegram.Services;
@@ -18,10 +19,8 @@ using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.ViewModels.Delegates;
 using Telegram.Views;
-using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -336,7 +335,7 @@ namespace Telegram.Controls.Cells
                 General.Visibility = Visibility.Visible;
                 AllTopics.Visibility = Visibility.Collapsed;
             }
-            else if (topic.Info.MessageThreadId == 0)
+            else if (topic.Info.ForumTopicId == 0)
             {
                 Animated.Source = null;
                 IconRoot.Visibility = Visibility.Collapsed;
@@ -473,13 +472,13 @@ namespace Telegram.Controls.Cells
             if (topic.SenderId == null)
             {
                 TitleLabel.Text = Strings.AllTopicsShort;
-                Photo.Clear();
+                Photo.Source = null;
                 AllTopics.Visibility = Visibility.Visible;
             }
             else
             {
                 TitleLabel.Text = _viewModel.ClientService.GetTitle(topic.SenderId);
-                Photo.SetMessageSender(_viewModel.ClientService, topic.SenderId, _vertical ? 28 : 20);
+                Photo.Source = ProfilePictureSource.MessageSender(_viewModel.ClientService, topic.SenderId);
                 AllTopics.Visibility = Visibility.Collapsed;
             }
 
@@ -494,7 +493,7 @@ namespace Telegram.Controls.Cells
 
         #endregion
 
-        public void ShowPreview(HoldingEventArgs args)
+        public void ShowPreview(Point? position)
         {
             Logger.Info();
 
@@ -507,54 +506,59 @@ namespace Telegram.Controls.Cells
             flyout.Items.Add(tooltip);
 
             var chat = _chat;
-            var message = chat?.LastMessage;
-
             if (chat == null)
             {
                 return;
             }
 
+            var context = WindowContext.ForXamlRoot(this);
+            var service = context.NavigationServices.GetByFrameId($"Main{_viewModel.SessionId}") as NavigationService;
+
             var grid = new Grid();
-            var frame = new Frame
+            var chatView = new ChatView
             {
+                FromPreview = true,
                 Width = 320,
                 Height = 360
             };
 
-            var context = WindowContext.ForXamlRoot(this);
+            var viewModel = TypeResolver.Current.Resolve<DialogViewModel, IDialogDelegate>(chatView, service.SessionId);
+            viewModel.NavigationService = service;
+            viewModel.Dispatcher = service.Dispatcher;
+            chatView.Activate(viewModel);
 
-            var service = new TLNavigationService(_viewModel.ClientService, null, context, frame, "ChatPreview");
-            service.NavigateToChat(chat);
-
-            var chatPage = frame.Content as ChatPage;
-            var chatView = chatPage?.Content as ChatView;
-
-            if (chatView != null)
+            if (_forumTopic != null)
             {
-                void handler(object sender, RoutedEventArgs e)
-                {
-                    Logger.Info("Unloaded");
-
-                    chatView.Unloaded -= handler;
-                    chatView.ViewModel.NavigatedFrom(null, false);
-                    chatView.Deactivate(false);
-                }
-
-                chatView.Unloaded += handler;
+                _ = viewModel.NavigatedToAsync(new ChatMessageTopic(chat.Id, new MessageTopicForum(_forumTopic.Info.ForumTopicId)), Windows.UI.Xaml.Navigation.NavigationMode.New, new Telegram.Navigation.Services.NavigationState());
             }
+            else if (_directMessagesChatTopic != null)
+            {
+                _ = viewModel.NavigatedToAsync(new ChatMessageTopic(chat.Id, new MessageTopicDirectMessages(_directMessagesChatTopic.Id)), Windows.UI.Xaml.Navigation.NavigationMode.New, new Telegram.Navigation.Services.NavigationState());
+            }
+
+            void handler(object sender, object e)
+            {
+                Logger.Info("Unloaded");
+
+                flyout.Closing -= handler;
+                chatView.ViewModel.NavigatedFrom(null, false);
+                chatView.Deactivate(true);
+            }
+
+            flyout.Closing += handler;
 
             var background = new ChatBackgroundControl();
             background.Update(_viewModel.ClientService, null);
 
             grid.Children.Add(background);
-            grid.Children.Add(frame);
+            grid.Children.Add(chatView);
             grid.CornerRadius = new CornerRadius(8);
 
             tooltip.Content = grid;
             tooltip.Padding = new Thickness();
             tooltip.MaxWidth = double.PositiveInfinity;
 
-            flyout.ShowAt(this, args.Position);
+            flyout.ShowAt(this, position ?? this.TransformToPointerPosition());
         }
 
         protected override void OnDragEnter(DragEventArgs e)
@@ -638,26 +642,5 @@ namespace Telegram.Controls.Cells
 
             base.OnDrop(e);
         }
-
-        #region XamlMarkupHelper
-
-        private void LoadObject<T>(ref T element, /*[CallerArgumentExpression("element")]*/string name)
-            where T : DependencyObject
-        {
-            element ??= GetTemplateChild(name) as T;
-        }
-
-        private void UnloadObject<T>(ref T element)
-            where T : DependencyObject
-        {
-            if (element != null)
-            {
-                XamlMarkupHelper.UnloadObject(element);
-                element = null;
-            }
-        }
-
-        #endregion
-
     }
 }

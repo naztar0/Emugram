@@ -23,8 +23,7 @@
                              Width="64"
                              CornerRadius="32">
                 <controls:ProfilePicture Source="{x:Bind ConvertPhoto(ViewModel.Title, ViewModel.Preview), Mode=OneWay}"
-                                         Height="64"
-                                         Width="64" />
+                                         Size="64" />
             </HyperlinkButton>
 
             <TextBlock Text="{CustomResource NewGroup}"

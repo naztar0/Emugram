@@ -46,6 +46,8 @@ namespace Telegram.ViewModels.Supergroups
             CanAddLinkPreviews = chat.Permissions.CanAddLinkPreviews;
             CanSendBasicMessages = chat.Permissions.CanSendBasicMessages;
 
+            UpdateCanSendMediaMessages();
+
             if (ClientService.TryGetSupergroup(chat, out Supergroup supergroup)
                 && ClientService.TryGetSupergroupFull(chat, out SupergroupFullInfo fullInfo))
             {
@@ -93,13 +95,15 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendBasicMessages;
             set
             {
-                Set(ref _canSendBasicMessages, value);
-                RaisePropertyChanged(nameof(CanUnrestrictBoosters));
-
-                // Don't allow send media
-                if (!value && _CanAddLinkPreviews)
+                if (Set(ref _canSendBasicMessages, value))
                 {
-                    CanAddLinkPreviews = false;
+                    RaisePropertyChanged(nameof(CanUnrestrictBoosters));
+
+                    // Don't allow send media
+                    if (!value && _canAddLinkPreviews)
+                    {
+                        CanAddLinkPreviews = false;
+                    }
                 }
             }
         }
@@ -115,15 +119,17 @@ namespace Telegram.ViewModels.Supergroups
 
                 if (value.HasValue)
                 {
-                    CanSendPhotos = value.Value;
-                    CanSendVideos = value.Value;
-                    CanSendOtherMessages = value.Value;
-                    CanSendAudios = value.Value;
-                    CanSendDocuments = value.Value;
-                    CanSendVoiceNotes = value.Value;
-                    CanSendVideoNotes = value.Value;
-                    CanSendPolls = value.Value;
-                    CanAddLinkPreviews = value.Value;
+                    Set(ref _canSendPhotos, value.Value, nameof(CanSendPhotos));
+                    Set(ref _canSendVideos, value.Value, nameof(CanSendVideos));
+                    Set(ref _canSendOtherMessages, value.Value, nameof(CanSendOtherMessages));
+                    Set(ref _canSendAudios, value.Value, nameof(CanSendAudios));
+                    Set(ref _canSendDocuments, value.Value, nameof(CanSendDocuments));
+                    Set(ref _canSendVoiceNotes, value.Value, nameof(CanSendVoiceNotes));
+                    Set(ref _canSendVideoNotes, value.Value, nameof(CanSendVideoNotes));
+                    Set(ref _canSendPolls, value.Value, nameof(CanSendPolls));
+                    Set(ref _canAddLinkPreviews, value.Value, nameof(CanAddLinkPreviews));
+
+                    Set(ref _canSendCount, value.Value ? 9 : 0, nameof(CanSendCount));
                 }
             }
         }
@@ -141,7 +147,7 @@ namespace Telegram.ViewModels.Supergroups
         private int Count()
         {
             var count = 0;
-            if (_CanAddLinkPreviews)
+            if (_canAddLinkPreviews)
             {
                 count++;
             }
@@ -195,8 +201,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendPhotos;
             set
             {
-                Set(ref _canSendPhotos, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendPhotos, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -206,8 +214,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendVideos;
             set
             {
-                Set(ref _canSendVideos, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendVideos, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -217,8 +227,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendOtherMessages;
             set
             {
-                Set(ref _canSendOtherMessages, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendOtherMessages, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -228,8 +240,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendAudios;
             set
             {
-                Set(ref _canSendAudios, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendAudios, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -239,8 +253,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendDocuments;
             set
             {
-                Set(ref _canSendDocuments, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendDocuments, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -250,8 +266,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendVoiceNotes;
             set
             {
-                Set(ref _canSendVoiceNotes, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendVoiceNotes, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -261,8 +279,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendVideoNotes;
             set
             {
-                Set(ref _canSendVideoNotes, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendVideoNotes, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -272,19 +292,23 @@ namespace Telegram.ViewModels.Supergroups
             get => _canSendPolls;
             set
             {
-                Set(ref _canSendPolls, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canSendPolls, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
-        private bool _CanAddLinkPreviews;
+        private bool _canAddLinkPreviews;
         public bool CanAddLinkPreviews
         {
-            get => _CanAddLinkPreviews;
+            get => _canAddLinkPreviews;
             set
             {
-                Set(ref _CanAddLinkPreviews, value);
-                UpdateCanSendMediaMessages();
+                if (Set(ref _canAddLinkPreviews, value))
+                {
+                    UpdateCanSendMediaMessages();
+                }
             }
         }
 
@@ -319,8 +343,10 @@ namespace Telegram.ViewModels.Supergroups
             get => _slowModeDelay;
             set
             {
-                Set(ref _slowModeDelay, value);
-                RaisePropertyChanged(nameof(CanUnrestrictBoosters));
+                if (Set(ref _slowModeDelay, value))
+                {
+                    RaisePropertyChanged(nameof(CanUnrestrictBoosters));
+                }
             }
         }
 
@@ -396,7 +422,7 @@ namespace Telegram.ViewModels.Supergroups
                 CanSendVoiceNotes = _canSendVoiceNotes,
                 CanSendVideoNotes = _canSendVideoNotes,
                 CanSendPolls = _canSendPolls,
-                CanAddLinkPreviews = _CanAddLinkPreviews,
+                CanAddLinkPreviews = _canAddLinkPreviews,
                 CanSendBasicMessages = _canSendBasicMessages
             };
 
@@ -455,9 +481,10 @@ namespace Telegram.ViewModels.Supergroups
                 }
             }
 
-            if (fullInfo.UnrestrictBoostCount != _unrestrictBoostCount && supergroup.CanRestrictMembers())
+            var unrestrictBootCounts = _unrestrictBoosters ? _unrestrictBoostCount : 0;
+            if (fullInfo.UnrestrictBoostCount != unrestrictBootCounts && supergroup.CanRestrictMembers())
             {
-                var unrestrictBoostCount = await ClientService.SendAsync(new SetSupergroupUnrestrictBoostCount(supergroup.Id, _unrestrictBoostCount));
+                var unrestrictBoostCount = await ClientService.SendAsync(new SetSupergroupUnrestrictBoostCount(supergroup.Id, unrestrictBootCounts));
                 if (unrestrictBoostCount is Error)
                 {
                     return;

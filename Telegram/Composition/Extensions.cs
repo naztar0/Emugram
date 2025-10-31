@@ -25,7 +25,7 @@ namespace Windows.UI.Xaml.Hosting
         {
             if (element == null)
             {
-                Telegram.Logger.Error(new ArgumentNullException(nameof(element), Environment.StackTrace));
+                Telegram.Logger.Exception(new ArgumentNullException(nameof(element), Environment.StackTrace));
             }
 
             return ElementCompositionPreview.GetElementVisual(element);

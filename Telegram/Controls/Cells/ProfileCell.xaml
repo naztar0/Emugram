@@ -35,8 +35,7 @@
                                     Margin="0,6,8,6"
                                     Grid.RowSpan="2">
         <controls:ProfilePicture x:Name="Photo"
-                                 Width="36"
-                                 Height="36" />
+                                 Size="36" />
     </controls:ActiveStoriesSegments>
 
     <Border x:Name="RestrictsNewChats"

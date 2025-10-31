@@ -357,11 +357,13 @@ namespace Telegram.ViewModels.Chats
             }
         }
 
+        private string _nextOffset = string.Empty;
+
         public async Task<LoadMoreItemsResult> LoadMoreItemsAsync(uint count)
         {
             var totalCount = 0u;
 
-            var response = await ClientService.SendAsync(new GetChatRevenueTransactions(Chat.Id, Items.Count, 10));
+            var response = await ClientService.SendAsync(new GetChatRevenueTransactions(Chat.Id, _nextOffset, 10));
             if (response is ChatRevenueTransactions transactions)
             {
                 foreach (var transaction in transactions.Transactions)
@@ -369,9 +371,11 @@ namespace Telegram.ViewModels.Chats
                     Items.Add(transaction);
                     totalCount++;
                 }
+
+                _nextOffset = transactions.NextOffset;
+                HasMoreItems = transactions.NextOffset.Length > 0;
             }
 
-            HasMoreItems = totalCount > 0;
             IsEmpty = Items.Count == 0;
 
             return new LoadMoreItemsResult

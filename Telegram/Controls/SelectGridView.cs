@@ -6,6 +6,7 @@
 //
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 
 namespace Telegram.Controls
 {
@@ -34,18 +35,12 @@ namespace Telegram.Controls
                 return;
             }
 
-            for (int i = panel.FirstCacheIndex; i <= panel.LastCacheIndex; i++)
+            foreach (SelectorItem container in panel.Children)
             {
-                var container = ContainerFromIndex(i) as GridViewItem;
-                if (container == null)
-                {
-                    continue;
-                }
-
                 var content = container.ContentTemplateRoot;
                 if (content != null)
                 {
-                    content.IsHitTestVisible = SelectionMode == ListViewSelectionMode.None;
+                    content.IsHitTestVisible = SelectionMode != ListViewSelectionMode.Multiple;
                 }
             }
         }

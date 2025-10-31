@@ -351,9 +351,18 @@ namespace Telegram.ViewModels.Supergroups
                     supergroup = await ClientService.SendAsync(new GetSupergroup(super.SupergroupId)) as Supergroup;
                     fullInfo = await ClientService.SendAsync(new GetSupergroupFullInfo(super.SupergroupId)) as SupergroupFullInfo;
                 }
-                else if (response is Error)
+                else if (response is Error error)
                 {
-                    // TODO:
+                    if (error.MessageEquals(ErrorType.CHANNELS_TOO_MUCH))
+                    {
+                        NavigationService.ShowLimitReached(new PremiumLimitTypeSupergroupCount());
+                    }
+                    else
+                    {
+                        AlertsService.ShowAddUserAlert(XamlRoot, error.Message, false);
+                    }
+
+                    return;
                 }
             }
 

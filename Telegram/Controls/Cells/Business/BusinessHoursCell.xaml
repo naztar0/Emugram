@@ -15,11 +15,8 @@
         <ColumnDefinition />
         <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
-    <controls:BadgeButton x:Name="Button"
-                          Click="Button_Click"
-                          Style="{StaticResource GlyphSubbadgeBadgeButtonStyle}"
-                          Margin="-44,0,0,0" />
-
+    <controls:SettingsButton x:Name="Button"
+                             Click="Button_Click" />
 
     <ToggleSwitch x:Name="Switch"
                   Toggled="Switch_Toggled"

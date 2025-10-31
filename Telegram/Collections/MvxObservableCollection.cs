@@ -25,7 +25,7 @@ namespace Telegram.Collections
 {
     public interface IMvxObservableCollection : IList
     {
-        void ReplaceWith(IEnumerable collection);
+        void ReplaceWithT(IEnumerable collection);
     }
 
     public partial class MvxObservableCollection<T>
@@ -119,6 +119,11 @@ namespace Telegram.Collections
             OnCollectionChanged(args);
         }
 
+        public void AddRangeT(IEnumerable items)
+        {
+            AddRange(items.Cast<T>());
+        }
+
         /// <summary>
         /// Adds the specified items collection to the current <see cref="MvxObservableCollection{T}"/> instance.
         /// </summary>
@@ -163,18 +168,20 @@ namespace Telegram.Collections
                 throw new ArgumentNullException(nameof(items));
             }
 
+            int insertIndex = index;
+
             using (SuppressEvents())
             {
                 foreach (T item in items)
                 {
-                    Insert(index, item);
+                    Insert(insertIndex++, item);
                 }
             }
 
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, changedItems: items, startingIndex: index));
         }
 
-        public void ReplaceWith(IEnumerable items)
+        public void ReplaceWithT(IEnumerable items)
         {
             ReplaceWith(items.Cast<T>());
         }

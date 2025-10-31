@@ -37,6 +37,13 @@ using Windows.UI.Xaml.Media.Animation;
 
 namespace Telegram.Common
 {
+    public enum SensitiveContentSource
+    {
+        Chat,
+        Message,
+        Settings
+    }
+
     public partial class TLNavigationService : NavigationService
     {
         private readonly IClientService _clientService;
@@ -83,7 +90,7 @@ namespace Telegram.Common
                 Height = 640,
                 PersistedId = "WebApp",
                 ViewMode = openMode is WebAppOpenModeFullScreen ? ViewServiceMode.FullScreen : ViewServiceMode.Default,
-                Content = control => new WebAppPage(ClientService, botUser, url, launchId, menuBot, sourceChat, sourceLink, buttonText)
+                Content = control => new WebAppPage(ClientService, this, botUser, url, launchId, menuBot, sourceChat, sourceLink, buttonText)
             });
         }
 
@@ -94,7 +101,7 @@ namespace Telegram.Common
                 Width = 384,
                 Height = 640,
                 PersistedId = "WebApp",
-                Content = control => new WebAppPage(ClientService, botUser, url, title, gameChatId, gameMessageId)
+                Content = control => new WebAppPage(ClientService, this, botUser, url, title, gameChatId, gameMessageId)
             });
         }
 
@@ -372,13 +379,12 @@ namespace Telegram.Common
 
                 if (user.Id == _clientService.Options.MyId && chat.ViewAsTopics && topic == null)
                 {
-                    Navigate(typeof(ProfilePage), chat.Id, infoOverride: new SuppressNavigationTransitionInfo());
+                    Navigate(typeof(ProfilePage), new ChatMessageTopic(chat.Id, null), infoOverride: new SuppressNavigationTransitionInfo());
                     return;
                 }
 
-                if (user.RestrictionReason.Length > 0)
+                if (user.RestrictionInfo != null && await ShowRestrictionInfoAsync(user.RestrictionInfo, false))
                 {
-                    await ShowPopupAsync(user.RestrictionReason, Strings.AppName, Strings.OK);
                     return;
                 }
                 else if (user.Id == _clientService.Options.AntiSpamBotUserId)
@@ -410,14 +416,13 @@ namespace Telegram.Common
                     return;
                 }
 
-                if (supergroup.RestrictionReason.Length > 0)
+                if (supergroup.RestrictionInfo != null && await ShowRestrictionInfoAsync(supergroup.RestrictionInfo, false))
                 {
-                    await ShowPopupAsync(supergroup.RestrictionReason, Strings.AppName, Strings.OK);
                     return;
                 }
             }
 
-            if (Frame?.Content is ChatPage page && page.ViewModel?.ChatId == chat.Id && page.ViewModel?.Topic.AreTheSame(topic) is true && !scheduled && !createNewWindow)
+            if (Frame?.Content is ChatPage page && page.ViewModel?.ChatId == chat.Id && page.ViewModel?.TopicId.AreTheSame(topic) is true && !scheduled && !createNewWindow)
             {
                 var viewModel = page.ViewModel;
                 if (message != null)
@@ -580,6 +585,153 @@ namespace Telegram.Common
                         }
                     }
                 }
+            }
+        }
+
+        public async Task<bool> ShowRestrictionInfoAsync(RestrictionInfo info, bool messages)
+        {
+            if (info.RestrictionReason.Length > 0 || !ClientService.Options.CanIgnoreSensitiveContentRestrictions)
+            {
+                if (info.RestrictionReason.Length > 0)
+                {
+                    ShowPopup(info.RestrictionReason, Strings.AppName, Strings.OK);
+                }
+                else
+                {
+                    var text = messages
+                        ? Strings.MessageShowSensitiveContentMediaTextClosed
+                        : Strings.MessageShowSensitiveContentChannelTextClosed;
+
+                    var title = messages
+                        ? Strings.MessageShowSensitiveContentMediaTitle
+                        : Strings.MessageShowSensitiveContentChannelTitle;
+
+                    ShowPopup(text, title, secondary: Strings.MessageShowSensitiveContentChannelTextClosedButton);
+                }
+
+                return true;
+            }
+            else if (info.HasSensitiveContent)
+            {
+                return await ShowSensitiveContentAsync(messages ? SensitiveContentSource.Message : SensitiveContentSource.Chat);
+            }
+
+            return false;
+        }
+
+        public async Task<bool> ShowSensitiveContentAsync(SensitiveContentSource source)
+        {
+            if (ClientService.AgeVerificationParameters == null)
+            {
+                var text = source switch
+                {
+                    SensitiveContentSource.Chat => Strings.MessageShowSensitiveContentChannelText,
+                    SensitiveContentSource.Message => Strings.MessageShowSensitiveContentMediaText,
+                    _ => Strings.ConfirmSensitiveContentText
+                };
+
+                var title = source switch
+                {
+                    SensitiveContentSource.Chat => Strings.MessageShowSensitiveContentChannelTitle,
+                    SensitiveContentSource.Message => Strings.MessageShowSensitiveContentMediaTitle,
+                    _ => Strings.ConfirmSensitiveContentTitle
+                };
+
+                var popup = new MessagePopup
+                {
+                    Title = title,
+                    Message = text,
+                    SecondaryButtonText = Strings.Cancel
+                };
+
+                if (source == SensitiveContentSource.Settings)
+                {
+                    popup.PrimaryButtonText = Strings.Confirm;
+                }
+                else
+                {
+                    popup.PrimaryButtonText = Strings.MessageShowSensitiveContentButton;
+                    popup.CheckBoxLabel = Strings.MessageShowSensitiveContentAlways;
+                }
+
+                var confirm = await ShowPopupAsync(popup);
+                if (confirm == ContentDialogResult.Primary)
+                {
+                    if (popup.IsChecked is true)
+                    {
+                        ClientService.Options.IgnoreSensitiveContentRestrictions = true;
+                    }
+
+                    return false;
+                }
+
+                return true;
+            }
+            else
+            {
+                var message = LocaleService.Current.GetString("AgeVerificationText" + ClientService.AgeVerificationParameters.Country);
+
+                var confirm = await ShowPopupAsync(message, Strings.AgeVerificationTitle, Strings.AgeVerificationButton, Strings.Cancel);
+                if (confirm == ContentDialogResult.Primary)
+                {
+                    // We inline here instead of using MessageHelper.NavigateToMainWebApp to have more control over the process.
+                    var response = await ClientService.SendAsync(new SearchPublicChat(ClientService.AgeVerificationParameters.VerificationBotUsername));
+                    if (response is Chat chat && ClientService.TryGetUser(chat, out User botUser))
+                    {
+                        if (botUser.Type is not UserTypeBot { HasMainWebApp: true })
+                        {
+                            return true;
+                        }
+
+                        var responsa = await ClientService.SendAsync(new GetMainWebApp(0, botUser.Id, string.Empty, new WebAppOpenParameters(Theme.Current.Parameters, Constants.WebAppHostName, new WebAppOpenModeFullSize())));
+                        if (responsa is MainWebApp webApp)
+                        {
+                            var sourceLink = new InternalLinkTypeMainWebApp(ClientService.AgeVerificationParameters.VerificationBotUsername, string.Empty, webApp.Mode);
+                            var tcs = new TaskCompletionSource<bool>();
+
+                            await OpenAsync(new ViewServiceOptions
+                            {
+                                Width = 384,
+                                Height = 640,
+                                PersistedId = "WebApp",
+                                ViewMode = ViewServiceMode.Default,
+                                Content = control =>
+                                {
+                                    var page = new WebAppPage(ClientService, this, botUser, webApp.Url, sourceLink: sourceLink);
+                                    void handler(object sender, WebAppAgeVerificationCompletedEventArgs args)
+                                    {
+                                        page.AgeVerificationCompleted -= handler;
+                                        tcs.SetResult(args.Passed && args.Age >= ClientService.AgeVerificationParameters.MinAge);
+                                    }
+
+                                    page.AgeVerificationCompleted += handler;
+                                    return page;
+                                }
+                            });
+
+                            var passed = await tcs.Task;
+                            if (passed)
+                            {
+                                ClientService.Options.IgnoreSensitiveContentRestrictions = true;
+
+                                ShowToast(Strings.SensitiveContentSettingsToast, ToastPopupIcon.Info);
+                                return false;
+                            }
+
+                            ShowToast(string.Format("**{0}**\n{1}", Strings.AgeVerificationFailedTitle, Strings.AgeVerificationFailedText), ToastPopupIcon.Error);
+                            return true;
+                        }
+
+                        return true;
+                    }
+                    else
+                    {
+                        ShowToast(Strings.NoUsernameFound, ToastPopupIcon.Info);
+                        return true;
+                    }
+                }
+
+                return true;
             }
         }
 

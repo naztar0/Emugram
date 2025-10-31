@@ -105,9 +105,9 @@ namespace Telegram.ViewModels
             }
 
             var filter = new SearchMessagesFilterPinned();
-            var messageTopic = _viewModel.Topic;
+            var messageTopic = _viewModel.TopicId;
 
-            if (direction == PanelScrollingDirection.None && !_hasLoadedLastPinnedMessage && _viewModel.Topic == null)
+            if (direction == PanelScrollingDirection.None && !_hasLoadedLastPinnedMessage && _viewModel.TopicId == null)
             {
                 _hasLoadedLastPinnedMessage = true;
 
@@ -130,7 +130,7 @@ namespace Telegram.ViewModels
             var tsc = new TaskCompletionSource<ListWithTotalCount<PinnedMessageViewModel>>();
             void handler(Object result)
             {
-                if (result is FoundChatMessages foundChatMessages && foundChatMessages.Messages.Count > 0)
+                if (result is FoundChatMessages foundChatMessages)
                 {
                     var results = new ListWithTotalCount<PinnedMessageViewModel>(foundChatMessages.TotalCount);
 
@@ -151,14 +151,24 @@ namespace Telegram.ViewModels
 
             var response = await tsc.Task;
 
-            if (response is ListWithTotalCount<PinnedMessageViewModel> messages && messages.Count > 0)
+            if (response is ListWithTotalCount<PinnedMessageViewModel> messages)
             {
                 TotalCount = messages.TotalCount;
 
-                if (direction == PanelScrollingDirection.None)
+                if (direction == PanelScrollingDirection.None || messages.TotalCount == 0)
                 {
                     _messages.Clear();
                     Clear();
+                }
+                    
+                if (messages.Empty())
+                {
+                    if (this.Empty())
+                    {
+                        _viewModel.Delegate?.UpdatePinnedMessage(chat, false);
+                    }
+
+                    return;
                 }
 
                 var insert = direction == PanelScrollingDirection.Backward && !hasHole;

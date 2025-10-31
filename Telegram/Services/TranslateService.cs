@@ -93,8 +93,8 @@ namespace Telegram.Services
         public bool CanTranslate(string language, bool entireChat)
         {
             var allowed = entireChat
-                ? Settings.Translate.Chats
-                : Settings.Translate.Messages;
+                ? ClientService.TranslateMessages
+                : ClientService.TranslateChats;
 
             if (string.IsNullOrEmpty(language) || !allowed)
             {

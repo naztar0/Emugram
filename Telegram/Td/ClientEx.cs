@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Telegram.Common;
 using Telegram.Controls;
 using Telegram.Services;
 using Telegram.Td.Api;
@@ -17,16 +18,9 @@ namespace Telegram.Td
 {
     static class ClientEx
     {
-        public static void Send(this Client client, Function function, Action<Object> handler)
+        public static void Send(this Client client, Function function, RefAction<Object> closure, Action<Object> handler)
         {
-            if (handler == null)
-            {
-                client.Send(function, null);
-            }
-            else
-            {
-                client.Send(function, new TdHandler(handler));
-            }
+            client.Send(function, new TdHandler(closure, handler));
         }
 
         public static void Send(this Client client, Function function)
@@ -34,7 +28,7 @@ namespace Telegram.Td
             client.Send(function, null);
         }
 
-        public static Task<Object> SendAsync(this Client client, Function function, Action<Object> closure)
+        public static Task<Object> SendAsync(this Client client, Function function, RefAction<Object> closure)
         {
             var tsc = new TdCompletionSource(closure);
             client.Send(function, tsc);
@@ -143,6 +137,11 @@ namespace Telegram.Td
             return new FormattedText("\U0001F642", new[] { new TextEntity(0, 2, new TextEntityTypeCustomEmoji(customEmojiId)) });
         }
 
+        public static FormattedText CustomEmoji(string glyph)
+        {
+            return new FormattedText(glyph, new[] { new TextEntity(0, 1, new TextEntityTypeCustomEmoji(-1)) });
+        }
+
         public static FormattedText Format(string format, params object[] args)
         {
             // TODO: doesn't support more than 10 parameters but I'm lazy
@@ -230,7 +229,39 @@ namespace Telegram.Td
                 return new SolidColorBrush(accent.LightThemeColors[0]);
             }
 
-            return PlaceholderImage.GetBrush(id);
+            return ProfilePictureSourceText.GetBrush(id);
+        }
+
+        public static SolidColorBrush GetAccentBrush(this IClientService clientService, Chat chat)
+        {
+            if (chat.UpgradedGiftColors != null)
+            {
+                return new SolidColorBrush(chat.UpgradedGiftColors.LightThemeAccentColor.ToColor());
+            }
+
+            var accent = clientService.GetAccentColor(chat.AccentColorId);
+            if (accent != null)
+            {
+                return new SolidColorBrush(accent.LightThemeColors[0]);
+            }
+
+            return ProfilePictureSourceText.GetBrush(chat.AccentColorId);
+        }
+
+        public static SolidColorBrush GetAccentBrush(this IClientService clientService, User user)
+        {
+            if (user.UpgradedGiftColors != null)
+            {
+                return new SolidColorBrush(user.UpgradedGiftColors.LightThemeAccentColor.ToColor());
+            }
+
+            var accent = clientService.GetAccentColor(user.AccentColorId);
+            if (accent != null)
+            {
+                return new SolidColorBrush(accent.LightThemeColors[0]);
+            }
+
+            return ProfilePictureSourceText.GetBrush(user.AccentColorId);
         }
     }
 }

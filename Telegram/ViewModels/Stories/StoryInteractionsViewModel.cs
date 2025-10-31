@@ -192,7 +192,7 @@ namespace Telegram.ViewModels
             var totalCount = 0u;
             var token = _nextToken = new CancellationTokenSource();
 
-            var response = await ClientService.SendAsync(new GetStoryInteractions(_story.StoryId, Query ?? string.Empty, OnlyContacts > 0, false, SortBy == StoryInteractionsSortBy.Reaction, _nextOffset, 50));
+            var response = await ClientService.SendAsync(new GetStoryInteractions(_story.Id, Query ?? string.Empty, OnlyContacts > 0, false, SortBy == StoryInteractionsSortBy.Reaction, _nextOffset, 50));
             if (response is StoryInteractions interactions && !token.IsCancellationRequested)
             {
                 _nextOffset = interactions.NextOffset;

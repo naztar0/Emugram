@@ -101,7 +101,6 @@ namespace Telegram.Collections
             if (source is ISupportIncrementalLoading incremental && incremental.HasMoreItems)
             {
                 _source = source;
-                _source.CollectionChanged += OnCollectionChanged;
 
                 if (_initialized)
                 {
@@ -126,11 +125,17 @@ namespace Telegram.Collections
                     _loading = false;
                     _replacing = false;
 
+                    _source.CollectionChanged += OnCollectionChanged;
+
                     // I'm not sure in what conditions this can happen, but it happens
                     if (Count < 1 && incremental.HasMoreItems && !reentrancy)
                     {
                         UpdateImpl(source, true);
                     }
+                }
+                else
+                {
+                    _source.CollectionChanged += OnCollectionChanged;
                 }
             }
             else

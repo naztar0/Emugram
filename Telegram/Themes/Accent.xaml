@@ -104,7 +104,7 @@
                 Value="Transparent" />
         <!--<Setter Property="Foreground" Value="{ThemeResource MessageMediaForegroundBrush}" />-->
         <Setter Property="BorderBrush"
-                Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                Value="{ThemeResource TextFillColorPrimaryBrush}" />
         <Setter Property="BorderThickness"
                 Value="0" />
         <Setter Property="Padding"
@@ -226,7 +226,7 @@
                 Value="Transparent" />
         <!--<Setter Property="Foreground" Value="{ThemeResource MessageMediaForegroundBrush}" />-->
         <Setter Property="BorderBrush"
-                Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                Value="{ThemeResource TextFillColorPrimaryBrush}" />
         <Setter Property="BorderThickness"
                 Value="0" />
         <Setter Property="Padding"
@@ -361,7 +361,7 @@
         <Setter Property="Foreground"
                 Value="#FFFFFF" />
         <Setter Property="BorderBrush"
-                Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                Value="{ThemeResource TextFillColorPrimaryBrush}" />
         <Setter Property="BorderThickness"
                 Value="0" />
         <Setter Property="Padding"
@@ -499,7 +499,7 @@
         <Setter Property="Foreground"
                 Value="#FFFFFF" />
         <Setter Property="BorderBrush"
-                Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                Value="{ThemeResource TextFillColorPrimaryBrush}" />
         <Setter Property="BorderThickness"
                 Value="0" />
         <Setter Property="Padding"

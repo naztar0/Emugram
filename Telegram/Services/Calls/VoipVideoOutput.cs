@@ -5,6 +5,7 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System.Numerics;
+using Telegram.Common;
 using Telegram.Native.Calls;
 using Telegram.Navigation;
 using Windows.Foundation;
@@ -36,7 +37,7 @@ namespace Telegram.Services.Calls
             visual.RelativeSizeAdjustment = Vector2.One;
             ElementCompositionPreview.SetElementChildVisual(element, visual);
 
-            return new VoipVideoOutputSink(visual, mirrored);
+            return new VoipVideoOutputSink(PlaceholderHelper.Foreground.Device, visual, mirrored);
         }
 
         public void Stop()

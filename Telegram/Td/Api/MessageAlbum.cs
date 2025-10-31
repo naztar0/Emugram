@@ -157,13 +157,13 @@ namespace Telegram.Td.Api
                 var width = Sanitize(rect.Width * ratio);
                 var height = Sanitize(rect.Height * ratio);
 
-                if (!positions.Item1[i].Item2.HasFlag(MosaicItemPosition.Top))
+                if (height >= 1 && !positions.Item1[i].Item2.HasFlag(MosaicItemPosition.Top))
                 {
                     y += 1;
                     height -= 1;
                 }
 
-                if (!positions.Item1[i].Item2.HasFlag(MosaicItemPosition.Left))
+                if (width >= 1 && !positions.Item1[i].Item2.HasFlag(MosaicItemPosition.Left))
                 {
                     x += 1;
                     width -= 1;

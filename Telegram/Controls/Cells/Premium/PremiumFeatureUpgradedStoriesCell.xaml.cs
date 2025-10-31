@@ -46,7 +46,7 @@ namespace Telegram.Controls.Cells.Premium
                 clientService.TryGetUser(chat, out User user))
             {
                 Segments.UpdateSegments(96, 8, 8, 3);
-                Photo.SetUser(clientService, user, 96);
+                Photo.Source = ProfilePictureSource.User(clientService, user);
             }
 
             //clientService.Send(new ViewPremiumFeature(new PremiumFeatureUpgradedStories()));

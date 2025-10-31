@@ -8,9 +8,12 @@ using System;
 using Telegram.Common;
 using Telegram.Converters;
 using Telegram.Navigation;
+using Telegram.Services;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
-using Telegram.ViewModels.Delegates;
+using Telegram.ViewModels.Chats;
+using Telegram.ViewModels.Profile;
+using Telegram.Views;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -19,7 +22,7 @@ namespace Telegram.Controls.Cells
 {
     public sealed partial class SharedFileCell : Grid
     {
-        private IMessageDelegate _delegate;
+        private MediaTabsViewModelBase _viewModel;
         private MessageWithOwner _message;
 
         private long _fileToken;
@@ -54,7 +57,7 @@ namespace Telegram.Controls.Cells
             TextRoot.Opacity = 0;
         }
 
-        public void UpdateMessage(IMessageDelegate delegato, MessageWithOwner message)
+        public void UpdateMessage(MediaTabsViewModelBase viewModel, MessageWithOwner message)
         {
             if (_hidden)
             {
@@ -63,7 +66,7 @@ namespace Telegram.Controls.Cells
                 TextRoot.Opacity = 1;
             }
 
-            _delegate = delegato;
+            _viewModel = viewModel;
             _message = message;
 
             var data = message.GetFileAndThumbnailAndName();
@@ -287,7 +290,7 @@ namespace Telegram.Controls.Cells
 
             if (file.Local.IsDownloadingActive)
             {
-                if (_delegate != null)
+                if (_viewModel != null)
                 {
                     _message.ClientService.CancelDownloadFile(file);
                 }
@@ -298,7 +301,7 @@ namespace Telegram.Controls.Cells
             }
             else if (file.Local.CanBeDownloaded && !file.Local.IsDownloadingActive && !file.Local.IsDownloadingCompleted)
             {
-                if (_delegate != null)
+                if (_viewModel != null)
                 {
                     if (_message.CanBeAddedToDownloads)
                     {
@@ -314,19 +317,30 @@ namespace Telegram.Controls.Cells
                     _message.ClientService.Send(new ToggleDownloadIsPaused(file.Id, false));
                 }
             }
-            else if (_delegate == null)
+            else if (_viewModel == null)
             {
-                // TODO: Replace with IStorageService.OpenFileAsync
-
-                var permanent = await _message.ClientService.GetPermanentFileAsync(file);
-                if (permanent != null)
+                // TODO: I don't like retrieving services this way
+                var service = TypeResolver.Current.Resolve<IStorageService>(_message.ClientService.SessionId);
+                if (service != null)
                 {
-                    await Windows.System.Launcher.LaunchFileAsync(permanent);
+                    _ = service.OpenFileAsync(file);
                 }
+            }
+            else if (_message.Content is MessageDocument document && document.IsPhoto())
+            {
+                var response = await _message.ClientService.SendAsync(new GetMessageProperties(_message.ChatId, _message.Id));
+                if (response is not MessageProperties properties)
+                {
+                    return;
+                }
+
+                var storageService = TypeResolver.Current.Resolve<IStorageService>(_message.ClientService.SessionId);
+                var viewModel = new ChatGalleryViewModel(_message.ClientService, storageService, _viewModel.Aggregator, _message.ChatId, _viewModel.Topic, _message, properties);
+                _viewModel.NavigationService.ShowGallery(viewModel, Texture);
             }
             else
             {
-                _delegate.OpenFile(file);
+                _viewModel.MessageDelegate.OpenFile(file);
             }
         }
     }

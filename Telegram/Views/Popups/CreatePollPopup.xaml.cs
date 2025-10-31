@@ -384,7 +384,7 @@ namespace Telegram.Views.Popups
 
         private void Emoji_Click(object sender, RoutedEventArgs e)
         {
-            var element = FocusManager.GetFocusedElement();
+            var element = FocusManagerEx.TryGetFocusedElement();
             if (element is not FormattedTextBox textBox)
             {
                 return;

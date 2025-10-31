@@ -31,7 +31,7 @@
     <GenerateTestArtifacts>False</GenerateTestArtifacts>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>11.0</LangVersion>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <ProjectPriIndexName>Telegram</ProjectPriIndexName>
     <PackageCertificateThumbprint>45698A6F1CF15CC081056106A2A8E92B94326D06</PackageCertificateThumbprint>
@@ -51,7 +51,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;NETFX_CORE;WINDOWS_UWP;ENABLE_CALLS;CODE_ANALYSIS;CODE_ANALYSIS;TD_CX</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NETFX_CORE;WINDOWS_UWP;ENABLE_CALLS;TD_CX;CODE_ANALYSIS</DefineConstants>
     <NoWarn>;2008</NoWarn>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -63,7 +63,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM64'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\ARM64\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;NETFX_CORE;WINDOWS_UWP;CODE_ANALYSIS;ENABLE_CALLS;CODE_ANALYSIS;TD_CX</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NETFX_CORE;WINDOWS_UWP;ENABLE_CALLS;TD_CX;CODE_ANALYSIS</DefineConstants>
     <NoWarn>;2008</NoWarn>
     <DebugType>full</DebugType>
     <PlatformTarget>ARM64</PlatformTarget>
@@ -76,7 +76,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\x86\Release\</OutputPath>
-    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;CODE_ANALYSIS;ENABLE_CALLS</DefineConstants>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;ENABLE_CALLS;TD_CX;CODE_ANALYSIS</DefineConstants>
     <Optimize>true</Optimize>
     <NoWarn>;2008</NoWarn>
     <DebugType>pdbonly</DebugType>
@@ -89,7 +89,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM64'">
     <OutputPath>bin\ARM64\Release\</OutputPath>
-    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;CODE_ANALYSIS;ENABLE_CALLS;CODE_ANALYSIS;TD_CX</DefineConstants>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;ENABLE_CALLS;TD_CX;CODE_ANALYSIS</DefineConstants>
     <Optimize>true</Optimize>
     <NoWarn>;2008</NoWarn>
     <DebugType>pdbonly</DebugType>
@@ -102,7 +102,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;CODE_ANALYSIS;ENABLE_CALLS;CODE_ANALYSIS;TD_CX</DefineConstants>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;ENABLE_CALLS;TD_CX;CODE_ANALYSIS</DefineConstants>
     <Optimize>true</Optimize>
     <NoWarn>;2008</NoWarn>
     <DebugType>pdbonly</DebugType>
@@ -117,6 +117,8 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AI\RecognizedTextPointer.cs" />
+    <Compile Include="AI\RecognizedTextSpatialIndex.cs" />
     <Compile Include="Assets\Icons\ActionFile.cs" />
     <Compile Include="Assets\Icons\ActionGame.cs" />
     <Compile Include="Assets\Icons\ActionSticker.cs" />
@@ -201,14 +203,19 @@
     <Compile Include="Collections\Experimental\ItemCacheManager.cs" />
     <Compile Include="Collections\Experimental\ItemIndexRangeExtensions.cs" />
     <Compile Include="Collections\Experimental\ItemIndexRangeList.cs" />
+    <Compile Include="Collections\IncrementalCollectionView.cs" />
+    <Compile Include="Collections\IndexShiftTracker.cs" />
     <Compile Include="Collections\ListWithTotalCount.cs" />
+    <Compile Include="Collections\LockFreeArrayList.cs" />
+    <Compile Include="Collections\ReaderWriterDictionary.cs" />
     <Compile Include="Collections\SearchEmojiCollection.cs" />
     <Compile Include="Collections\SynchronizedList.cs" />
-    <Compile Include="Common\AsyncMediaPlayerSwapChain.cs" />
+    <Compile Include="Common\AnimationScheduler.cs" />
     <Compile Include="Common\AutomaticDragHelper.cs" />
     <Compile Include="Common\BezierPoint.cs" />
     <Compile Include="Common\DebouncedPropertyWithToken.cs" />
     <Compile Include="Common\FeatureTokenGenerator.cs" />
+    <Compile Include="Collections\HashSetDictionary.cs" />
     <Compile Include="Common\HttpServer.cs" />
     <Compile Include="Common\LocalDatabase.cs" />
     <Compile Include="Common\MediaDeviceTracker.cs" />
@@ -216,9 +223,14 @@
     <Compile Include="Common\MediaDevicePermissions.cs" />
     <Compile Include="Common\MediaHttpServer.cs" />
     <Compile Include="Common\SliderHelper.cs" />
+    <Compile Include="Common\ThemeShadowEx.cs" />
+    <Compile Include="Common\NormalizingStringBuilder.cs" />
     <Compile Include="Common\VideoPreloader.cs" />
+    <Compile Include="Common\WebAppStorage.cs" />
+    <Compile Include="Composition\CompositionPropertySetColorSource.cs" />
     <Compile Include="Composition\CompositionVisualColorSource.cs" />
     <Compile Include="Composition\WeakInteractionTrackerOwner.cs" />
+    <Compile Include="Controls\ButtonEx.cs" />
     <Compile Include="Controls\Calls\MediaStateBadge.xaml.cs">
       <DependentUpon>MediaStateBadge.xaml</DependentUpon>
     </Compile>
@@ -249,6 +261,9 @@
     <Compile Include="Controls\Cells\ForumTopicShareCell.xaml.cs">
       <DependentUpon>ForumTopicShareCell.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\Cells\GroupCallMessageCell.xaml.cs">
+      <DependentUpon>GroupCallMessageCell.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\Cells\PaidReactorCell.xaml.cs">
       <DependentUpon>PaidReactorCell.xaml</DependentUpon>
     </Compile>
@@ -263,6 +278,9 @@
     </Compile>
     <Compile Include="Controls\Cells\Revenue\StarTransactionCell.xaml.cs">
       <DependentUpon>StarTransactionCell.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Cells\PlaybackItemCell.xaml.cs">
+      <DependentUpon>PlaybackItemCell.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\Cells\StarAmountCell.xaml.cs">
       <DependentUpon>StarAmountCell.xaml</DependentUpon>
@@ -291,6 +309,9 @@
     <Compile Include="Controls\Cells\PremiumGiftCell.xaml.cs">
       <DependentUpon>PremiumGiftCell.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\Cells\SharedMediaCell.xaml.cs">
+      <DependentUpon>SharedMediaCell.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\ChatFoldersNavView.cs" />
     <Compile Include="Controls\Chats\ChatAccountInfo.xaml.cs">
       <DependentUpon>ChatAccountInfo.xaml</DependentUpon>
@@ -307,6 +328,7 @@
     <Compile Include="Controls\Chats\ChatConnectedBotHeader.xaml.cs">
       <DependentUpon>ChatConnectedBotHeader.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\ControlEx.cs" />
     <Compile Include="Controls\Drawers\EmojiSkinFlyout.xaml.cs">
       <DependentUpon>EmojiSkinFlyout.xaml</DependentUpon>
     </Compile>
@@ -323,8 +345,12 @@
       <DependentUpon>GalleryCompactOverlay.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\GlassToggleButton.cs" />
+    <Compile Include="Controls\ImageTextSelection.cs" />
+    <Compile Include="Controls\Media\LinearGaussianBrush.cs" />
+    <Compile Include="Controls\Media\PowerSavingBrushBase.cs" />
     <Compile Include="Controls\MenuFlyoutContent.cs" />
     <Compile Include="Composition\CompositionColorSource.cs" />
+    <Compile Include="Controls\MenuFlyoutInfoItem.cs" />
     <Compile Include="Controls\Messages\Content\PaidMediaContent.xaml.cs">
       <DependentUpon>PaidMediaContent.xaml</DependentUpon>
     </Compile>
@@ -340,6 +366,30 @@
     <Compile Include="Controls\Messages\Content\StickerSetContent.xaml.cs">
       <DependentUpon>StickerSetContent.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AI\RecognizedTextBlock.cs" />
+    <Compile Include="AI\RecognizedTextBoundingBoxHelper.cs" />
+    <Compile Include="AI\RecognizedTextBoundingBoxRounding.cs" />
+    <Compile Include="AI\RecognizedTextBoundingBoxSimplifier.cs" />
+    <Compile Include="AI\RecognizedTextSelection.cs" />
+    <Compile Include="AI\RecognizedTextSelectionManager.cs" />
+    <Compile Include="Common\ThumbnailController.cs" />
+    <Compile Include="Controls\PremiumProgressBar.cs" />
+    <Compile Include="Controls\ProgressRingIndeterminate.cs" />
+    <Compile Include="Controls\SlidePanel.cs" />
+    <Compile Include="Controls\Views\SearchPostsTabPage.xaml.cs">
+      <DependentUpon>SearchPostsTabPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\Views\RecentChatsView.xaml.cs">
+      <DependentUpon>RecentChatsView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Services\Calls\VoipGroupCallMessage.cs" />
+    <Compile Include="Services\Calls\VoipGroupCallMessagesChangedEventArgs.cs" />
+    <Compile Include="Services\Settings\ToolTipSettings.cs" />
+    <Compile Include="Services\TextRecognitionService.cs" />
+    <Compile Include="Td\Api\ChatProjection.cs" />
+    <Compile Include="Td\Api\InlineKeyboardButtonTypeSuggestionApprove.cs" />
+    <Compile Include="Td\Api\InlineKeyboardButtonTypeSuggestionDecline.cs" />
+    <Compile Include="Td\Api\InlineKeyboardButtonTypeSuggestionEdit.cs" />
     <Compile Include="Controls\Messages\MessageEffectMenuFlyout.xaml.cs">
       <DependentUpon>MessageEffectMenuFlyout.xaml</DependentUpon>
     </Compile>
@@ -350,6 +400,9 @@
       <DependentUpon>MessageFactCheck.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\Messages\ReplyMarkupInlinePanel.cs" />
+    <Compile Include="Controls\Messages\Service\SuggestedPostInfoCell.xaml.cs">
+      <DependentUpon>SuggestedPostInfoCell.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\NativeVideoPlayer.xaml.cs">
       <DependentUpon>NativeVideoPlayer.xaml</DependentUpon>
     </Compile>
@@ -359,10 +412,14 @@
     <Compile Include="Controls\Messages\Content\ChecklistTaskContent.xaml.cs">
       <DependentUpon>ChecklistTaskContent.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\PlaybackOverlay.xaml.cs">
+      <DependentUpon>PlaybackOverlay.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\PremiumStarHeader.cs" />
     <Compile Include="Controls\ProfileGiftsCover.xaml.cs">
       <DependentUpon>ProfileGiftsCover.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\ProfileRating.cs" />
     <Compile Include="Controls\ProfilePatternCover.cs" />
     <Compile Include="Common\RectangleF.cs" />
     <Compile Include="Controls\SlideTextBlock.cs" />
@@ -384,6 +441,7 @@
     <Compile Include="Entities\StorageAlbum.cs" />
     <Compile Include="Entities\VideoGeneration.cs" />
     <Compile Include="Services\Calls\VoipCallBase.cs" />
+    <Compile Include="Services\Calls\VoipCoordinator.cs" />
     <Compile Include="Services\Calls\VoipGroupCallVerificationStateChangedEventArgs.cs" />
     <Compile Include="Services\Calls\VoipGroupCallJoinedStateChangedEventArgs.cs" />
     <Compile Include="Services\Calls\VoipGroupCallParticipants.cs" />
@@ -409,7 +467,6 @@
     <Compile Include="Services\PaidReactionService.cs" />
     <Compile Include="Controls\Messages\ReactionAsPaidButton.cs" />
     <Compile Include="Controls\Messages\ReactionAsTagButton.cs" />
-    <Compile Include="Common\AsyncMediaPlayer.cs" />
     <Compile Include="Controls\PremiumSlider.cs" />
     <Compile Include="Services\Calls\VoipService.cs" />
     <Compile Include="Services\Calls\VoipVideoType.cs" />
@@ -418,8 +475,10 @@
     <Compile Include="Services\ForumTopicService.cs" />
     <Compile Include="Td\Api\ErrorStarsNeeded.cs" />
     <Compile Include="Td\Api\InputMessageReplyToTopicMessage.cs" />
+    <Compile Include="Services\MessageAlbumLastMessageService.cs" />
     <Compile Include="Td\Api\MessageHeaderAccountInfo.cs" />
     <Compile Include="Td\Api\MessageHeaderMessageTopic.cs" />
+    <Compile Include="Td\Api\MessageHeaderNewThread.cs" />
     <Compile Include="Td\Api\PremiumLimitTypeFileSize.cs" />
     <Compile Include="Td\Api\ReactionTypeEqualityComparer.cs" />
     <Compile Include="Controls\PremiumStarCount.cs" />
@@ -530,7 +589,6 @@
       <DependentUpon>ReactionsMenuFlyout.xaml</DependentUpon>
     </Compile>
     <Compile Include="Controls\OverlayWindow.cs" />
-    <Compile Include="Controls\PremiumProgressBar.cs" />
     <Compile Include="Controls\Stories\StoriesWindow.xaml.cs">
       <DependentUpon>StoriesWindow.xaml</DependentUpon>
     </Compile>
@@ -569,54 +627,10 @@
     <Compile Include="Td\Api\UpdateMessageEffect.cs" />
     <Compile Include="Td\Api\UpdateMessageTranslatedText.cs" />
     <Compile Include="Td\Api\UpdatePaymentCompleted.cs" />
+    <Compile Include="Td\Api\UpdateTextRecognition.cs" />
     <Compile Include="TypeContainerGenerator.cs" />
     <Compile Include="TypeCrosserGenerator.cs" />
-    <Compile Include="Videolan\Platforms\Windows\InitializedEventArgs.cs" />
-    <Compile Include="Videolan\Platforms\Windows\VideoView.cs" />
-    <Compile Include="Videolan\Platforms\Windows\VideoViewBase.cs" />
-    <Compile Include="Videolan\Platforms\Windows\VideoViewOfTInitializedEventArgs.cs" />
-    <Compile Include="Videolan\Shared\Core\Constants.cs" />
-    <Compile Include="Videolan\Shared\Core\Core.cs" />
-    <Compile Include="Videolan\Shared\Core\Core.UWP.cs" />
-    <Compile Include="Videolan\Shared\Dialog.cs" />
-    <Compile Include="Videolan\Shared\Equalizer.cs" />
-    <Compile Include="Videolan\Shared\Events\EventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaDiscovererEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaListEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaPlayerChangedEventArgs.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaPlayerChangingEventArgs.cs" />
-    <Compile Include="Videolan\Shared\Events\MediaPlayerEventManager.cs" />
-    <Compile Include="Videolan\Shared\Events\RendererDiscovererEventManager.cs" />
-    <Compile Include="Videolan\Shared\Helpers\MarshalExtensions.cs" />
-    <Compile Include="Videolan\Shared\Helpers\MarshalUtils.cs" />
-    <Compile Include="Videolan\Shared\Helpers\PlatformHelper.cs" />
-    <Compile Include="Videolan\Shared\Internal.cs" />
-    <Compile Include="Videolan\Shared\IVideoControl.cs" />
-    <Compile Include="Videolan\Shared\IVideoView.cs" />
-    <Compile Include="Videolan\Shared\LibVLC.cs" />
-    <Compile Include="Videolan\Shared\LibVLCEvents.cs" />
-    <Compile Include="Videolan\Shared\Media.cs" />
-    <Compile Include="Videolan\Shared\MediaConfiguration.cs" />
-    <Compile Include="Videolan\Shared\MediaDiscoverer.cs" />
-    <Compile Include="Videolan\Shared\MediaInput.cs" />
-    <Compile Include="Videolan\Shared\MediaList.cs" />
-    <Compile Include="Videolan\Shared\MediaPlayer.cs" />
-    <Compile Include="Videolan\Shared\RendererDiscoverer.cs" />
-    <Compile Include="Videolan\Shared\StreamMediaInput.cs" />
-    <Compile Include="Videolan\Shared\Structures\AudioOutputDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\AudioOutputDevice.cs" />
-    <Compile Include="Videolan\Shared\Structures\ChapterDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaDiscovererDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaSlave.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaStats.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaTrack.cs" />
-    <Compile Include="Videolan\Shared\Structures\MediaTrackData.cs" />
-    <Compile Include="Videolan\Shared\Structures\ModuleDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\RendererDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\TrackDescription.cs" />
-    <Compile Include="Videolan\Shared\Structures\VideoViewpoint.cs" />
-    <Compile Include="Videolan\Shared\VLCException.cs" />
+    <Compile Include="Controls\VideoViewBase.cs" />
     <Compile Include="ViewModels\Business\BusinessFeatureViewModelBase.cs" />
     <Compile Include="ViewModels\Business\BusinessLocationViewModel.cs" />
     <Compile Include="ViewModels\Business\BusinessChatLinksViewModel.cs" />
@@ -643,6 +657,7 @@
     <Compile Include="ViewModels\Delegates\ISavedMessagesChatsDelegate.cs" />
     <Compile Include="ViewModels\Delegates\ITopicListDelegate.cs" />
     <Compile Include="ViewModels\DialogBusinessRepliesViewModel.cs" />
+    <Compile Include="ViewModels\Dialogs\DialogPendingTextMessage.cs" />
     <Compile Include="ViewModels\Dialogs\DialogPinnedMessagesViewModel.cs" />
     <Compile Include="ViewModels\Dialogs\DialogUnreadMessagesViewModel.cs" />
     <Compile Include="ViewModels\DialogViewModel.Translate.cs" />
@@ -662,6 +677,7 @@
     <Compile Include="ViewModels\Profile\ProfileSavedChatsTabViewModel.cs" />
     <Compile Include="ViewModels\Profile\ProfileStoriesTabViewModel.cs" />
     <Compile Include="ViewModels\Profile\ProfileTabsViewModel.cs" />
+    <Compile Include="ViewModels\SearchPostsViewModel.cs" />
     <Compile Include="ViewModels\SearchWebAppsViewModel.cs" />
     <Compile Include="ViewModels\SearchChannelsViewModel.cs" />
     <Compile Include="ViewModels\SearchChatsViewModel.cs" />
@@ -671,7 +687,6 @@
     <Compile Include="Collections\KeyedList.cs" />
     <Compile Include="Collections\MvxObservableCollection.cs" />
     <Compile Include="Collections\SearchChatMessagesCollection.cs" />
-    <Compile Include="Collections\SearchChatsCollection.cs" />
     <Compile Include="Collections\SearchCollection.cs" />
     <Compile Include="Collections\SearchMembersAndUsersCollection.cs" />
     <Compile Include="Collections\SearchStickersCollection.cs" />
@@ -711,11 +726,8 @@
     <Compile Include="Common\DisposableMutex.cs" />
     <Compile Include="Common\EventDebouncer.cs" />
     <Compile Include="Common\ImageHelper.cs" />
-    <Compile Include="Common\LoopThread.cs" />
-    <Compile Include="Common\LoopThreadPool.cs" />
     <Compile Include="Common\MenuFlyoutHelper.cs" />
     <Compile Include="Td\Api\PremiumLimitTypeConnectedAccounts.cs" />
-    <Compile Include="Streams\RemoteFileStream.cs" />
     <Compile Include="Common\Scrim.cs" />
     <Compile Include="Common\SoundEffects.cs" />
     <Compile Include="Common\UpdateManager.cs" />
@@ -891,7 +903,7 @@
     <Compile Include="Controls\LoopingPicker.cs" />
     <Compile Include="Controls\MasterDetailPanel.cs" />
     <Compile Include="Controls\Media\SolidGaussianBrush.cs" />
-    <Compile Include="Controls\Media\TiledBrush.cs" />
+    <Compile Include="Controls\Media\ChatBackgroundBrush.cs" />
     <Compile Include="Controls\MenuButton.cs" />
     <Compile Include="Controls\MenuFlyoutLabel.cs" />
     <Compile Include="Controls\MenuFlyoutProfile.cs" />
@@ -981,7 +993,7 @@
     <Compile Include="Controls\NavigationViewItemBase.cs" />
     <Compile Include="Controls\NavigationViewItemSeparator.cs" />
     <Compile Include="Controls\PageHeader.cs" />
-    <Compile Include="Controls\BadgeButton.cs" />
+    <Compile Include="Controls\SettingsButton.cs" />
     <Compile Include="Controls\Payments\CardTextBox.cs" />
     <Compile Include="Controls\Payments\DateTextBox.cs" />
     <Compile Include="Controls\Payments\LabeledPricesPanel.cs" />
@@ -1232,7 +1244,7 @@
     <Compile Include="Views\Folders\Popups\ShareFolderPopup.xaml.cs">
       <DependentUpon>ShareFolderPopup.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Common\MultiValueDictionary.cs" />
+    <Compile Include="Collections\MultiValueDictionary.cs" />
     <Compile Include="Views\HostedPage.cs" />
     <Compile Include="Views\Host\SharePage.xaml.cs">
       <DependentUpon>SharePage.xaml</DependentUpon>
@@ -1265,6 +1277,24 @@
       <DependentUpon>BackgroundPopup.xaml</DependentUpon>
     </Compile>
     <Compile Include="Services\CaptureSessionService.cs" />
+    <Compile Include="Views\Popups\PlaybackPopup.xaml.cs">
+      <DependentUpon>PlaybackPopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Popups\ChooseGiftsPopup.xaml.cs">
+      <DependentUpon>ChooseGiftsPopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Popups\ChooseStoriesPopup.xaml.cs">
+      <DependentUpon>ChooseStoriesPopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Popups\WebAppRestorePopup.xaml.cs">
+      <DependentUpon>WebAppRestorePopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Popups\ChooseDateTimePopup.xaml.cs">
+      <DependentUpon>ChooseDateTimePopup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Popups\TextRecognitionDownloadPopup.xaml.cs">
+      <DependentUpon>TextRecognitionDownloadPopup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Popups\CreateChecklistPopup.xaml.cs">
       <DependentUpon>CreateChecklistPopup.xaml</DependentUpon>
     </Compile>
@@ -1308,6 +1338,9 @@
     <Compile Include="Views\Popups\FactCheckPopup.xaml.cs">
       <DependentUpon>FactCheckPopup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Popups\SuggestPostPopup.xaml.cs">
+      <DependentUpon>SuggestPostPopup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Popups\QrCodePopup.xaml.cs">
       <DependentUpon>QrCodePopup.xaml</DependentUpon>
     </Compile>
@@ -1350,6 +1383,9 @@
     <Compile Include="Views\Premium\Popups\ChangePrivacyPopup.xaml.cs">
       <DependentUpon>ChangePrivacyPopup.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Profile\Popups\ProfileRatingPopup.xaml.cs">
+      <DependentUpon>ProfileRatingPopup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Profile\ProfileSavedMessagesTabPage.xaml.cs">
       <DependentUpon>ProfileSavedMessagesTabPage.xaml</DependentUpon>
     </Compile>
@@ -1367,6 +1403,12 @@
     </Compile>
     <Compile Include="Views\Profile\ProfileSavedChatsTabPage.xaml.cs">
       <DependentUpon>ProfileSavedChatsTabPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Settings\SettingsProfileColorNameTabPage.xaml.cs">
+      <DependentUpon>SettingsProfileColorNameTabPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Settings\SettingsProfileColorProfileTabPage.xaml.cs">
+      <DependentUpon>SettingsProfileColorProfileTabPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Settings\Password\SettingsPasswordCreatePopup.xaml.cs">
       <DependentUpon>SettingsPasswordCreatePopup.xaml</DependentUpon>
@@ -1506,6 +1548,9 @@
     <Compile Include="Views\Chats\ChatInviteLinksPage.xaml.cs">
       <DependentUpon>ChatInviteLinksPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Stars\Popups\UpgradedGiftValuePopup.xaml.cs">
+      <DependentUpon>UpgradedGiftValuePopup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Stars\StarsPage.xaml.cs">
       <DependentUpon>StarsPage.xaml</DependentUpon>
     </Compile>
@@ -1534,7 +1579,6 @@
     </Compile>
     <Compile Include="Converters\BooleanNegationConverter.cs" />
     <Compile Include="Converters\ChannelParticipantToTypeConverter.cs" />
-    <Compile Include="Converters\FileTypeToStringConverter.cs" />
     <Compile Include="Converters\MessageTtlConverter.cs" />
     <Compile Include="Converters\MeUrlPrefixConverter.cs" />
     <Compile Include="Converters\ProportionsToLabelConverter.cs" />
@@ -2217,6 +2261,9 @@
     <Content Include="Assets\Animations\SendMessagesProgress.tgs" />
     <Content Include="Assets\Fonts\Nunito.ttf" />
     <Content Include="Assets\Animations\QrLogo.json" />
+    <Content Include="Assets\Animations\TextRecognitionDownload.tgs" />
+    <Content Include="Assets\Animations\Birthdate.tgs" />
+    <Content Include="Assets\Animations\ProfileColor.tgs" />
     <None Include="Assets\i420.hlsl" />
     <Content Include="Assets\Images\Reply.scale-100.png" />
     <Content Include="Assets\Images\Reply.scale-125.png" />
@@ -2409,6 +2456,7 @@
     <Content Include="Assets\Toasts\StarsTopup.tgs" />
     <Content Include="Assets\Toasts\Unpin.tgs" />
     <Content Include="Assets\Toasts\VideoConversion.tgs" />
+    <Content Include="Assets\Toasts\Gift.tgs" />
     <None Include="Telegram_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
@@ -2508,6 +2556,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Controls\Cells\GroupCallMessageCell.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Controls\Cells\PaidReactorCell.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -2527,6 +2579,10 @@
     <Page Include="Controls\Cells\Revenue\StarTransactionCell.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\Cells\PlaybackItemCell.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Controls\Cells\StarAmountCell.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -2643,6 +2699,10 @@
     <Page Include="Controls\Cells\SharedVoiceCell.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\Cells\SharedMediaCell.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Controls\Cells\WebSessionCell.xaml">
       <SubType>Designer</SubType>
@@ -2920,6 +2980,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Controls\Messages\Service\SuggestedPostInfoCell.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Controls\NativeVideoPlayer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -2939,6 +3003,10 @@
     <Page Include="Controls\Messages\Content\PollOptionContent.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\PlaybackOverlay.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Controls\ProfileGiftsCover.xaml">
       <SubType>Designer</SubType>
@@ -2997,6 +3065,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Controls\Views\ForumView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\Views\SearchPostsTabPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\Views\RecentChatsView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -3256,6 +3332,30 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\Popups\PlaybackPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Popups\ChooseGiftsPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Popups\ChooseStoriesPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Popups\WebAppRestorePopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Popups\ChooseDateTimePopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Popups\TextRecognitionDownloadPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\Popups\CreateChecklistPopup.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -3309,6 +3409,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\Popups\FactCheckPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Popups\SuggestPostPopup.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -3368,6 +3472,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Views\Profile\Popups\ProfileRatingPopup.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\Profile\ProfileSavedMessagesTabPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -3389,6 +3497,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\Profile\ProfileSavedChatsTabPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Settings\SettingsProfileColorNameTabPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Settings\SettingsProfileColorProfileTabPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -3573,6 +3689,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\Chats\ChatInviteLinksPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\Stars\Popups\UpgradedGiftValuePopup.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -4090,6 +4210,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Clipper2">
+      <Version>1.5.4</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.Bcl.HashCode">
       <Version>6.0.0</Version>
     </PackageReference>
@@ -4100,10 +4223,10 @@
       <Version>2.8.7</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Web.WebView2">
-      <Version>1.0.3240.44</Version>
+      <Version>1.0.3537.50</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
-      <Version>13.0.3</Version>
+      <Version>13.0.4</Version>
     </PackageReference>
     <PackageReference Include="PolySharp">
       <Version>1.15.0</Version>
@@ -4113,9 +4236,6 @@
     <PackageReference Include="Rg.DiffUtils">
       <Version>1.0.0</Version>
     </PackageReference>
-    <PackageReference Include="SharpDX.Direct3D11">
-      <Version>4.2.0</Version>
-    </PackageReference>
     <PackageReference Include="System.Memory">
       <Version>4.6.3</Version>
     </PackageReference>
@@ -4123,10 +4243,10 @@
       <Version>4.6.1</Version>
     </PackageReference>
     <PackageReference Include="Telegram.Td.UWP">
-      <Version>1.8.51</Version>
+      <Version>1.8.56</Version>
     </PackageReference>
     <PackageReference Include="VideoLAN.LibVLC.UWP">
-      <Version>3.0.21</Version>
+      <Version>3.0.22-rc1</Version>
     </PackageReference>
     <PackageReference Include="Win2D.uwp">
       <Version>1.28.2</Version>
@@ -4136,7 +4256,7 @@
       <Version>2.1.11</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.Metadata">
-      <Version>9.0.5</Version>
+      <Version>9.0.10</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

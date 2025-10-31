@@ -1786,8 +1786,8 @@
 
 
 
-    <string name="EditContact">Edit contact</string>
-    <string name="DeleteContact">Delete contact</string>
+    <string name="EditContact">Edit Contact</string>
+    <string name="DeleteContact">Delete Contact</string>
 
 
 
@@ -3422,7 +3422,7 @@
 
     <string name="PrivacyInvites">Invites</string>
 
-    <string name="WhoCanAddMe">Who can add me to group chats?</string>
+    <string name="WhoCanAddMe">Who can add me?</string>
     <string name="WhoCanAddMeInfo">You can restrict who can add you to groups and channels with granular precision.</string>
     <string name="AlwaysAllow">Always Allow</string>
     <string name="NeverAllow">Never Allow</string>
@@ -11729,6 +11729,8 @@
     <string name="Gift2OwnerChange">change</string>
     <string name="Gift2CollectionNumber_one">Collectible #{0}</string>
     <string name="Gift2CollectionNumber_other">Collectible #{0}</string>
+    <string name="Gift2CollectionNumberBy_one">Collectible #{0} by **{1}**</string>
+    <string name="Gift2CollectionNumberBy_other">Collectible #{0} by **{1}**</string>
     <string name="Gift2AttributeOriginalDetails">Gifted by {0} to {1} on {2}.</string>
     <string name="Gift2AttributeOriginalDetailsComment">Gifted by {0} to {1} on {2} with the comment: \"{3}\"</string>
     <string name="Gift2AttributeOriginalDetailsSelf">Saved by {0} on {1}.</string>
@@ -12086,7 +12088,7 @@
     <string name="SelectAccount">Select Account</string>
     <string name="AccDescrReactionMentionDown">Go to next unread reactions</string>
 
-    <string name="Gift2ProfileInvisible3">This gift is hidden from your page. **Show &gt;**</string>
+    <string name="Gift2ProfileInvisible3">This gift is hidden from your profile. **Show &gt;**</string>
     <string name="Gift2ProfileVisible3">This gift is visible on your profile. **Hide &gt;**</string>
     <string name="Gift2ChannelProfileVisible3">This gift is visible on your channel\'s profile. **Hide &gt;**</string>
     <string name="Gift2ChannelProfileInvisible3">This gift is hidden from visitors to your channel. **Show &gt;**</string>
@@ -12108,6 +12110,8 @@
     <string name="GroupCallLinkText2Two">**{0}** and **{1}** already joined this call.</string>
     <string name="GroupCallLinkText2Many_one">**{1}**, **{2}** and **{0}** more person already joined this call.</string>
     <string name="GroupCallLinkText2Many_other">**{1}**, **{2}** and **{0}** more people already joined this call.</string>
+    <string name="GroupCallLinkText2Unknown_one">**{0}** person already joined this call.</string>
+    <string name="GroupCallLinkText2Unknown_other">**{0}** people already joined this call.</string>
     <string name="GroupCallLinkJoin">Join Group Call</string>
     <string name="LinkIsNoActive">This link is no longer active.</string>
     <string name="GroupCallCreate">Start New Call</string>
@@ -12507,5 +12511,511 @@
     <string name="NumberNotOnTelegram">This number is not on Telegram</string>
     <string name="AutoDownloadPreloadVideo">Preload larger videos</string>
     <string name="AutoDownloadPreloadVideoInfo">Preload the first few seconds (1-2 MB) of videos larger than {0} for instant playback.</string>
+    <string name="TodoItemQuote">Reply to Item</string>
+
+    <string name="SuggestedOfferRefundByAdminAmountF">&#11088;&#65039; {2} was returned to {0} because {1} deleted the message</string>
+    <string name="SuggestedOfferRefundByUserAmountF">{1} will not receive &#11088;&#65039; {2} because {0} requested a refund</string>
+
+    <string name="SuggestedOfferRefundByAdminAmountUnknown">Payment was returned to {0} because {1} deleted the message</string>
+    <string name="SuggestedOfferRefundByUserAmountUnknown">{1} will not receive payment because {0} requested a refund</string>
+
+    <string name="SuggestedOfferCompleteAmountF">{0} has received &#11088;&#65039; {1} for publishing post</string>
+    <string name="SuggestedOfferCompleteAmountUnknown">{0} received payment for publishing post</string>
+
+    <string name="PostSuggestionsInlineAccept">Accept</string>
+    <string name="PostSuggestionsInlineDecline">Decline</string>
+    <string name="PostSuggestionsInlineEdit">Suggest Changes</string>
+
+    <string name="SuggestionOfferInfoTitleYou">**You** suggested a post.</string>
+    <string name="SuggestionOfferInfoTitle">**{0}** suggested a post.</string>
+    <string name="SuggestionOfferInfoPrice">Price</string>
+    <string name="SuggestionOfferInfoPriceFree">Free</string>
+    <string name="SuggestionOfferInfoTime">Time</string>
+    <string name="SuggestionOfferInfoTimeAnytime">Anytime</string>
+
+    <string name="SuggestionOfferInfoTitleEditedFromYou">**You** suggested a new {0} for this post.</string>
+    <string name="SuggestionOfferInfoTitleEditedFromX">**{0}** suggested a new {1} for this post.</string>
+    <string name="SuggestionOfferInfoTitleEditedPrice">price</string>
+    <string name="SuggestionOfferInfoTitleEditedTime">time</string>
+    <string name="SuggestionOfferInfoTitleEditedText">text</string>
+    <string name="SuggestionOfferInfoTitleEditedMedia">media</string>
+    <string name="SuggestionOfferInfoTitleEditedAnd">and</string>
+
+    <string name="Gift2ReleasedBy">released by **{0}**</string>
+    <string name="Gift2ActionReleasedBy">Released by **{0}**</string>
+
+    <string name="Gift2ProfileInvisible4">This gift is hidden. **Show on Profile &gt;**</string>
+    <string name="Gift2ProfileVisible4">This gift is visible. **Hide from profile &gt;**</string>
+    <string name="Gift2UpgradeButtonGift">Upgrade</string>
+
+    <string name="SuggestedOfferStars">Offer Stars</string>
+    <string name="SuggestedOfferTON">Offer TON</string>
+
+    <string name="AccDescrSuggestPost">Suggest a Post</string>
+    <string name="PostSuggestionsOfferTitle">Suggest a Post</string>
+
+    <string name="PostSuggestionsOfferTitlePriceStars">Enter Price in Stars</string>
+    <string name="PostSuggestionsOfferTitlePriceTON">Enter Price in TON</string>
+    <string name="PostSuggestionsOfferSubtitleStars">Choose how many Stars to pay to publish this post.</string>
+    <string name="PostSuggestionsOfferSubtitleTON">Choose how much to pay to publish this post.</string>
+    <string name="PostSuggestionsOfferTitleTime">Publishing Time</string>
+    <string name="PostSuggestionsAnytime">Anytime</string>
+    <string name="PostSuggestionsAddTime">Edit Time</string>
+    <string name="PostSuggestionsAddTimeHint">Select the date and time you want the post to be published.</string>
+    <string name="PostSuggestionsAddTimeHint2">The post will remain available for at least {0} hours from this date.</string>
+    <string name="PostSuggestionsOfferStars">Offer &#11088;&#65039;{0}</string>
+    <string name="PostSuggestionsOfferTON">Offer {0} TON</string>
+    <string name="PostSuggestionsOfferForFree">Offer for Free</string>
+    <string name="SuggestAPostTooMuch">Maximum offer: {0}</string>
+    <string name="SuggestAPostTooSmall">Minimum offer: {0}</string>
+
+    <string name="SuggestAPostBelow">Suggest a Post Below</string>
+    <string name="SuggestAPostBelowSubtitle">Click to offer a price for publishing</string>
+    <string name="SuggestAPostBelowSubtitleStars">&#11088;&#65039; {0} for publishing anytime</string>
+    <string name="SuggestAPostBelowSubtitleStarsAndTime">&#11088;&#65039; {0} {1}</string>
+
+    <string name="TonCount_one">{0} TON</string>
+    <string name="TonCount_other">{0} TON</string>
+
+    <string name="StarsCountX">{0} Stars</string>
+    <string name="TonCountX">{0} TON</string>
+
+    <string name="SuggestedPostPublish">Publish</string>
+    <string name="SuggestedPostAcceptTitle">Accept Terms</string>
+    <string name="SuggestedMessageAcceptInfo">Do you want to publish this post from **{0}**?</string>
+
+    <string name="SuggestedMessageAcceptInfoAdmin2">You will receive **{0}** ({2}) for publishing this post **{1}**.</string>
+    <string name="SuggestedMessageAcceptInfoUser2">You will pay **{0}** for publishing this post **{1}**.</string>
+    <string name="SuggestedMessageAcceptInfoAnytimeAdmin2">You will receive **{0}** ({1}) for publishing this post.</string>
+    <string name="SuggestedMessageAcceptInfoAnytimeUser2">You will pay **{0}** for publishing this post.</string>
+    <string name="SuggestedMessageAcceptInfo3">It must remain visible for at least **{0}** hours after publication.</string>
+    <string name="SuggestedMessageAcceptStarsDisclaimer">Transactions in Stars may be reversed by the payment provider within 21 days. Only accept Stars from people you trust.</string>
+    
+    <string name="SuggestedMessageDecline">Decline</string>
+    <string name="SuggestedMessageDeclineInfo">Do you want to decline this post from **{0}**?</string>
+    <string name="SuggestedMessageDeclineReasonHint">Add a reason (optional)</string>
+
+    <string name="EditAdminManageDirect">Manage Direct Messages</string>
+
+    <string name="SuggestionStarsWillBeLost">Stars will be lost</string>
+    <string name="SuggestionTONWillBeLost">TON will be lost</string>
+    <string name="SuggestionStarsWillBeLostInfo">You won’t receive Stars for this post if you delete it now. The post must remain visible for at least **{0} hours** after it was published.</string>
+    <string name="SuggestionTONWillBeLostInfo">You won’t receive TON for this post if you delete it now. The post must remain visible for at least **{0} hours** after it was published.</string>
+    <string name="SuggestionStarsWillBeLostDelete">Delete Anyway</string>
+
+    <string name="SuggestedOfferPaidUntil">Paid until {0}</string>
+
+    <string name="UnpinAllMessages2">Unpin All Messages</string>
+    <string name="HidePinnedMessages2">Hide Pinned Messages</string>
+    <string name="UnpinMessage2">Unpin Message</string>
+    <string name="HidePinnedMessage2">Hide Pinned Message</string>
+
+    <string name="AccDescrScanText">Scan Text</string>
+    <string name="ScanTextNoTextDetected">There was no text detected</string>
+    <string name="ScanTextTooSmall">This image is too small to scan for text</string>
+    <string name="ScanTextTooLarge">This image is too large to scan for text</string>
+    <string name="ScanTextFirstTime">Click here to grab text</string>
+    <string name="ScanTextDownloadingTitle">Almost there...</string>
+    <string name="ScanTextDownloadingText">We’re downloading the files needed to recognize text. This is a one-time setup—next time, it will be ready instantly.</string>
+
+    <string name="BotRestoreStorageTitle">Import Data</string>
+    <string name="BotRestoreStorageText">**{0}** is requesting permission to import data from a previous Telegram account used on device.</string>
+    <string name="BotRestoreStorageHeader">Account to import data from</string>
+    <string name="BotRestoreStorageButton">Import</string>
+    <string name="BotRestoreStorageCreatedAt">created on {0}</string>
+    <string name="AutoDeleteAfteTitle">Auto-delete after...</string>
+
+    <string name="ViewCollection">VIEW COLLECTION</string>
+    <string name="ViewAlbum">VIEW ALBUM</string>
+    <string name="OpenChannelDirect">CONTACT CHANNEL</string>
+    
+    <string name="StoriesAlbumNameAllStories">All Stories</string>
+    <string name="StoriesAlbumRename">Rename Album</string>
+    <string name="StoriesAlbumMenuAddStories">Add Stories</string>
+    <string name="StoriesAlbumMenuShareLink">Share Link</string>
+    <string name="StoriesAlbumMenuEditName">Edit Name</string>
+    <string name="StoriesAlbumMenuDeleteAlbum">Delete Album</string>
+    <string name="StoriesAlbumRenameHint">Choose a new name for your album.</string>
+    <string name="StoriesAlbumTitleInputHint">Title</string>
+    <string name="StoriesAlbumMenuDeleteAlbumAsk">Are you sure you want to delete the **{0}** album?</string>
+    <string name="StoriesAlbumAddToAlbum">Add to Album</string>
+    <string name="StoriesAlbumNewAlbum">New Album</string>
+    <string name="StoriesAlbumAddAlbum">Add Album</string>
+    <string name="StoryAddedToAlbumX">This story has been added to **{0}** album.</string>
+    <string name="StoryRemovedFromAlbumX">This story has been removed from **{0}** album.</string>
+    <string name="StoriesAlbumCreateNew">Create a New Album</string>
+    <string name="StoriesAlbumAddHint">Choose a name for your album and add your stories.</string>
+    <string name="StoriesAlbumMenuRemoveFromAlbum">Remove from Album</string>
+    <string name="StoriesAlbumOrganizeTitle">Organize Your Stories</string>
+    <string name="StoriesAlbumOrganizeDescription">Add some of your stories to this album.</string>
+    <string name="StoryAddedToAlbumTitle_one">{0} story saved to **{1}**</string>
+    <string name="StoryAddedToAlbumTitle_other">{0} stories saved to **{1}**</string>
+    <string name="StoryRemovedFromAlbumTitle_one">{0} story removed from **{1}**</string>
+    <string name="StoryRemovedFromAlbumTitle_other">{0} stories removed from **{1}**</string>
+
+    <string name="GiftsCollectionNameAllGifts">All Gifts</string>
+    <string name="GiftsCollectionRename">Rename Collection</string>
+    <string name="GiftsCollectionMenuAddGifts">Add Gifts</string>
+    <string name="GiftsCollectionMenuShareLink">Share Link</string>
+    <string name="GiftsCollectionMenuEditName">Edit Name</string>
+    <string name="GiftsCollectionMenuDeleteCollection">Delete Collection</string>
+    <string name="GiftsCollectionRenameHint">Choose a new name for your collection.</string>
+    <string name="GiftsCollectionTitleInputHint">Title</string>
+    <string name="GiftsCollectionMenuDeleteCollectionAsk">Are you sure you want to delete the **{0}** collection?</string>
+    <string name="GiftsCollectionAddToCollection">Add to Collection</string>
+    <string name="GiftsCollectionNewCollection">New Collection</string>
+    <string name="GiftsCollectionAddCollection">Add Collection</string>
+    <string name="GiftAddedToCollectionX">This gift has been added to **{0}** collection.</string>
+    <string name="GiftRemovedFromCollectionX">This gift has been removed from **{0}** collection.</string>
+    <string name="GiftsCollectionCreateNew">Create a New Collection</string>
+    <string name="GiftsCollectionAddHint">Choose a name for your collection and add your gifts.</string>
+    <string name="GiftsCollectionMenuRemoveFromCollection">Remove from Collection</string>
+    <string name="GiftsCollectionOrganizeTitle">Organize Your Gifts</string>
+    <string name="GiftsCollectionOrganizeDescription">Add some of your gifts to this collection.</string>
+    <string name="GiftAddedToCollectionTitle_one">{0} gift saved to **{1}**</string>
+    <string name="GiftAddedToCollectionTitle_other">{0} gifts saved to **{1}**</string>
+    <string name="GiftRemovedFromCollectionTitle_one">{0} gift removed from **{1}**</string>
+    <string name="GiftRemovedFromCollectionTitle_other">{0} gifts removed from **{1}**</string>
+
+    <string name="BoostingBoostToSendMessages">Boost this group to send messages</string>
+
+    <string name="SearchPostsTitle">Global Search</string>
+    <string name="SearchPostsText">Type a keyword to search for posts from public channels.</string>
+    <string name="SearchPostsButton">Search</string>
+    <string name="SearchPostsFreeSearches_one">{0} free search remaining today.</string>
+    <string name="SearchPostsFreeSearches_other">{0} free searches remaining today.</string>
+    <string name="SearchPostsButtonPay_one">Search for &#11088;&#65039;{0}</string>
+    <string name="SearchPostsButtonPay_other">Search for &#11088;&#65039;{0}</string>
+    <string name="SearchPostsFreeSearchUnlocksIn">free search unlocks in {0}</string>
+    <string name="SearchPostsLimitReached">Limit Reached</string>
+    <string name="SearchPostsLimitReachedText_one">You can make up to {0} search query per day.</string>
+    <string name="SearchPostsLimitReachedText_other">You can make up to {0} search queries per day.</string>
+    <string name="SearchPostsNotFound">Not Found</string>
+    <string name="SearchPostsNotFoundText">No posts found for \"{0}\".</string>
+    <string name="SearchPostsButtonPremium">Subscribe to Premium</string>
+    <string name="SearchPostsPremium">Global search is a Premium feature.</string>
+    <string name="SearchPostsHeaderNews">Telegram News</string>
+    <string name="SearchPostsHeaderFound">Public Posts</string>
+    <string name="SearchPosts">Posts</string>
+    <string name="SearchPaidStars_one">**{0} Star** spent on extra search.</string>
+    <string name="SearchPaidStars_other">**{0} Stars** spent on extra search.</string>
+
+    <string name="StarRatingTitle">Rating</string>
+    <string name="StarRatingAdded">ADDED</string>
+    <string name="StarRatingDeduces">DEDUCTED</string>
+    <string name="StarRatingFuture_one">The rating will update in {0} day after purchases.</string>
+    <string name="StarRatingFuture_other">The rating will update in {0} days after purchases.</string>
+    <string name="StarRatingFuturePreview1_one">This will be your rating in {0} day, after</string>
+    <string name="StarRatingFuturePreview1_other">This will be your rating in {0} days, after</string>
+    <string name="StarRatingFuturePreview2_one">{0} point are added.</string>
+    <string name="StarRatingFuturePreview2_other">{0} points are added.</string>
+    <string name="StarRatingFuturePendingPoints_one">{0} point is pending.</string>
+    <string name="StarRatingFuturePendingPoints_other">{0} points are pending.</string>
+    <string name="StarRatingFuturePendingPointsAndLevel1_one">{0} point and</string>
+    <string name="StarRatingFuturePendingPointsAndLevel1_other">{0} points and</string>
+    <string name="StarRatingFuturePendingPointsAndLevel2_one">Level {0} are pending.</string>
+    <string name="StarRatingFuturePendingPointsAndLevel2_other">Level {0} are pending.</string>
+    <string name="StarRatingFuturePendingPointsPreview">**Preview &gt;**</string>
+    <string name="StarRatingFuturePendingPointsPreviewBack">**Back &gt;**</string>
+    <string name="StarRatingDescription">This rating reflects **{0}\'s** activity\non Telegram. It is based on:</string>
+    <string name="StarRatingSelfDescription">This rating reflects your activity\non Telegram. It is based on:</string>
+    <string name="StarRatingTitle1">Gifts from Telegram</string>
+    <string name="StarRatingDescription1">{0} 100% of the Stars spent on gifts purchased from Telegram.</string>
+    <string name="StarRatingTitle2">Gifts and Posts from Users</string>
+    <string name="StarRatingDescription2">{0} 20% of the Stars spent on resold gifts, paid messages and channel posts.</string>
+    <string name="StarRatingTitle3">Refunds and Conversions</string>
+    <string name="StarRatingDescription3">{0} 10x refunded Stars and 85% of gifts converted back to Stars.</string>
+    <string name="StarRatingButtonUnderstood">Understood</string>
+    <string name="StarRatingLevel">Level {0}</string>
+    <string name="StarRatingLevelNegative">Negative Rating</string>
+    <string name="StarRatingLevelNegativeYou_one">A negative rating indicates that your payments are unreliable. Spend **{0} Star** to fix this issue.</string>
+    <string name="StarRatingLevelNegativeYou_other">A negative rating indicates that your payments are unreliable. Spend **{0} Stars** to fix this issue.</string>
+    <string name="StarRatingLevelNegativeOther">A negative rating indicates that **{0}’s** payments are unreliable.</string>
+
+    <string name="Gift2LimitedPremium">premium</string>
+    <string name="Gift2PremiumTitle">Premium Gift</string>
+    <string name="Gift2PremiumSubtitle">Subscribe to **Telegram Premium** to send these gifts and unlock access to powerful features.</string>
+    <string name="Gift2PremiumSubtitleMany_one">Subscribe to **Telegram Premium** to send up to **{0}** of these gifts and unlock powerful features.</string>
+    <string name="Gift2PremiumSubtitleMany_other">Subscribe to **Telegram Premium** to send up to **{0}** of these gifts and unlock powerful features.</string>
+    <string name="Gift2SentRemainsLimit_one">You can send **{0}** more.</string>
+    <string name="Gift2SentRemainsLimit_other">You can send **{0}** more.</string>
+    <string name="Gift2PerUserLimit_one">You already sent **{0}** of these gifts, which is the limit.</string>
+    <string name="Gift2PerUserLimit_other">You already sent **{0}** of these gifts, which is the limit.</string>
+    <string name="Gift2TabCollectibles">Collectibles</string>
+    <string name="Gift2TransferMine">Transfer</string>
+
+    <string name="AgeVerificationTitle">Age Verification</string>
+    <string name="AgeVerificationTextGB">To access such content, you must confirm that you are at least **18** years old as required by UK law.\n\nThis is a one-time process using your phone\'s camera. Your selfie will not be stored by Telegram.</string>
+    <string name="AgeVerificationButton">Verify My Age</string>
+    <string name="AgeVerificationFailedTitle">Age Check Failed</string>
+    <string name="AgeVerificationFailedText">Sorry, you can\'t view 18+ content.</string>
+    <string name="AgeVerificationPassedTitle">Age Check Passed</string>
+    <string name="AgeVerificationNeedCameraPermission">Telegram needs access to your camera so that you can confirm your age.</string>
+    <string name="MessageShowSensitiveContentMediaTitle">18+</string>
+    <string name="MessageShowSensitiveContentChannelTitle">18+</string>
+    <string name="MessageShowSensitiveContentMediaText">This media may contain sensitive content suitable only for adults. Do you still want to view it?</string>
+    <string name="MessageShowSensitiveContentMediaTextClosed">This media may contain sensitive content suitable only for adults.</string>
+    <string name="MessageShowSensitiveContentMediaTextClosedButton">Cancel</string>
+    <string name="MessageShowSensitiveContentChannelText">This chat may contain sensitive content suitable only for adults. Do you still want to view it?</string>
+    <string name="MessageShowSensitiveContentChannelTextClosed">This chat may contain sensitive content suitable only for adults.</string>
+    <string name="MessageShowSensitiveContentChannelTextClosedButton">Cancel</string>
+    <string name="MessageShowSensitiveContentAlways">Always show 18+ media</string>
+    <string name="MessageShowSensitiveContentButton">View Anyway</string>
+    <string name="SensitiveContentSettingsToast">You can update the visibility of sensitive media in **Privacy and Security &gt; Show 18+ Content**</string>
+    <string name="ShowSensitiveContent">Show 18+ Content</string>
+    <string name="ShowSensitiveContentInfo">Do not hide media that contains content suitable only for adults</string>
+    <string name="ConfirmSensitiveContentTitle">18+ Content</string>
+    <string name="ConfirmSensitiveContentText">Confirm that you are over 18 years old and update your settings to see potentially explicit and sensitive content.</string>
+
+    <string name="MessageContainsEmojiPack">This message contains emoji from {0} pack.</string>
+    <string name="MessageContainsEmojiPacks_other">This message contains emoji from **{0} Packs**.</string>
+    <string name="MessageContainsReactionsPack">Emoji from {0} pack were used as reactions.</string>
+    <string name="MessageContainsReactionsPacks_other">Emoji from **{0} packs** were used as reactions.</string>
+    <string name="MessageContainsReactionPack">This reaction is from {0} emoji pack.</string>
+
+    <string name="YourNetworkUsageSince">Your network usage since {0}</string>
+    <string name="NoNetworkUsageSince">No network usage since {0}</string>
+    <string name="ResetStatisticsAlertTitle">Reset statistics</string>
+
+    <string name="StorageUsageCalculating">Calculating cache size...</string>
+    <string name="StorageUsageTelegram">Telegram uses {0} of your device storage.</string>
+    <string name="StorageUsageTelegramLess">Telegram uses {0} of your device storage.</string>
+    <string name="StorageUsageInfo">All media will stay in the Telegram cloud and can be re-downloaded if you need them again.</string>
+    <string name="KeepMediaInfoPart">Photos, videos and other files from cloud chats that you have **not accessed** during this period will be removed from this device to save disk space.</string>
+    <string name="ClearLocalDatabase">Clear Local Database</string>
+    <string name="LocalDatabaseClearTextTitle">Clear local database</string>
+    <string name="LocalDatabaseClearText">Are you sure you want to clear cached text messages?</string>
+    <string name="LocalDatabaseClearText2">Local database size: **{0}**</string>
+    <string name="LocalDatabaseClearText3">**WARNING:**\nSecret chats and pending messages will be lost.</string>
+
+    <string name="Gift2FilterUpgradable">Upgradable</string>
+    <string name="Gift2GiftAnUpgrade">Gift an Upgrade</string>
+    <string name="Gift2PrepayUpgradeButton">Pay &#11088;&#65039;{0} for Upgrade</string>
+    <string name="Gift2PrepayUpgradeFeature1Text">{0} will get a unique number, model, backdrop, and symbol for the gift.</string>
+    <string name="Gift2PrepayUpgradeFeature2Text">{0} will be able to send the gift to anyone on Telegram.</string>
+    <string name="Gift2PrepayUpgradeFeature3Text">{0} will be able to auction the gift on third-party NFT marketplaces.</string>
+    <string name="Gift2PrepayUpgradeText">Let {0} turn your gift into a unique collectible.</string>
+    <string name="Gift2PrepayUpgradeTitle">Make Unique</string>
+    <string name="StarsGiftUpgradeCompleted">Gift Upgrade sent!</string>
+    <string name="StarsGiftUpgradeCompletedText">{0} can now upgrade this gift for free.</string>
+    <string name="ActionPrepaidGiftInbound">un1 sent an upgrade worth **un2** for your gift</string>
+    <string name="ActionPrepaidGiftOutbound">You sent an upgrade worth **un2** for **un1**\'s gift</string>
+
+    <string name="GiftValue2">Value</string>
+    <string name="GiftValue2LearnMore">learn more</string>
+
+    <string name="GiftValueAverage">This is average sale price of **{0}** on Telegram and Fragment over the past month.</string>
+    <string name="GiftValueAveragePrice">Average Price</string>
+    <string name="GiftValueAveragePriceInfo">**{0}** is the average sale price of **{1}** gifts over the past month.</string>
+    <string name="GiftValueInitialPrice">Initial Price</string>
+    <string name="GiftValueInitialSale">Initial Sale</string>
+    <string name="GiftValueLastFragment">This is the price at which **{0}** was last sold on Fragment.</string>
+    <string name="GiftValueLastPrice">Last Price</string>
+    <string name="GiftValueLastSale">Last Sale</string>
+    <string name="GiftValueLastTelegram">This is the price at which **{0}** was last sold on Telegram.</string>
+    <string name="GiftValueMinPrice">Minimum Price</string>
+    <string name="GiftValueMinPriceInfo">**{0}** is the floor price for **{1}** gifts listed on Telegram and Fragment.</string>
+    <string name="GiftValueOnSaleFragment">for sale on Fragment &gt;</string>
+    <string name="GiftValueOnSaleTelegram">for sale on Telegram &gt;</string>
+
+    <string name="BotCantJoinGroups">This bot can\'t join groups.</string>
+
+    <string name="TranslateSelectedText">Translate Selected Text</string>
+
+    <string name="CopyUsername">Copy Username</string>
+    <string name="UsernameNotOnTelegram">This username is not on Telegram</string>
+
+    <string name="LiteOptionsAnimationEffects">Animation Effects</string>
+    <string name="LiteOptionsAnimationEffectsInfo">Enable or disable animation effects throughout the app.</string>
+    <string name="LiteOptionsAnimationEffectsDisabled">Animation effects are currently disabled system-wide. You can change this in **Accessibility &gt; Visual effects**.</string>
+
+  <!-- new from translations.telegram.org -->
+
+  <string name="Gift2CollectionNumberBy_zero">Collectible #{0} by **{1}**</string>
+  <string name="Gift2CollectionNumberBy_two">Collectible #{0} by **{1}**</string>
+  <string name="Gift2CollectionNumberBy_few">Collectible #{0} by **{1}**</string>
+  <string name="Gift2CollectionNumberBy_many">Collectible #{0} by **{1}**</string>
+  <string name="Gift2PerUserLimit_zero">You already sent **{0}** of these gifts, which is the limit.</string>
+  <string name="Gift2PerUserLimit_two">You already sent **{0}** of these gifts, which is the limit.</string>
+  <string name="Gift2PerUserLimit_few">You already sent **{0}** of these gifts, which is the limit.</string>
+  <string name="Gift2PerUserLimit_many">You already sent **{0}** of these gifts, which is the limit.</string>
+  <string name="Gift2PremiumSubtitleMany_zero">Subscribe to **Telegram Premium** to send up to **{0}** of these gifts and unlock powerful features.</string>
+  <string name="Gift2PremiumSubtitleMany_two">Subscribe to **Telegram Premium** to send up to **{0}** of these gifts and unlock powerful features.</string>
+  <string name="Gift2PremiumSubtitleMany_few">Subscribe to **Telegram Premium** to send up to **{0}** of these gifts and unlock powerful features.</string>
+  <string name="Gift2PremiumSubtitleMany_many">Subscribe to **Telegram Premium** to send up to **{0}** of these gifts and unlock powerful features.</string>
+  <string name="Gift2SentRemainsLimit_zero">You can send **{0}** more.</string>
+  <string name="Gift2SentRemainsLimit_two">You can send **{0}** more.</string>
+  <string name="Gift2SentRemainsLimit_few">You can send **{0}** more.</string>
+  <string name="Gift2SentRemainsLimit_many">You can send **{0}** more.</string>
+  <string name="GiftAddedToCollectionTitle_zero">{0} gifts saved to **{1}**</string>
+  <string name="GiftAddedToCollectionTitle_two">{0} gifts saved to **{1}**</string>
+  <string name="GiftAddedToCollectionTitle_few">{0} gifts saved to **{1}**</string>
+  <string name="GiftAddedToCollectionTitle_many">{0} gifts saved to **{1}**</string>
+  <string name="GiftRemovedFromCollectionTitle_zero">{0} gifts removed from **{1}**</string>
+  <string name="GiftRemovedFromCollectionTitle_two">{0} gifts removed from **{1}**</string>
+  <string name="GiftRemovedFromCollectionTitle_few">{0} gifts removed from **{1}**</string>
+  <string name="GiftRemovedFromCollectionTitle_many">{0} gifts removed from **{1}**</string>
+  <string name="MessageContainsReactionsPacks_zero">Emoji from **{0} packs** were used as reactions.</string>
+  <string name="MessageContainsReactionsPacks_one"></string>
+  <string name="MessageContainsReactionsPacks_two">Emoji from **{0} packs** were used as reactions.</string>
+  <string name="MessageContainsReactionsPacks_few">Emoji from **{0} packs** were used as reactions.</string>
+  <string name="MessageContainsReactionsPacks_many">Emoji from **{0} packs** were used as reactions.</string>
+  <string name="SearchPaidStars_zero">**{0} Stars** spent on extra search.</string>
+  <string name="SearchPaidStars_two">**{0} Stars** spent on extra search.</string>
+  <string name="SearchPaidStars_few">**{0} Stars** spent on extra search.</string>
+  <string name="SearchPaidStars_many">**{0} Stars** spent on extra search.</string>
+  <string name="SearchPostsButtonPay_zero">Search for &#11088;&#65039;{0}</string>
+  <string name="SearchPostsButtonPay_two">Search for &#11088;&#65039;{0}</string>
+  <string name="SearchPostsButtonPay_few">Search for &#11088;&#65039;{0}</string>
+  <string name="SearchPostsButtonPay_many">Search for &#11088;&#65039;{0}</string>
+  <string name="SearchPostsFreeSearches_zero">{0} free searches remaining today.</string>
+  <string name="SearchPostsFreeSearches_two">{0} free searches remaining today.</string>
+  <string name="SearchPostsFreeSearches_few">{0} free searches remaining today.</string>
+  <string name="SearchPostsFreeSearches_many">{0} free searches remaining today.</string>
+  <string name="SearchPostsLimitReachedText_zero">You can make up to {0} search queries per day.</string>
+  <string name="SearchPostsLimitReachedText_two">You can make up to {0} search queries per day.</string>
+  <string name="SearchPostsLimitReachedText_few">You can make up to {0} search queries per day.</string>
+  <string name="SearchPostsLimitReachedText_many">You can make up to {0} search queries per day.</string>
+  <string name="StarRatingFuture_zero">The rating will update in {0} days after purchases.</string>
+  <string name="StarRatingFuture_two">The rating will update in {0} days after purchases.</string>
+  <string name="StarRatingFuture_few">The rating will update in {0} days after purchases.</string>
+  <string name="StarRatingFuture_many">The rating will update in {0} days after purchases.</string>
+  <string name="StarRatingFuturePendingPoints_zero">{0} points are pending.</string>
+  <string name="StarRatingFuturePendingPoints_two">{0} points are pending.</string>
+  <string name="StarRatingFuturePendingPoints_few">{0} points are pending.</string>
+  <string name="StarRatingFuturePendingPoints_many">{0} points are pending.</string>
+  <string name="StarRatingFuturePendingPointsAndLevel1_zero">{0} points and</string>
+  <string name="StarRatingFuturePendingPointsAndLevel1_two">{0} points and</string>
+  <string name="StarRatingFuturePendingPointsAndLevel1_few">{0} points and</string>
+  <string name="StarRatingFuturePendingPointsAndLevel1_many">{0} points and</string>
+  <string name="StarRatingFuturePendingPointsAndLevel2_zero">Level {0} are pending.</string>
+  <string name="StarRatingFuturePendingPointsAndLevel2_two">Level {0} are pending.</string>
+  <string name="StarRatingFuturePendingPointsAndLevel2_few">Level {0} are pending.</string>
+  <string name="StarRatingFuturePendingPointsAndLevel2_many">Level {0} are pending.</string>
+  <string name="StarRatingFuturePreview1_zero">This will be your rating in {0} days, after</string>
+  <string name="StarRatingFuturePreview1_two">This will be your rating in {0} days, after</string>
+  <string name="StarRatingFuturePreview1_few">This will be your rating in {0} days, after</string>
+  <string name="StarRatingFuturePreview1_many">This will be your rating in {0} days, after</string>
+  <string name="StarRatingFuturePreview2_zero">{0} points are added.</string>
+  <string name="StarRatingFuturePreview2_two">{0} points are added.</string>
+  <string name="StarRatingFuturePreview2_few">{0} points are added.</string>
+  <string name="StarRatingFuturePreview2_many">{0} points are added.</string>
+  <string name="StarRatingLevelNegativeYou_zero">A negative rating indicates that your payments are unreliable. Spend **{0} Stars** to fix this issue.</string>
+  <string name="StarRatingLevelNegativeYou_two">A negative rating indicates that your payments are unreliable. Spend **{0} Stars** to fix this issue.</string>
+  <string name="StarRatingLevelNegativeYou_few">A negative rating indicates that your payments are unreliable. Spend **{0} Stars** to fix this issue.</string>
+  <string name="StarRatingLevelNegativeYou_many">A negative rating indicates that your payments are unreliable. Spend **{0} Stars** to fix this issue.</string>
+  <string name="StoryAddedToAlbumTitle_zero">{0} stories saved to **{1}**</string>
+  <string name="StoryAddedToAlbumTitle_two">{0} stories saved to **{1}**</string>
+  <string name="StoryAddedToAlbumTitle_few">{0} stories saved to **{1}**</string>
+  <string name="StoryAddedToAlbumTitle_many">{0} stories saved to **{1}**</string>
+  <string name="StoryRemovedFromAlbumTitle_zero">{0} stories removed from **{1}**</string>
+  <string name="StoryRemovedFromAlbumTitle_two">{0} stories removed from **{1}**</string>
+  <string name="StoryRemovedFromAlbumTitle_few">{0} stories removed from **{1}**</string>
+  <string name="StoryRemovedFromAlbumTitle_many">{0} stories removed from **{1}**</string>
+  <string name="TonCount_zero">{0} TON</string>
+  <string name="TonCount_two">{0} TON</string>
+  <string name="TonCount_few">{0} TON</string>
+  <string name="TonCount_many">{0} TON</string>
+
+    <string name="GroupJoinLinkText2One">**{0}** already joined this group.</string>
+    <string name="GroupJoinLinkText2Two">**{0}** and **{1}** already joined this group.</string>
+    <string name="GroupJoinLinkText2Many_one">**{1}**, **{2}** and **{0}** more person already joined this group.</string>
+    <string name="GroupJoinLinkText2Many_other">**{1}**, **{2}** and **{0}** more people already joined this group.</string>
+    <string name="GroupJoinLinkText2Unknown_one">**{0}** person already joined this group.</string>
+    <string name="GroupJoinLinkText2Unknown_other">**{0}** people already joined this group.</string>
+
+    <string name="CallForbiddenInviteLinkButton">Send Invite Link</string>
+    <string name="CallForbiddenInviteLinkText">**{0}** restricts calling them. You can send them an invite link to call instead.</string>
+    <string name="CallForbiddenInviteLinkTitle">Invite via Link</string>
+
+    <string name="GiftThemesSetInReuseConfirm">Yes</string>
+    <string name="GiftThemesSetInReuseInfo">This gift is already your theme in the chat with **{0}**. Remove it there and use it here instead?</string>
+    <string name="GiftThemesSetIn">Set as Theme in...</string>
+    <string name="SelectChat">Select Chat</string>
+
+    <string name="ProfileTabSetAsMain">Set as Main Tab</string>
+    <string name="ProfilePlaylistRemoveFromProfile">Remove from Profile</string>
+    <string name="ProfilePlaylistTitle">{0}\'s Playlist</string>
+    <string name="ProfilePlaylistTitleMine">Your Playlist</string>
+    <string name="AudioAddToProfile">Add to Profile</string>
+    <string name="AudioAddedToProfileRemove">This audio is visible on your Profile. **Remove &gt;**</string>
+
+    <string name="AudioSaveTo">Save to...</string>
+    <string name="AudioSaveToInfo">Choose where you want this audio to be saved.</string>
+    <string name="AudioSaveToFiles">Files</string>
+    <string name="AudioSaveToMyProfile">Profile</string>
+    <string name="AudioSaveToMyProfileSaved">Audio added to your Profile.</string>
+    <string name="AudioSaveToMyProfileUnsaved">Audio removed from your Profile.</string>
+    <string name="AudioSaveToSavedMessages">Saved Messages</string>
+    <string name="AudioSaveToSavedMessagesSaved">Audio sent to Saved Messages.</string>
+
+    <string name="BoostingBoostGroupMenu">Boost Group</string>
+    <string name="BoostingBoostChannelMenu">Boost Channel</string>
+
+    <string name="VoipOngoingConferenceChatAlert">Leave group call with **{0}** and start a new one with **{1}**?</string>
+    <string name="VoipOngoingConferenceChatAlert2">Leave group call with **{0}** and call **{1}**?</string>
+
+    <string name="RemindDayAt">\'Remind on\' MMM d \'at\' HH:mm</string>
+    <string name="RemindDayYearAt">\'Remind on\' MMM d yyyy \'at\' HH:mm</string>
+    <string name="RemindTodayAt">\'Remind today at\' HH:mm</string>
+    <string name="SendTodayAt">\'Send today at\' HH:mm</string>
+    <string name="SendDayAt">\'Send on\' MMM d \'at\' HH:mm</string>
+    <string name="SendDayYearAt">\'Send on\' MMM d yyyy \'at\' HH:mm</string>
+
+    <string name="ScheduleMessageDate">Date</string>
+    <string name="ScheduleMessageTime">Time</string>
+
+    <string name="AddNotes">Add Notes...</string>
+    <string name="AddNotesInfo">Notes are only visible to you.</string>
+    <string name="ProfileNotes">Notes</string>
+    <string name="ProfileNotesInfo">only visible to you</string>
+    <string name="ProfileNotesRemoveText">Are you sure you want to remove the note?</string>
+    <string name="ProfileNotesRemoveTitle">Delete Note</string>
+
+    <string name="UserSuggestBirthday">Suggest Date of Birth</string>
+    <string name="UserSuggestBirthdayButton">Suggest Date of Birth</string>
+    <string name="UserSuggestBirthdayTitle">{0}\'s Date Of Birth</string>
+
+    <string name="ActionSuggestBirthday">**un1** suggests you to add your date of birth</string>
+    <string name="ActionYouSuggestBirthday">You suggest to add date of birth</string>
+    <string name="SuggestedDateOfBirthView">View</string>
+    <string name="DateDay">Day</string>
+    <string name="DateMonth">Month</string>
+    <string name="DateOfBirth">Date Of Birth</string>
+    <string name="DateOfBirthAddToProfile">Add to My Profile</string>
+    <string name="DateOfBirthHideYear">Hide Year</string>
+    <string name="DateYear">Year</string>
+    <string name="PrivacyBirthdaySetDone">Date of birth added.</string>
+    <string name="PrivacyBirthdaySetDoneInfo">You can change your birth of date in settings.</string>
+
+    <string name="UserColorApply">Apply Style</string>
+    <string name="UserColorApplyCollectible">Wear Collectible</string>
+    <string name="Gift2PeerColorEmptyButton">Browse gifts available for purchase &gt;</string>
+    <string name="Gift2PeerColorProfileEmptyTitle">You don\'t have any gifts you can use as profile covers.</string>
+    <string name="Gift2PeerColorReplyEmptyTitle">You don\'t have any gifts you can use as reply color.</string>
+
+    <string name="VoipChannelEnableComments">Enable Messages</string>
+    <string name="VoipChannelDisableComments">Disable Messages</string>
+    <string name="VoipMessage">Message</string>
+
+    <string name="Gift2RemoveDescriptionTitle">Remove Description</string>
+    <string name="Gift2RemoveDescriptionText">Do you want to permanently remove this description from your gift?</string>
+    <string name="Gift2RemoveDescriptionButton">Remove for &#11088;&#65039;{0}</string>
+
+    <string name="LastActiveCommunities">Least active communities</string>
+    <string name="InactiveChannelSignature">channel, inactive for {0}</string>
+    <string name="InactiveChatSignature">{0}, inactive for {1}</string>
+    <string name="LeaveCommunities_one">Leave community</string>
+    <string name="LeaveCommunities_other">Leave {0} communities</string>
+    <string name="ChatsLeaveAlert"><![CDATA[Are you sure you want to leave the selected chats?]]></string>
+    <string name="MegaLeaveAlertWithName">Are you sure you want to leave **{0}**?</string>
+    <string name="ChannelLeaveAlertWithName">Are you sure you want to leave **{0}**?</string>
+
+    <string name="BotForumNewTopic">New Chat</string>
+    <string name="BotForumContinueChat">Continue last thread</string>
+    <string name="BotForumAskForStartNewChatTitle">New Thread</string>
+    <string name="BotForumAskForStartNewChat">Type any message to create a new thread.</string>
+
+    <string name="GiftLocked">Gift Locked</string>
 
 </resources>

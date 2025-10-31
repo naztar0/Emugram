@@ -4,6 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,9 +18,24 @@ using Telegram.ViewModels.Profile;
 using Telegram.Views;
 using Telegram.Views.Chats;
 using Windows.UI.Xaml.Navigation;
+using WinRT;
 
 namespace Telegram.ViewModels
 {
+    [GeneratedBindableCustomProperty]
+    public partial class RevenueTabItem : BindableBase
+    {
+        public RevenueTabItem(string text, Type type)
+        {
+            Text = text;
+            Type = type;
+        }
+
+        public string Text { get; }
+
+        public Type Type { get; }
+    }
+
     public partial class RevenueViewModel : MultiViewModelBase, IHandle
     {
         protected readonly ChatStatisticsViewModel _statisticsViewModel;
@@ -37,14 +53,14 @@ namespace Telegram.ViewModels
             Children.Add(_boostsViewModel);
             Children.Add(_revenueViewModel);
 
-            Items = new ObservableCollection<ProfileTabItem>
+            Items = new ObservableCollection<RevenueTabItem>
             {
-                new ProfileTabItem(Strings.Statistics, typeof(ChatStatisticsPage)),
-                new ProfileTabItem(Strings.Boosts, typeof(ChatBoostsPage)),
+                new RevenueTabItem(Strings.Statistics, typeof(ChatStatisticsPage)),
+                new RevenueTabItem(Strings.Boosts, typeof(ChatBoostsPage)),
             };
         }
 
-        public ObservableCollection<ProfileTabItem> Items { get; }
+        public ObservableCollection<RevenueTabItem> Items { get; }
 
         public ChatStatisticsViewModel Statistics => _statisticsViewModel;
         public ChatBoostsViewModel Boosts => _boostsViewModel;
@@ -60,7 +76,7 @@ namespace Telegram.ViewModels
             {
                 if (fullInfo.CanGetRevenueStatistics || fullInfo.CanGetStarRevenueStatistics)
                 {
-                    Items.Add(new ProfileTabItem(Strings.Monetization, typeof(ChatRevenuePage)));
+                    Items.Add(new RevenueTabItem(Strings.Monetization, typeof(ChatRevenuePage)));
                 }
             }
 
@@ -85,8 +101,8 @@ namespace Telegram.ViewModels
             set => Set(ref _sharedCount, value);
         }
 
-        private ProfileTabItem _selectedItem;
-        public ProfileTabItem SelectedItem
+        private RevenueTabItem _selectedItem;
+        public RevenueTabItem SelectedItem
         {
             get => _selectedItem;
             set => Set(ref _selectedItem, value);

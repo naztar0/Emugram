@@ -91,7 +91,7 @@ namespace Telegram
                 var key = type.Key.Name;
                 var name = type.Key.Name.CamelCase();
 
-                builder.AppendLine($"case {key} {name}:");
+                builder.AppendLine($"case global::Telegram.Td.Api.{key} {name}:");
                 builder.Increment();
 
                 foreach (var property in type.Value.OrderBy(x => x.Key))
@@ -136,7 +136,7 @@ namespace Telegram
                 builder.Decrement();
             }
 
-            builder.AppendLine("case File file:");
+            builder.AppendLine("case global::Telegram.Td.Api.File file:");
             builder.Increment();
             builder.AppendLine("ProcessFile(file);");
             builder.AppendLine("break;");

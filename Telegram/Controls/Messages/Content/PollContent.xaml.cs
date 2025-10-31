@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Telegram.Common;
+using Telegram.Native.Controls;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Windows.UI.Xaml;
@@ -29,11 +30,9 @@ namespace Telegram.Controls.Messages.Content
             _message = message;
 
             DefaultStyleKey = typeof(PollContent);
-
-            Disconnected += OnUnloaded;
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _timeoutTimer?.Stop();
             _timeoutTimer = null;
@@ -245,18 +244,7 @@ namespace Telegram.Controls.Messages.Content
 
         private void RecentVoters_RecentUserHeadChanged(ProfilePicture photo, MessageSender sender)
         {
-            if (_message.ClientService.TryGetUser(sender, out User user))
-            {
-                photo.SetUser(_message.ClientService, user, 18);
-            }
-            else if (_message.ClientService.TryGetChat(sender, out Chat chat))
-            {
-                photo.SetChat(_message.ClientService, chat, 18);
-            }
-            else
-            {
-                photo.Clear();
-            }
+            photo.Source = ProfilePictureSource.MessageSender(_message.ClientService, sender);
         }
 
         private void TimeoutTimer_Tick(object sender, object e)

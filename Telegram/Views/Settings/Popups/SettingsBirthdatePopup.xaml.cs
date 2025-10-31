@@ -21,35 +21,26 @@ namespace Telegram.Views.Settings.Popups
         private readonly ObservableCollection<int> _days = new();
         private readonly ObservableCollection<int> _months = new();
 
-        public SettingsBirthdatePopup(Birthdate date, UserPrivacySettingRule primaryRule = null)
+        public SettingsBirthdatePopup(User user)
+            : this(new Birthdate(DateTime.Today.Day, DateTime.Today.Month, 0), null)
+        {
+            Title = string.Format(Strings.UserSuggestBirthdayTitle, user.FirstName);
+            PrimaryButtonText = Strings.UserSuggestBirthdayButton;
+            SecondaryButtonText = string.Empty;
+            ButtonsLayout = ContentPopupButtonsLayout.Vertical;
+
+            IsDismissButtonVisible = true;
+        }
+
+        public SettingsBirthdatePopup(Birthdate date, UserPrivacySettingRule primaryRule = null, bool suggested = false)
         {
             InitializeComponent();
 
-            var dayPosition = 0;
-            var monthPosition = 2;
-            var yearPosition = 4;
+            LocaleService.Current.GetDatePositions(out int dayPosition, out int monthPosition, out int yearPosition);
 
-            var parts = LocaleService.Current.CurrentCulture.DateTimeFormat.ShortDatePattern.Split(LocaleService.Current.CurrentCulture.DateTimeFormat.DateSeparator);
-            if (parts.Length != 3)
-            {
-                parts = new[] { "dd", "MM", "yyyy" };
-            }
-
-            for (int i = 0; i < parts.Length; i++)
-            {
-                if (parts[i].StartsWith("d", StringComparison.OrdinalIgnoreCase))
-                {
-                    dayPosition = i * 2;
-                }
-                else if (parts[i].StartsWith("M", StringComparison.OrdinalIgnoreCase))
-                {
-                    monthPosition = i * 2;
-                }
-                else if (parts[i].StartsWith("y", StringComparison.OrdinalIgnoreCase))
-                {
-                    yearPosition = i * 2;
-                }
-            }
+            dayPosition *= 2;
+            monthPosition *= 2;
+            yearPosition *= 2;
 
             var first = dayPosition == 0
                 ? DayHost
@@ -99,17 +90,32 @@ namespace Telegram.Views.Settings.Popups
             if (primaryRule != null)
             {
                 PrivacyInfo.Text = primaryRule is UserPrivacySettingRuleAllowContacts
-                ? Strings.EditProfileBirthdayInfoContacts
-                : Strings.EditProfileBirthdayInfo;
+                    ? Strings.EditProfileBirthdayInfoContacts
+                    : Strings.EditProfileBirthdayInfo;
             }
             else
             {
                 PrivacyInfo.Visibility = Visibility.Collapsed;
             }
 
-            Title = Strings.EditProfileBirthdayTitle;
-            PrimaryButtonText = Strings.EditProfileBirthdayButton;
-            SecondaryButtonText = Strings.Cancel;
+            if (suggested)
+            {
+                Title = Strings.DateOfBirth;
+                PrimaryButtonText = Strings.DateOfBirthAddToProfile;
+                SecondaryButtonText = string.Empty;
+
+                ButtonsLayout = ContentPopupButtonsLayout.Vertical;
+
+                IsDismissButtonVisible = true;
+            }
+            else
+            {
+                Title = Strings.EditProfileBirthdayTitle;
+                PrimaryButtonText = Strings.EditProfileBirthdayButton;
+                SecondaryButtonText = Strings.Cancel;
+
+                HideYear.Visibility = Visibility.Collapsed;
+            }
 
             DefaultButton = ContentDialogButton.Primary;
         }
@@ -403,6 +409,11 @@ namespace Telegram.Views.Settings.Popups
         {
             ShowPrivacySettings = true;
             Hide(ContentDialogResult.Secondary);
+        }
+
+        private void HideYear_Click(object sender, RoutedEventArgs e)
+        {
+            YearHost.SelectedItem = 0;
         }
     }
 }

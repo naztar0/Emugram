@@ -35,8 +35,7 @@
                                 <Border Height="40"
                                         Width="40">
                                     <controls:ProfilePicture x:Name="PinPhoto"
-                                                             Width="32"
-                                                             Height="32"
+                                                             Size="32"
                                                              IsHitTestVisible="False"
                                                              Margin="4,3,4,4"
                                                              VerticalAlignment="Top" />

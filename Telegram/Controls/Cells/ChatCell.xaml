@@ -72,13 +72,12 @@
                                                             Height="48"
                                                             IsClickEnabled="False">
                                 <controls:ProfilePicture x:Name="Photo"
-                                                         Width="48"
-                                                         Height="48" />
+                                                         Size="48" />
                             </controls:ActiveStoriesSegments>
 
                             <Border x:Name="OnlineBadge"
                                     x:Load="False"
-                                    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                                    Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                                     UseLayoutRounding="False"
                                     Width="12"
                                     Height="12"
@@ -93,9 +92,36 @@
                                         CornerRadius="4" />
                             </Border>
 
+                            <Grid x:Name="AutoDeleteBadge"
+                                  x:Load="False"
+                                  Background="{ThemeResource MessageServiceBackgroundBrush}"
+                                  Width="22"
+                                  Height="22"
+                                  CornerRadius="12"
+                                  Margin="0,0,-2,-2"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Bottom">
+                                <TextBlock Text="&#xEAD5;"
+                                           FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                           FontSize="20"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Foreground="#FFFFFF" />
+
+                                <TextBlock x:Name="AutoDeleteLabel"
+                                           TextLineBounds="Tight"
+                                           TextAlignment="Center"
+                                           OpticalMarginAlignment="TrimSideBearings"
+                                           FontSize="9"
+                                           FontWeight="SemiBold"
+                                           Padding="4,0,4,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="#FFFFFF" />
+                            </Grid>
+
                             <Border x:Name="CompactBadgeRoot"
                                     x:Load="False"
-                                    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                                    Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                                     CornerRadius="10"
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Bottom"
@@ -262,19 +288,18 @@
                                                    Margin="4,2,0,0"
                                                    Visibility="Collapsed"
                                                    Grid.Column="2" />
-                            <controls:BadgeButton x:Name="BotOpen"
-                                                  Glyph="{CustomResource BotOpen}"
-                                                  Content="{CustomResource BotOpen}"
-                                                  Style="{StaticResource SmallPillButtonStyle}"
-                                                  HorizontalAlignment="Right"
-                                                  VerticalAlignment="Top"
-                                                  Margin="4,0,0,0"
-                                                  Padding="8,5,8,7"
-                                                  CornerRadius="10"
-                                                  Height="20"
-                                                  Visibility="Collapsed"
-                                                  Grid.Column="1"
-                                                  Grid.ColumnSpan="2" />
+                            <Button x:Name="BotOpen"
+                                    Content="{CustomResource BotOpen}"
+                                    Style="{StaticResource SmallPillButtonStyle}"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Margin="4,0,0,0"
+                                    Padding="8,5,8,7"
+                                    CornerRadius="10"
+                                    Height="20"
+                                    Visibility="Collapsed"
+                                    Grid.Column="1"
+                                    Grid.ColumnSpan="2" />
                         </Grid>
 
                         <StackPanel x:Name="Folders"
@@ -285,7 +310,7 @@
 
                         <Rectangle x:Name="DropVisual"
                                    x:Load="False"
-                                   Stroke="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                                   Stroke="{ThemeResource TextFillColorPrimaryBrush}"
                                    StrokeThickness="2"
                                    RadiusX="4"
                                    RadiusY="4"

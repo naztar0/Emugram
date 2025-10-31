@@ -16,11 +16,13 @@ using Telegram.ViewModels;
 using Telegram.ViewModels.Delegates;
 using Windows.Devices.Input;
 using Windows.Foundation;
+using Windows.UI.Composition;
 using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Automation.Peers;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 
@@ -32,6 +34,7 @@ namespace Telegram.Controls.Chats
         public IDialogDelegate Delegate { get; set; }
 
         public ScrollViewer ScrollingHost { get; private set; }
+        public CompositionPropertySet ScrollingPropertySet { get; private set; }
 
         public bool IsBottomReached
         {
@@ -119,7 +122,10 @@ namespace Telegram.Controls.Chats
             _waitItemsPanelRoot = new();
 
             _raiseViewChanged = false;
+        }
 
+        public void Disconnect()
+        {
             // Note, this is done because of the following:
             // In some conditions (always?) ListView starts to store
             // all the created containers in the ItemsPanelRoot (on Unload presumably).
@@ -137,6 +143,7 @@ namespace Telegram.Controls.Chats
 
         protected override void OnApplyTemplate()
         {
+            // TODO: Name
             ScrollingHost = (ScrollViewer)GetTemplateChild("ScrollViewer");
 
             // Used by saved messages tab
@@ -145,6 +152,8 @@ namespace Telegram.Controls.Chats
             ScrollingHost.ViewChanged += OnViewChanged;
             ScrollingHost.DirectManipulationStarted += OnDirectManipulationStarted;
             ScrollingHost.AddHandler(PointerWheelChangedEvent, new PointerEventHandler(OnPointerWheelChanged), true);
+
+            ScrollingPropertySet = ElementCompositionPreview.GetScrollViewerManipulationPropertySet(ScrollingHost);
 
             base.OnApplyTemplate();
         }
@@ -157,6 +166,29 @@ namespace Telegram.Controls.Chats
         private void OnPointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
             HasBeenScrolled = true;
+
+            var modifiers = WindowContext.KeyModifiers();
+            if (modifiers == VirtualKeyModifiers.Control)
+            {
+                try
+                {
+                    var presenter = ScrollingHost.GetChild<ScrollContentPresenter>();
+
+                    var point = e.GetCurrentPoint(ScrollingHost);
+                    if (point.Properties.MouseWheelDelta < 0)
+                    {
+                        presenter.PageDown();
+                    }
+                    else
+                    {
+                        presenter.PageUp();
+                    }
+                }
+                catch
+                {
+                    // All the remote procedure calls must be wrapped in a try-catch block
+                }
+            }
         }
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -181,8 +213,16 @@ namespace Telegram.Controls.Chats
 
         private void OnViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
         {
-            ViewChanging(e.FinalView.VerticalOffset != e.NextView.VerticalOffset ?
-                e.FinalView.VerticalOffset < e.NextView.VerticalOffset
+            var finalOffset = e.FinalView.VerticalOffset;
+            var nextOffset = e.NextView.VerticalOffset;
+
+            if (finalOffset == nextOffset && !e.IsInertial)
+            {
+                nextOffset = ScrollingHost.VerticalOffset;
+            }
+
+            ViewChanging(e.FinalView.VerticalOffset != nextOffset ?
+                finalOffset < nextOffset
                 ? PanelScrollingDirection.Backward
                 : PanelScrollingDirection.Forward
                 : PanelScrollingDirection.None);
@@ -391,7 +431,7 @@ namespace Telegram.Controls.Chats
 
                 if (highlightArea.Height < ActualHeight - occludedHeight)
                 {
-                    position.Y -= (ActualHeight - highlightArea.Height - highlightArea.Y) / 2d + occludedHeight / 2;
+                    position.Y -= (ActualHeight / 2 - (highlightArea.Bottom - highlightArea.Height / 2)) + occludedHeight / 2;
 
                     if (Delegate.HasMessagesPadding)
                     {

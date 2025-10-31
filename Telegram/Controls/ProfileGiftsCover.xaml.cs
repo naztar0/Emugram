@@ -41,7 +41,16 @@ namespace Telegram.Controls
             _seed = (uint)DateTime.Now.ToTimestamp();
         }
 
-        public void Update(float avatarTransitionFraction, UIElement titleRoot)
+        public UIElement TitleRoot { get; set; }
+
+        private float _transitionFraction;
+        public float TransitionFraction
+        {
+            get => _transitionFraction;
+            set => Update(_transitionFraction = value, TitleRoot);
+        }
+
+        private void Update(float avatarTransitionFraction, UIElement titleRoot)
         {
             var newSize = new Vector2(ActualSize.X + 36, ActualSize.Y);
             var seed = _seed;
@@ -94,21 +103,29 @@ namespace Telegram.Controls
             var avatarSize = new Vector2(120, 120);
             var centerFrame = new RectangleF((-72 + newSize.X - avatarSize.X) / 2f, (-36 + 204 - avatarSize.Y) / 2f, avatarSize.X, avatarSize.Y);
 
-            var titleTransform = titleRoot.TransformToVector2(this);
-
-            var excludeRects = new RectangleF[]
+            RectangleF[] excludeRects;
+            if (titleRoot != null)
             {
-                new RectangleF(titleTransform.X - 4, titleTransform.Y, titleRoot.ActualSize.X + 8, titleRoot.ActualSize.Y),
-            };
+                var titleTransform = titleRoot.TransformToVector2(this);
+
+                excludeRects = new RectangleF[]
+                {
+                    new RectangleF(titleTransform.X - 4, titleTransform.Y, titleRoot.ActualSize.X + 8, titleRoot.ActualSize.Y),
+                };
+            }
+            else
+            {
+                excludeRects = Array.Empty<RectangleF>();
+            }
 
             var positionGenerator = new OrbitGenerator(
-                    containerSize: newSize,
-                    centerFrame: centerFrame,
-                    exclusionZones: excludeRects,
-                    minimumDistance: 42.0f,
-                    edgePadding: 5.0f,
-                    seed: seed
-                );
+                containerSize: newSize,
+                centerFrame: centerFrame,
+                exclusionZones: excludeRects,
+                minimumDistance: 42.0f,
+                edgePadding: 5.0f,
+                seed: seed
+            );
 
             _positions = positionGenerator.GeneratePositions(count: 12, itemSize: new Vector2(28));
             _gifts = hash;

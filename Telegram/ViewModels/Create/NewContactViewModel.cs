@@ -104,7 +104,7 @@ namespace Telegram.ViewModels.Create
         {
             var phoneNumber = _phoneNumber?.Trim('+').Replace(" ", string.Empty);
 
-            var response = await ClientService.SendAsync(new ImportContacts(new[] { new Contact(phoneNumber, _firstName, _lastName, string.Empty, 0) }));
+            var response = await ClientService.SendAsync(new ImportContacts(new[] { new ImportedContact(phoneNumber, _firstName, _lastName, null) }));
             if (response is ImportedContacts imported)
             {
                 if (imported.UserIds.Count > 0)

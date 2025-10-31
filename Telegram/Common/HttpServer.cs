@@ -48,9 +48,10 @@ namespace Telegram.Common
             Headers = new Dictionary<string, string>();
         }
 
-        public HttpResponse(string statusCode)
+        public HttpResponse(string statusCode, string reasonPhrase)
         {
             StatusCode = statusCode;
+            ReasonPhrase = reasonPhrase;
             Headers = new Dictionary<string, string>();
         }
 
@@ -59,7 +60,9 @@ namespace Telegram.Common
             return string.Format("HTTP status {0} {1}", this.StatusCode, this.ReasonPhrase);
         }
 
-        public static HttpResponse NotFound = new HttpResponse("404");
+        public static HttpResponse NotFound => new HttpResponse("404", "Not Found");
+
+        public static HttpResponse InternalServerError => new HttpResponse("500", "Internal Server Error");
     }
 
     public class HttpServer
@@ -129,7 +132,17 @@ namespace Telegram.Common
                 HttpRequest request = GetRequest(stream);
 
                 // route and handle the request...
-                HttpResponse response = _callback(request);
+                HttpResponse response;
+
+                try
+                {
+                    response = _callback(request);
+                }
+                catch (Exception ex)
+                {
+                    response = HttpResponse.InternalServerError;
+                    Logger.Exception(ex);
+                }
 
                 Console.WriteLine("{0} {1}", response.StatusCode, request.Path);
                 // build a default response for errors
@@ -140,7 +153,7 @@ namespace Telegram.Common
                 stream.Close();
                 stream = null;
             }
-            catch (IOException)
+            catch
             {
                 // Connection was aborted
             }

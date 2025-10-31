@@ -130,8 +130,7 @@
                                                 FrameSize="64,64"
                                                 DecodeFrameType="Logical"
                                                 Ready="Player_Ready" />
-                        <Border Background="{ThemeResource MessageServiceBackgroundBrush}"
-                                HorizontalAlignment="Right"
+                        <Border HorizontalAlignment="Right"
                                 VerticalAlignment="Bottom"
                                 Width="16"
                                 Height="16"

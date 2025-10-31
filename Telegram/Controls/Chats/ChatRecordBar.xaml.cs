@@ -11,13 +11,12 @@ using System.Threading.Tasks;
 using Telegram.Common;
 using Telegram.Composition;
 using Telegram.Controls.Media;
-using Telegram.Native;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Td.Api;
 using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using Windows.Storage;
-using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.Composition;
 using Windows.UI.Xaml;
@@ -70,11 +69,9 @@ namespace Telegram.Controls.Chats
             };
 
             _blobVisual = new CompositionBlobVisual(Blob, 160, 160, 4);
-
-            Disconnected += OnUnloaded;
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnDisconnectVisualChildren()
         {
             _blobVisual.StopAnimating();
         }
@@ -235,6 +232,7 @@ namespace Telegram.Controls.Chats
             ChatRecordGlyph.Text = ControlledButton.Mode == ChatRecordMode.Video
                 ? Icons.VideoNoteFilled24
                 : Icons.MicOnFilled24;
+            ChatRecordGlyph.FontSize = 24;
 
             var slideWidth = SlidePanel.ActualSize.X;
             var elapsedWidth = ElapsedPanel.ActualSize.X;
@@ -291,21 +289,18 @@ namespace Telegram.Controls.Chats
                 var file = await ApplicationData.Current.TemporaryFolder.TryGetItemAsync("LastVideoFrame.png");
                 if (file != null)
                 {
-                    var bitmap = new BitmapImage();
+                    var source = new SoftwareBitmapSource();
 
-                    using (var stream = new InMemoryRandomAccessStream())
+                    try
                     {
-                        try
-                        {
-                            await Task.Run(() => PlaceholderImageHelper.Background.DrawThumbnailPlaceholder(file.Path, 3, stream));
-                            await bitmap.SetSourceAsync(stream);
-                        }
-                        catch { }
+                        var bitmap = await Task.Run(() => PlaceholderHelper.Background.DrawBlurred(file.Path, 3));
+                        await source.SetBitmapAsync(bitmap);
                     }
+                    catch { }
 
                     return new ImageBrush
                     {
-                        ImageSource = bitmap
+                        ImageSource = source
                     };
                 }
             }
@@ -568,7 +563,7 @@ namespace Telegram.Controls.Chats
 
                 WaveformLabel.Text = result.Duration.ToString("m\\:ss");
                 Waveform.Visibility = Visibility.Visible;
-                Waveform.UpdateWaveform(new VoiceNote(-1, result.Waveform, string.Empty, null, null));
+                Waveform.UpdateWaveform(result.Waveform, -1);
 
                 var compositor = BootStrapper.Current.Compositor;
                 var ellipse = compositor.CreateRoundedRectangleGeometry();
@@ -604,6 +599,8 @@ namespace Telegram.Controls.Chats
 
                 ElementCompositionPreview.SetElementChildVisual(WaveformBackground, visual);
                 ChatRecordGlyph.Foreground = new SolidColorBrush(Theme.Accent);
+                ChatRecordGlyph.Text = Icons.SendFilled32;
+                ChatRecordGlyph.FontSize = 32;
 
                 ShowHideDelete(true);
             }
@@ -649,6 +646,8 @@ namespace Telegram.Controls.Chats
 
                 ElementCompositionPreview.SetElementChildVisual(WaveformBackground, visual);
                 ChatRecordGlyph.Foreground = new SolidColorBrush(Colors.White);
+                ChatRecordGlyph.Text = Icons.SendFilled;
+                ChatRecordGlyph.FontSize = 24;
 
                 ShowHideDelete(false);
             }

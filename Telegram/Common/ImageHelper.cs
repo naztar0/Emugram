@@ -76,10 +76,15 @@ namespace Telegram.Common
                     var width = decoder.PixelWidth;
                     var height = decoder.PixelHeight;
 
-                    if (generation?.Rectangle is Rect crop)
+                    if (generation?.Rotation is ImageRotation.Clockwise90Degrees or ImageRotation.Clockwise270Degrees)
                     {
-                        width = (uint)(crop.Width * decoder.PixelWidth);
-                        height = (uint)(crop.Height * decoder.PixelHeight);
+                        (width, height) = (height, width);
+                    }
+
+                    if (generation?.Rectangle is Rect crop && (crop.X != 0 || crop.Y != 0 || crop.Right != 1 || crop.Bottom != 1))
+                    {
+                        width = (uint)(crop.Width * width);
+                        height = (uint)(crop.Height * height);
                     }
 
                     if (width > requestedMinSide || height > requestedMinSide)
@@ -88,28 +93,10 @@ namespace Telegram.Common
                         double ratioY = (double)requestedMinSide / height;
                         double ratio = Math.Min(ratioX, ratioY);
 
-                        if (generation != null && generation.Rotation is ImageRotation.Clockwise90Degrees or ImageRotation.Clockwise270Degrees)
-                        {
-                            return new SizeInt32
-                            {
-                                Width = (int)(height * ratio),
-                                Height = (int)(width * ratio)
-                            };
-                        }
-
                         return new SizeInt32
                         {
                             Width = (int)(width * ratio),
                             Height = (int)(height * ratio)
-                        };
-                    }
-
-                    if (generation != null && generation.Rotation is ImageRotation.Clockwise90Degrees or ImageRotation.Clockwise270Degrees)
-                    {
-                        return new SizeInt32
-                        {
-                            Width = (int)(height),
-                            Height = (int)(width)
                         };
                     }
 
@@ -329,17 +316,13 @@ namespace Telegram.Common
             using (var destination = await file.OpenAsync(FileAccessMode.ReadWrite))
             {
                 var decoder = await BitmapDecoder.CreateAsync(source);
-                var cropWidth = (double)decoder.PixelWidth;
-                var cropHeight = (double)decoder.PixelHeight;
+                var imageSize = new Size(decoder.PixelWidth, decoder.PixelHeight);
 
-                if (decoder.PixelWidth > min || decoder.PixelHeight > min)
+                // TODO: cropRectangle comes already translated, so no rotation/flip needs to be applied to it
+                // I don't really like this, but at the same time I don't like the idea of "unapplying" the transform in ImageCropper
+                if (rotation is ImageRotation.Clockwise90Degrees or ImageRotation.Clockwise270Degrees)
                 {
-                    double ratioX = (double)min / cropWidth;
-                    double ratioY = (double)min / cropHeight;
-                    double ratio = Math.Min(ratioX, ratioY);
-
-                    cropWidth *= ratio;
-                    cropHeight *= ratio;
+                    (imageSize.Width, imageSize.Height) = (imageSize.Height, imageSize.Width);
                 }
 
                 if (cropRectangle == default || (cropRectangle.Width == 0 && cropRectangle.Height == 0))
@@ -349,34 +332,39 @@ namespace Telegram.Common
                 else if (cropRectangle.Right <= 1 && cropRectangle.Bottom <= 1)
                 {
                     cropRectangle = new Rect(
-                        cropRectangle.X * decoder.PixelWidth,
-                        cropRectangle.Y * decoder.PixelHeight,
-                        cropRectangle.Width * decoder.PixelWidth,
-                        cropRectangle.Height * decoder.PixelHeight);
+                        cropRectangle.X * imageSize.Width,
+                        cropRectangle.Y * imageSize.Height,
+                        cropRectangle.Width * imageSize.Width,
+                        cropRectangle.Height * imageSize.Height);
                 }
 
-                if (rotation != ImageRotation.None)
+                (cropRectangle, imageSize) = Scale(cropRectangle, imageSize, min, max);
+
+                if (rotation is ImageRotation.Clockwise90Degrees or ImageRotation.Clockwise270Degrees)
                 {
-                    cropRectangle = RotateArea(cropRectangle, decoder.PixelWidth, decoder.PixelHeight, (int)rotation);
+                    (imageSize.Width, imageSize.Height) = (imageSize.Height, imageSize.Width);
                 }
 
-                if (flip == ImageFlip.Horizontal)
-                {
-                    cropRectangle = FlipArea(cropRectangle, decoder.PixelWidth);
-                }
+                //if (flip != ImageFlip.None)
+                //{
+                //    cropRectangle = FlipArea(cropRectangle, imageSize.Width, imageSize.Height, flip);
+                //}
 
-                var (scaledCrop, scaledSize) = Scale(cropRectangle, new Size(decoder.PixelWidth, decoder.PixelHeight), new Size(cropWidth, cropHeight), min, max);
+                //if (rotation != ImageRotation.None)
+                //{
+                //    cropRectangle = RotateArea(cropRectangle, imageSize.Width, imageSize.Height, (int)rotation);
+                //}
 
                 var bounds = new BitmapBounds();
-                bounds.X = (uint)scaledCrop.X;
-                bounds.Y = (uint)scaledCrop.Y;
-                bounds.Width = (uint)scaledCrop.Width;
-                bounds.Height = (uint)scaledCrop.Height;
+                bounds.X = (uint)cropRectangle.X;
+                bounds.Y = (uint)cropRectangle.Y;
+                bounds.Width = (uint)cropRectangle.Width;
+                bounds.Height = (uint)cropRectangle.Height;
 
                 var transform = new BitmapTransform
                 {
-                    ScaledWidth = (uint)scaledSize.Width,
-                    ScaledHeight = (uint)scaledSize.Height,
+                    ScaledWidth = (uint)imageSize.Width,
+                    ScaledHeight = (uint)imageSize.Height,
                     Bounds = bounds,
                     Rotation = (BitmapRotation)rotation,
                     Flip = (BitmapFlip)flip,
@@ -400,33 +388,41 @@ namespace Telegram.Common
             return file;
         }
 
-        private static Rect RotateArea(Rect area, uint width, uint height, int count)
+        public static Rect RotateArea(Rect area, double width, double height, int count)
         {
+            count = count % 4;
+
             for (int i = 0; i < count; i++)
             {
                 var point = new Point(height - area.Bottom, width - (width - area.X));
                 area = new Rect(point.X, point.Y, area.Height, area.Width);
 
-                var temp = width;
-                width = height;
-                height = temp;
+                (width, height) = (height, width);
             }
 
             return area;
         }
 
-        private static Rect FlipArea(Rect area, uint width)
+        public static Rect FlipArea(Rect area, double width, double height, ImageFlip flip)
         {
-            var point = new Point(width - area.Right, area.Y);
-            var result = new Rect(point.X, point.Y, area.Width, area.Height);
+            if (flip == ImageFlip.Horizontal)
+            {
+                var newX = width - area.Right;
+                return new Rect(newX, area.Y, area.Width, area.Height);
+            }
+            else if (flip == ImageFlip.Vertical)
+            {
+                var newY = height - area.Bottom;
+                return new Rect(area.X, newY, area.Width, area.Height);
+            }
 
-            return result;
+            return area;
         }
 
-        private static (Rect, Size) Scale(Rect rect, Size start, Size size, int min, int max)
+        private static (Rect, Size) Scale(Rect rect, Size start, int min, int max)
         {
-            var width = rect.Width * size.Width / start.Width;
-            var height = rect.Height * size.Height / start.Height;
+            var width = rect.Width;
+            var height = rect.Height;
 
             if (width > min || height > min)
             {
@@ -478,7 +474,7 @@ namespace Telegram.Common
                 await Task.Run(() => animation.RenderSync(frame, width, height, true, out _));
 
                 using var stream = new InMemoryRandomAccessStream();
-                PlaceholderImageHelper.Background.Encode(frame, stream, width, height, animation.Rotation);
+                PlaceholderHelper.Background.Encode(frame, stream, width, height, animation.Rotation);
 
                 return await CropAndPreviewAsync(stream, generation, maxSize);
             }
@@ -492,46 +488,46 @@ namespace Telegram.Common
         public static async Task<ImageSource> CropAndPreviewAsync(IRandomAccessStream source, ImageGeneration generation, int maxSize = 1280)
         {
             var decoder = await BitmapDecoder.CreateAsync(source);
-            var cropWidth = (double)decoder.PixelWidth;
-            var cropHeight = (double)decoder.PixelHeight;
 
-            if (decoder.PixelWidth > maxSize || decoder.PixelHeight > maxSize)
+            var cropRectangle = generation.Rectangle;
+            var imageSize = new Size(decoder.PixelWidth, decoder.PixelHeight);
+
+            // TODO: cropRectangle comes already translated, so no rotation/flip needs to be applied to it
+            // I don't really like this, but at the same time I don't like the idea of "unapplying" the transform in ImageCropper
+            if (generation.Rotation is ImageRotation.Clockwise90Degrees or ImageRotation.Clockwise270Degrees)
             {
-                double ratioX = maxSize / cropWidth;
-                double ratioY = maxSize / cropHeight;
-                double ratio = Math.Min(ratioX, ratioY);
-
-                cropWidth *= ratio;
-                cropHeight *= ratio;
+                (imageSize.Width, imageSize.Height) = (imageSize.Height, imageSize.Width);
             }
 
-            var cropRectangle = new Rect(
-                generation.Rectangle.X * decoder.PixelWidth,
-                generation.Rectangle.Y * decoder.PixelHeight,
-                generation.Rectangle.Width * decoder.PixelWidth,
-                generation.Rectangle.Height * decoder.PixelHeight);
-
-            if (generation.Rotation != ImageRotation.None)
+            if (cropRectangle == default || (cropRectangle.Width == 0 && cropRectangle.Height == 0))
             {
-                cropRectangle = RotateArea(cropRectangle, decoder.PixelWidth, decoder.PixelHeight, (int)generation.Rotation);
+                cropRectangle = new Rect(0, 0, decoder.PixelWidth, decoder.PixelHeight);
+            }
+            else if (cropRectangle.Right <= 1 && cropRectangle.Bottom <= 1)
+            {
+                cropRectangle = new Rect(
+                    cropRectangle.X * imageSize.Width,
+                    cropRectangle.Y * imageSize.Height,
+                    cropRectangle.Width * imageSize.Width,
+                    cropRectangle.Height * imageSize.Height);
             }
 
-            if (generation.Flip == ImageFlip.Horizontal)
-            {
-                cropRectangle = FlipArea(cropRectangle, decoder.PixelWidth);
-            }
+            (cropRectangle, imageSize) = Scale(cropRectangle, imageSize, maxSize, 0);
 
-            var (scaledCrop, scaledSize) = Scale(cropRectangle, new Size(decoder.PixelWidth, decoder.PixelHeight), new Size(cropWidth, cropHeight), maxSize, 0);
+            if (generation.Rotation is ImageRotation.Clockwise90Degrees or ImageRotation.Clockwise270Degrees)
+            {
+                (imageSize.Width, imageSize.Height) = (imageSize.Height, imageSize.Width);
+            }
 
             var bounds = new BitmapBounds();
-            bounds.X = (uint)scaledCrop.X;
-            bounds.Y = (uint)scaledCrop.Y;
-            bounds.Width = (uint)scaledCrop.Width;
-            bounds.Height = (uint)scaledCrop.Height;
+            bounds.X = (uint)cropRectangle.X;
+            bounds.Y = (uint)cropRectangle.Y;
+            bounds.Width = (uint)cropRectangle.Width;
+            bounds.Height = (uint)cropRectangle.Height;
 
             var transform = new BitmapTransform();
-            transform.ScaledWidth = (uint)scaledSize.Width;
-            transform.ScaledHeight = (uint)scaledSize.Height;
+            transform.ScaledWidth = (uint)imageSize.Width;
+            transform.ScaledHeight = (uint)imageSize.Height;
             transform.Bounds = bounds;
             transform.InterpolationMode = BitmapInterpolationMode.Linear;
             transform.Rotation = (BitmapRotation)generation.Rotation;
@@ -579,7 +575,7 @@ namespace Telegram.Common
                     var result = animation.RenderSync(frame, width, height, true, out _);
 
                     var stream = new InMemoryRandomAccessStream();
-                    PlaceholderImageHelper.Background.Encode(frame, stream, width, height, animation.Rotation);
+                    PlaceholderHelper.Background.Encode(frame, stream, width, height, animation.Rotation);
 
                     return stream;
                 });

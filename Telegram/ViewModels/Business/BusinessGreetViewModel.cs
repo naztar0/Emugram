@@ -91,10 +91,8 @@ namespace Telegram.ViewModels.Business
 
         public override bool HasChanged => !_cached.AreTheSame(GetSettings());
 
-        public override async void Continue()
+        protected override async void ContinueImpl(NavigatingEventArgs args)
         {
-            _completed = true;
-
             if (IsEnabled && Replies == null)
             {
                 RaisePropertyChanged("REPLIES_MISSING");
@@ -104,18 +102,20 @@ namespace Telegram.ViewModels.Business
             var settings = GetSettings();
             if (settings.AreTheSame(_cached))
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
                 return;
             }
 
             var response = await ClientService.SendAsync(new SetBusinessGreetingMessageSettings(settings));
             if (response is Ok)
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
             }
-            else
+            else if (response is Error error)
             {
-                // TODO
+                ShowToast(error);
             }
         }
 

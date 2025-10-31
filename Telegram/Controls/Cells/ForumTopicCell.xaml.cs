@@ -15,6 +15,7 @@ using Telegram.Controls.Chats;
 using Telegram.Controls.Media;
 using Telegram.Converters;
 using Telegram.Native;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Navigation.Services;
 using Telegram.Services;
@@ -25,12 +26,10 @@ using Telegram.Views;
 using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.Composition;
-using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Hosting;
-using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Shapes;
@@ -58,18 +57,15 @@ namespace Telegram.Controls.Cells
         public ForumTopicCell()
         {
             DefaultStyleKey = typeof(ForumTopicCell);
-
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             _strokeBrush?.Register();
             _selectionStrokeBrush?.Register();
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _strokeBrush?.Unregister();
             _selectionStrokeBrush?.Unregister();
@@ -496,7 +492,7 @@ namespace Telegram.Controls.Cells
             //UpdateChatReadInbox(chat);
             UpdateForumTopicUnreadMentionCount(topic);
             UpdateForumTopicNotificationSettings(topic);
-            UpdateForumTopicActions(topic, _viewModel.ClientService.GetChatActions(topic.Info.ChatId, topic.Info.MessageThreadId));
+            UpdateForumTopicActions(topic, _viewModel.ClientService.GetChatActions(topic.Info.ChatId, new MessageTopicForum(topic.Info.ForumTopicId)));
         }
 
         #endregion
@@ -663,7 +659,7 @@ namespace Telegram.Controls.Cells
             return string.Empty;
         }
 
-        public void ShowPreview(HoldingEventArgs args)
+        public void ShowPreview(Point? position)
         {
             Logger.Info();
 
@@ -676,54 +672,51 @@ namespace Telegram.Controls.Cells
             flyout.Items.Add(tooltip);
 
             var chat = _chat;
-            var message = chat?.LastMessage;
-
             if (chat == null)
             {
                 return;
             }
 
+            var context = WindowContext.ForXamlRoot(this);
+            var service = context.NavigationServices.GetByFrameId($"Main{_viewModel.SessionId}") as NavigationService;
+
             var grid = new Grid();
-            var frame = new Frame
+            var chatView = new ChatView
             {
+                FromPreview = true,
                 Width = 320,
                 Height = 360
             };
 
-            var context = WindowContext.ForXamlRoot(this);
+            var viewModel = TypeResolver.Current.Resolve<DialogViewModel, IDialogDelegate>(chatView, service.SessionId);
+            viewModel.NavigationService = service;
+            viewModel.Dispatcher = service.Dispatcher;
+            chatView.Activate(viewModel);
+            _ = viewModel.NavigatedToAsync(new ChatMessageTopic(chat.Id, new MessageTopicForum(_topic.Info.ForumTopicId)), Windows.UI.Xaml.Navigation.NavigationMode.New, new Telegram.Navigation.Services.NavigationState());
 
-            var service = new TLNavigationService(_viewModel.ClientService, null, context, frame, "ChatPreview");
-            service.NavigateToChat(chat);
-
-            var chatPage = frame.Content as ChatPage;
-            var chatView = chatPage?.Content as ChatView;
-
-            if (chatView != null)
+            void handler(object sender, object e)
             {
-                void handler(object sender, RoutedEventArgs e)
-                {
-                    Logger.Info("Unloaded");
+                Logger.Info("Unloaded");
 
-                    chatView.Unloaded -= handler;
-                    chatView.ViewModel.NavigatedFrom(null, false);
-                    chatView.Deactivate(false);
-                }
-
-                chatView.Unloaded += handler;
+                flyout.Closing -= handler;
+                chatView.ViewModel.NavigatedFrom(null, false);
+                chatView.Deactivate(true);
             }
+
+            flyout.Closing += handler;
 
             var background = new ChatBackgroundControl();
             background.Update(_viewModel.ClientService, null);
 
             grid.Children.Add(background);
-            grid.Children.Add(frame);
+            grid.Children.Add(chatView);
             grid.CornerRadius = new CornerRadius(8);
 
             tooltip.Content = grid;
             tooltip.Padding = new Thickness();
             tooltip.MaxWidth = double.PositiveInfinity;
 
-            flyout.ShowAt(this, args.Position);
+            flyout.ShowAt(this, position ?? this.TransformToPointerPosition());
         }
 
         protected override void OnDragEnter(DragEventArgs e)
@@ -1055,26 +1048,5 @@ namespace Telegram.Controls.Cells
         }
 
         #endregion
-
-        #region XamlMarkupHelper
-
-        private void LoadObject<T>(ref T element, /*[CallerArgumentExpression("element")]*/string name)
-            where T : DependencyObject
-        {
-            element ??= GetTemplateChild(name) as T;
-        }
-
-        private void UnloadObject<T>(ref T element)
-            where T : DependencyObject
-        {
-            if (element != null)
-            {
-                XamlMarkupHelper.UnloadObject(element);
-                element = null;
-            }
-        }
-
-        #endregion
-
     }
 }

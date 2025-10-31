@@ -23,9 +23,9 @@ namespace Telegram.Views.Popups2
 
             _clientService = clientService;
 
-            Photo.SetChat(clientService, info, 96);
+            Photo.Source = ProfilePictureSource.Chat(clientService, info);
 
-            Identity.SetStatus(info);
+            Identity.SetStatus(clientService, info);
 
             Title.Text = info.Title;
             Subtitle.Text = ConvertCount(info.MemberCount, info.Type is InviteLinkChatTypeChannel);
@@ -79,7 +79,7 @@ namespace Telegram.Views.Popups2
             else if (args.Phase == 2)
             {
                 var photo = content.Children[0] as ProfilePicture;
-                photo.SetUser(_clientService, user, 48);
+                photo.Source = ProfilePictureSource.User(_clientService, user);
             }
 
             if (args.Phase < 2)

@@ -4,6 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -128,26 +129,6 @@ namespace Telegram.Navigation
             Logger.Debug(sender.VisibleBounds);
         }
 
-        private void OnShutdownCompleted(Windows.System.DispatcherQueue sender, object args)
-        {
-            sender.ShutdownCompleted -= OnShutdownCompleted;
-            Current = null;
-
-            Theme.Current = null;
-
-            ThemeIncoming.Release();
-            ThemeOutgoing.Release();
-
-            AnimatedImageLoader.Release();
-            ChatRecordButton.Recorder.Release();
-
-            // TODO: needed? From some tests, this prevented the whole Window root from being garbage collected
-            if (SynchronizationContext.Current is SecondaryViewSynchronizationContextDecorator decorator)
-            {
-                SynchronizationContext.SetSynchronizationContext(decorator.Context);
-            }
-        }
-
         public async Task ConsolidateAsync()
         {
             if (_consolidated)
@@ -175,18 +156,30 @@ namespace Telegram.Navigation
         {
             _consolidated = true;
             _inputListener.Release();
+            sender.VisibleBoundsChanged -= OnVisibleBoundsChanged;
             sender.Consolidated -= OnConsolidated;
 
             // TODO: since we can't call Close directly,
             // Closed event will be never fired.
-            //OnClosed(null, null);
+            OnClosed(null, null);
             ClearTitleBar(sender);
+
+            // TODO: needed? From some tests, this prevented the whole Window root from being garbage collected
+            if (SynchronizationContext.Current is SecondaryViewSynchronizationContextDecorator decorator)
+            {
+                SynchronizationContext.SetSynchronizationContext(decorator.Context);
+            }
         }
 
         private void OnClosed(object sender, CoreWindowEventArgs e)
         {
             lock (_allLock)
             {
+                if (_xamlRoot != null)
+                {
+                    _mapping.Remove(_xamlRoot);
+                }
+
                 All.Remove(this);
             }
 
@@ -201,32 +194,58 @@ namespace Telegram.Navigation
             _window.CoreWindow.ResizeCompleted -= OnResizeCompleted;
         }
 
+        private void OnShutdownCompleted(DispatcherQueue sender, object args)
+        {
+            sender.ShutdownCompleted -= OnShutdownCompleted;
+            Current = null;
+
+            Theme.Current = null;
+
+            ThemeIncoming.Release();
+            ThemeOutgoing.Release();
+
+            PlaceholderHelper.Release();
+            AnimatedImageLoader.Release();
+            ProfilePicture.Loader.Release();
+            ChatRecordButton.Recorder.Release();
+
+            // TODO: needed? From some tests, this prevented the whole Window root from being garbage collected
+            if (SynchronizationContext.Current is SecondaryViewSynchronizationContextDecorator decorator)
+            {
+                SynchronizationContext.SetSynchronizationContext(decorator.Context);
+            }
+        }
+
         public bool IsInMainView { get; }
 
         public bool IsCallInProgress { get; private set; }
 
         public UIElement Content
         {
-            get => _window.Content;
+            get => _locked != null ? _lockedContent : _window.Content;
             set
             {
-                _window.Content = value;
-
-                if (value != null)
+                if (_locked != null)
                 {
-                    IsCallInProgress = value is VoipPage or GroupCallPage or LiveStreamPage;
-
-                    if (_locked != null)
-                    {
-                        value.Visibility = Visibility.Collapsed;
-                    }
-
-                    if (value is FrameworkElement element)
-                    {
-                        element.Loading += OnLoading;
-                        element.Loaded += OnLoaded;
-                    }
+                    _lockedContent = value;
                 }
+                else
+                {
+                    _window.Content = value;
+                }
+
+                if (value is Control control)
+                {
+                    if (_locked == null)
+                    {
+                        BackdropMaterial.SetApplyToRootOrPageBackground(control, true);
+                    }
+
+                    control.Loading += OnLoading;
+                    control.Loaded += OnLoaded;
+                }
+
+                IsCallInProgress = value is VoipPage or GroupCallPage or LiveStreamPage;
             }
         }
 
@@ -236,15 +255,21 @@ namespace Telegram.Navigation
 
             lock (_allLock)
             {
-                _mapping[sender.UIContext] = this;
+                if (_xamlRoot != null)
+                {
+                    _mapping.Remove(_xamlRoot);
+                }
+
+                _xamlRoot = sender.XamlRoot;
+                _mapping[sender.XamlRoot] = this;
             }
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement element)
+            if (sender is Control control)
             {
-                element.Loaded -= OnLoaded;
+                control.Loaded -= OnLoaded;
             }
 
             ViewService.OnWindowLoaded();
@@ -423,44 +448,54 @@ namespace Telegram.Navigation
 
         #region Lock
 
+        private UIElement _lockedContent;
         private PasscodePage _locked;
 
-        public async void Lock(bool biometrics)
+        public void Lock(bool biometrics)
         {
             if (_locked != null)
             {
                 return;
             }
 
-            if (_window.Content != null)
+            if (_window.Content is IPopupHost popupHost)
             {
-                _window.Content.Visibility = Visibility.Collapsed;
+                popupHost.PopupOpened();
             }
 
-            _locked = new PasscodePage(biometrics && IsInMainView);
+            Logger.Info("Showing passcode lock");
 
-            void handler(ContentDialog s, ContentDialogClosingEventArgs args)
-            {
-                s.Closing -= handler;
+            // TODO: Transition from splash screen to passcode
+            _locked = new PasscodePage(this, biometrics && IsInMainView);
+            _lockedContent = _window.Content;
 
-                if (_window.Content != null)
-                {
-                    _window.Content.Visibility = Visibility.Visible;
-                }
-            }
-
-            // TODO: WinUI - most likely XamlRoot is going to be null at this stage.
-            // As well, Content may be null too.
-
-            _locked.Closing += handler;
-            await _locked.ShowQueuedAsync(Content?.XamlRoot);
-
-            _locked = null;
+            _window.Content = _locked;
         }
 
         public void Unlock()
         {
-            _locked?.Update();
+            if (_locked == null)
+            {
+                return;
+            }
+
+            Logger.Info("Hiding passcode lock");
+
+            _window.Content = _lockedContent;
+
+            _locked = null;
+            _lockedContent = null;
+
+            if (_window.Content is IPopupHost popupHost)
+            {
+                popupHost.PopupClosed();
+            }
+
+            if (_window.Content is Control control)
+            {
+                BackdropMaterial.SetApplyToRootOrPageBackground(control, true);
+                control.Focus(FocusState.Programmatic);
+            }
         }
 
         #endregion
@@ -694,7 +729,7 @@ namespace Telegram.Navigation
         public static bool IsKeyDown(VirtualKey key)
         {
             //return (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
-            return (Window.Current.CoreWindow.GetKeyState(key) & CoreVirtualKeyStates.Down) != 0;
+            return (Window.Current.CoreWindow.GetAsyncKeyState(key) & CoreVirtualKeyStates.Down) != 0;
         }
 
         public static bool IsKeyDownAsync(VirtualKey key)
@@ -708,20 +743,21 @@ namespace Telegram.Navigation
             //return (InputKeyboardSource.GetKeyStateForCurrentThread(key) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
 
             var modifiers = VirtualKeyModifiers.None;
+            var coreWindow = Window.Current.CoreWindow;
 
-            if ((Window.Current.CoreWindow.GetAsyncKeyState(VirtualKey.Control) & CoreVirtualKeyStates.Down) != 0)
+            if ((coreWindow.GetAsyncKeyState(VirtualKey.Control) & CoreVirtualKeyStates.Down) != 0)
             {
-                modifiers |= Windows.System.VirtualKeyModifiers.Control;
+                modifiers |= VirtualKeyModifiers.Control;
             }
 
-            if ((Window.Current.CoreWindow.GetAsyncKeyState(VirtualKey.Menu) & CoreVirtualKeyStates.Down) != 0)
+            if ((coreWindow.GetAsyncKeyState(VirtualKey.Menu) & CoreVirtualKeyStates.Down) != 0)
             {
-                modifiers |= Windows.System.VirtualKeyModifiers.Menu;
+                modifiers |= VirtualKeyModifiers.Menu;
             }
 
-            if ((Window.Current.CoreWindow.GetAsyncKeyState(VirtualKey.Shift) & CoreVirtualKeyStates.Down) != 0)
+            if ((coreWindow.GetAsyncKeyState(VirtualKey.Shift) & CoreVirtualKeyStates.Down) != 0)
             {
-                modifiers |= Windows.System.VirtualKeyModifiers.Shift;
+                modifiers |= VirtualKeyModifiers.Shift;
             }
 
             return modifiers;
@@ -779,14 +815,15 @@ namespace Telegram.Navigation
             return Task.WhenAll(tasks);
         }
 
-        private static readonly Dictionary<UIContext, WindowContext> _mapping = new();
+        private static readonly Dictionary<XamlRoot, WindowContext> _mapping = new();
+        private XamlRoot _xamlRoot;
 
         public static WindowContext ForXamlRoot(XamlRoot xamlRoot)
         {
             WindowContext context;
             lock (_allLock)
             {
-                _mapping.TryGetValue(xamlRoot.UIContext, out context);
+                _mapping.TryGetValue(xamlRoot, out context);
             }
 
             return context;
@@ -797,7 +834,7 @@ namespace Telegram.Navigation
             WindowContext context;
             lock (_allLock)
             {
-                _mapping.TryGetValue(element.UIContext, out context);
+                _mapping.TryGetValue(element.XamlRoot, out context);
             }
 
             return context;

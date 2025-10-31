@@ -39,7 +39,6 @@
                         <TextBox x:Name="UsernameField"
                                  Text="{x:Bind ViewModel.Results.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  FontFamily="{ThemeResource EmojiThemeFontFamily}"
-                                 MaxLength="{StaticResource ChannelAboutMaxLength}"
                                  PlaceholderText="{CustomResource BusinessBotLink}"
                                  TextWrapping="Wrap"
                                  AcceptsReturn="True"
@@ -68,15 +67,15 @@
                         </Grid.ColumnDefinitions>
                         <cells:ProfileCell />
 
-                        <controls:BadgeButton Click="Add_Click"
-                                              Background="{StaticResource AccentButtonBackground}"
-                                              Content="{CustomResource Add}"
-                                              Style="{StaticResource PillButtonStyle}"
-                                              FontWeight="SemiBold"
-                                              HorizontalAlignment="Right"
-                                              VerticalAlignment="Center"
-                                              Margin="0,0,12,0"
-                                              Grid.Column="1" />
+                        <controls:SettingsButton Click="Add_Click"
+                                                 Background="{StaticResource AccentButtonBackground}"
+                                                 Content="{CustomResource Add}"
+                                                 Style="{StaticResource PillButtonStyle}"
+                                                 FontWeight="SemiBold"
+                                                 HorizontalAlignment="Right"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,12,0"
+                                                 Grid.Column="1" />
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -97,10 +96,9 @@
 
                     <StackPanel Visibility="{x:Bind ViewModel.IsInclude, Mode=OneWay}">
                         <controls:HeaderedControl Header="{CustomResource BusinessChatsIncluded}">
-                            <controls:BadgeButton Click="{x:Bind ViewModel.AddIncluded}"
-                                                  Content="{CustomResource BusinessChatsIncludedAdd}"
-                                                  Style="{StaticResource GlyphBadgeButtonStyle}"
-                                                  Glyph="&#xEA08;" />
+                            <controls:SettingsButton Click="{x:Bind ViewModel.AddIncluded}"
+                                                     Content="{CustomResource BusinessChatsIncludedAdd}"
+                                                     Glyph="&#xEA08;" />
                         </controls:HeaderedControl>
 
                         <muxc:ItemsRepeater Layout="{StaticResource ThreadStackLayout}"
@@ -122,10 +120,9 @@
 
                     <StackPanel>
                         <controls:HeaderedControl Header="{CustomResource BusinessChatsExcluded}">
-                            <controls:BadgeButton Click="{x:Bind ViewModel.AddExcluded}"
-                                                  Content="{CustomResource BusinessChatsExcludedAdd}"
-                                                  Style="{StaticResource GlyphBadgeButtonStyle}"
-                                                  Glyph="&#xEA08;" />
+                            <controls:SettingsButton Click="{x:Bind ViewModel.AddExcluded}"
+                                                     Content="{CustomResource BusinessChatsExcludedAdd}"
+                                                     Glyph="&#xEA08;" />
                         </controls:HeaderedControl>
 
                         <muxc:ItemsRepeater Layout="{StaticResource ThreadStackLayout}"

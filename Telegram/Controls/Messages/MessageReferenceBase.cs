@@ -9,14 +9,13 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Telegram.Common;
 using Telegram.Controls.Media;
-using Telegram.Native;
+using Telegram.Converters;
+using Telegram.Td;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
-using Windows.Storage.Streams;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Media.Imaging;
 
 namespace Telegram.Controls.Messages
 {
@@ -29,6 +28,8 @@ namespace Telegram.Controls.Messages
         protected MessageViewModel _message;
         protected bool _loading;
         protected string _title;
+
+        protected ThumbnailController _thumbnailController;
 
         protected bool _templateApplied;
 
@@ -49,7 +50,12 @@ namespace Telegram.Controls.Messages
                 return;
             }
 
-            if (embedded.LinkPreview != null && !embedded.LinkPreviewDisabled)
+            if (embedded.SuggestedPostInfo != null)
+            {
+                Message = null;
+                GetSuggestedPostInfoTemplate(embedded.SuggestedPostInfo.Price, embedded.SuggestedPostInfo.SendDate);
+            }
+            else if (embedded.LinkPreview != null && !embedded.LinkPreviewDisabled)
             {
                 Message = null;
                 Visibility = Visibility.Visible;
@@ -77,19 +83,51 @@ namespace Telegram.Controls.Messages
                     string.Empty,
                     message.AsFormattedText());
             }
-            else if (embedded.EditingMessage != null)
+            else if (embedded.Editing != null)
             {
-                Message = embedded.EditingMessage;
-                GetMessageTemplate(embedded.EditingMessage, null, false, Strings.Edit, true, false, false);
+                Message = embedded.Editing.Message;
+                GetMessageTemplate(embedded.Editing.Message, null, false, 0, Strings.Edit, true, false, false);
             }
-            else if (embedded.ReplyToMessage != null)
+            else if (embedded.ReplyTo != null)
             {
-                Message = embedded.ReplyToMessage;
-                GetMessageTemplate(embedded.ReplyToMessage, embedded.ReplyToQuote?.Text, false, embedded.ReplyToQuote != null ? Strings.ReplyToQuote : Strings.ReplyTo, true, false, false);
+                Message = embedded.ReplyTo.Message;
+                GetMessageTemplate(embedded.ReplyTo.Message, embedded.ReplyTo.Quote?.Text, false, embedded.ReplyTo.ChecklistTaskId, embedded.ReplyTo.Quote != null ? Strings.ReplyToQuote : Strings.ReplyTo, true, false, false);
             }
         }
 
         #endregion
+
+        private void GetSuggestedPostInfoTemplate(SuggestedPostPrice price, int sendDate)
+        {
+            // 1F4C6	
+            if (price == null && sendDate == 0)
+            {
+                SetText(null, false, null, Strings.SuggestAPostBelow, null, Strings.SuggestAPostBelowSubtitle.AsFormattedText());
+            }
+            else if (sendDate == 0)
+            {
+                if (price is SuggestedPostPriceStar priceStar)
+                {
+                    SetText(null, false, null, Strings.SuggestAPostBelow, null, string.Format(Strings.SuggestAPostBelowSubtitleStars.ReplaceStar(Icons.Premium), priceStar.StarCount).AsFormattedText());
+                }
+                else if (price is SuggestedPostPriceTon priceTon)
+                {
+                    SetText(null, false, null, Strings.SuggestAPostBelow, null, string.Format(Strings.SuggestAPostBelowSubtitleStars.ReplaceStar(Icons.Ton), priceTon.ToncoinCentCount / 100d).AsFormattedText());
+                }
+            }
+            else if (price is SuggestedPostPriceStar priceStar)
+            {
+                SetText(null, false, null, Strings.SuggestAPostBelow, null, string.Format(Strings.SuggestAPostBelowSubtitleStarsAndTime.ReplaceStar(Icons.Premium), priceStar.StarCount, string.Format("\U0001F4C6 {0}", Formatter.DateAt(sendDate))).AsFormattedText());
+            }
+            else if (price is SuggestedPostPriceTon priceTon)
+            {
+                SetText(null, false, null, Strings.SuggestAPostBelow, null, string.Format(Strings.SuggestAPostBelowSubtitleStarsAndTime.ReplaceStar(Icons.Ton), priceTon.ToncoinCentCount / 100d, string.Format("\U0001F4C6 {0}", Formatter.DateAt(sendDate))).AsFormattedText());
+            }
+            else
+            {
+                SetText(null, false, null, Strings.SuggestAPostBelow, null, string.Format(Strings.SuggestAPostBelowSubtitleStarsAndTime.ReplaceStar(Icons.Premium), 0, string.Format("\U0001F4C6 {0}", Formatter.DateAt(sendDate))).AsFormattedText());
+            }
+        }
 
         public void Mockup(string sender, string message)
         {
@@ -121,7 +159,7 @@ namespace Telegram.Controls.Messages
             else if (message.ReplyToItem is MessageViewModel replyToMessage && message.ReplyTo is MessageReplyToMessage replyToMessage1)
             {
                 Visibility = Visibility.Visible;
-                GetMessageTemplate(replyToMessage, replyToMessage1.Quote?.Text, replyToMessage1.Quote?.IsManual ?? false, null, outgoing, light, message.ForwardInfo != null);
+                GetMessageTemplate(replyToMessage, replyToMessage1.Quote?.Text, replyToMessage1.Quote?.IsManual ?? false, replyToMessage1.ChecklistTaskId, null, outgoing, light, message.ForwardInfo != null);
             }
             else if (message.ReplyToItem is Story replyToStory)
             {
@@ -163,7 +201,7 @@ namespace Telegram.Controls.Messages
             else
             {
                 Message = message;
-                GetMessageTemplate(message, null, false, title, true, false, message.ForwardInfo != null);
+                GetMessageTemplate(message, null, false, 0, title, true, false, message.ForwardInfo != null);
             }
         }
 
@@ -171,11 +209,18 @@ namespace Telegram.Controls.Messages
         {
             if (photoSize != null && photoSize.Photo.Local.IsDownloadingCompleted)
             {
-                BitmapImage source;
+                if (_thumbnailController == null)
+                {
+                    _thumbnailController = new ThumbnailController(ShowThumbnail());
+                }
+                else
+                {
+                    ShowThumbnail();
+                }
+
                 if (hasSpoiler)
                 {
-                    source = new BitmapImage();
-                    PlaceholderHelper.GetBlurred(source, photoSize.Photo.Local.Path, 15);
+                    _thumbnailController.Blur(photoSize.Photo.Local.Path, 15, HashCode.Combine(message.ChatId, message.Id));
                 }
                 else
                 {
@@ -186,15 +231,12 @@ namespace Telegram.Controls.Messages
                     var width = (int)(photoSize.Width * ratio);
                     var height = (int)(photoSize.Height * ratio);
 
-                    source = UriEx.ToBitmap(photoSize.Photo.Local.Path, width, height);
+                    _thumbnailController.Bitmap(photoSize.Photo.Local.Path, width, height, HashCode.Combine(message.ChatId, message.Id));
                 }
-
-                ShowThumbnail();
-                SetThumbnail(source);
             }
             else
             {
-                UpdateThumbnail(minithumbnail, hasSpoiler);
+                UpdateThumbnail(minithumbnail, hasSpoiler, default, HashCode.Combine(message.ChatId, message.Id));
 
                 if (photoSize != null && photoSize.Photo.Local.CanBeDownloaded && !photoSize.Photo.Local.IsDownloadingActive)
                 {
@@ -207,11 +249,18 @@ namespace Telegram.Controls.Messages
         {
             if (thumbnail != null && thumbnail.File.Local.IsDownloadingCompleted && thumbnail.Format is ThumbnailFormatJpeg)
             {
-                BitmapImage source;
+                if (_thumbnailController == null)
+                {
+                    _thumbnailController = new ThumbnailController(ShowThumbnail(radius));
+                }
+                else
+                {
+                    ShowThumbnail(radius);
+                }
+
                 if (hasSpoiler)
                 {
-                    source = new BitmapImage();
-                    PlaceholderHelper.GetBlurred(source, thumbnail.File.Local.Path, 15);
+                    _thumbnailController.Blur(thumbnail.File.Local.Path, 15, HashCode.Combine(message.ChatId, message.Id));
                 }
                 else
                 {
@@ -222,15 +271,12 @@ namespace Telegram.Controls.Messages
                     var width = (int)(thumbnail.Width * ratio);
                     var height = (int)(thumbnail.Height * ratio);
 
-                    source = UriEx.ToBitmap(thumbnail.File.Local.Path, width, height);
+                    _thumbnailController.Bitmap(thumbnail.File.Local.Path, width, height, HashCode.Combine(message.ChatId, message.Id));
                 }
-
-                ShowThumbnail(radius);
-                SetThumbnail(source);
             }
             else
             {
-                UpdateThumbnail(minithumbnail, hasSpoiler, radius);
+                UpdateThumbnail(minithumbnail, hasSpoiler, radius, HashCode.Combine(message.ChatId, message.Id));
 
                 if (thumbnail != null && thumbnail.File.Local.CanBeDownloaded && !thumbnail.File.Local.IsDownloadingActive)
                 {
@@ -239,15 +285,22 @@ namespace Telegram.Controls.Messages
             }
         }
 
-        private void UpdateThumbnail(Minithumbnail thumbnail, bool hasSpoiler, CornerRadius radius = default)
+        private void UpdateThumbnail(Minithumbnail thumbnail, bool hasSpoiler, CornerRadius radius, int hashCode)
         {
             if (thumbnail != null)
             {
-                BitmapImage source;
+                if (_thumbnailController == null)
+                {
+                    _thumbnailController = new ThumbnailController(ShowThumbnail(radius));
+                }
+                else
+                {
+                    ShowThumbnail(radius);
+                }
+
                 if (hasSpoiler)
                 {
-                    source = new BitmapImage();
-                    PlaceholderHelper.GetBlurred(source, thumbnail.Data, 15);
+                    _thumbnailController.Blur(thumbnail.Data, 15, hashCode);
                 }
                 else
                 {
@@ -258,36 +311,18 @@ namespace Telegram.Controls.Messages
                     var width = (int)(thumbnail.Width * ratio);
                     var height = (int)(thumbnail.Height * ratio);
 
-                    source = new BitmapImage { DecodePixelWidth = width, DecodePixelHeight = height, DecodePixelType = DecodePixelType.Logical };
-
-                    using (var stream = new InMemoryRandomAccessStream())
-                    {
-                        try
-                        {
-                            PlaceholderImageHelper.WriteBytes(thumbnail.Data, stream);
-                            source.SetSource(stream);
-                        }
-                        catch
-                        {
-                            // Throws when the data is not a valid encoded image,
-                            // not so frequent, but if it happens during ContainerContentChanging it crashes the app.
-                        }
-                    }
+                    _thumbnailController.Bitmap(thumbnail.Data, width, height, hashCode);
                 }
-
-                ShowThumbnail(radius);
-                SetThumbnail(source);
             }
             else
             {
                 HideThumbnail();
-                SetThumbnail(null);
             }
         }
 
         #region Reply
 
-        private void GetMessageTemplate(MessageViewModel message, FormattedText quote, bool manual, string title, bool outgoing, bool white, bool forward)
+        private void GetMessageTemplate(MessageViewModel message, FormattedText quote, bool manual, int checklistTaskId, string title, bool outgoing, bool white, bool forward)
         {
             MessageSender sender;
             if (title == null)
@@ -356,7 +391,7 @@ namespace Telegram.Controls.Messages
                     SetPollTemplate(message, sender, poll, title, outgoing, white);
                     break;
                 case MessageChecklist checklist:
-                    SetChecklistTemplate(message, sender, checklist, title, outgoing, white);
+                    SetChecklistTemplate(message, sender, checklist, checklistTaskId, title, outgoing, white);
                     break;
                 case MessageSticker sticker:
                     SetStickerTemplate(message, sender, sticker, title, outgoing, white);
@@ -439,7 +474,7 @@ namespace Telegram.Controls.Messages
                     SetPollTemplate(message, sender, poll, title, outgoing, white);
                     break;
                 case MessageChecklist checklist:
-                    SetChecklistTemplate(message, sender, checklist, title, outgoing, white);
+                    SetChecklistTemplate(message, sender, checklist, replyToMessage.ChecklistTaskId, title, outgoing, white);
                     break;
                 case MessageSticker sticker:
                     SetStickerTemplate(message, sender, sticker, title, outgoing, white);
@@ -539,7 +574,7 @@ namespace Telegram.Controls.Messages
                 outgoing,
                 sender,
                 title,
-                Strings.AttachPhoto,
+                quote != null ? null : Strings.AttachPhoto,
                 quote,
                 manual,
                 white);
@@ -739,7 +774,7 @@ namespace Telegram.Controls.Messages
                 false,
                 white);
 
-            UpdateThumbnail(message, game.Game.Photo?.GetSmall(), game.Game.Photo?.Minithumbnail);
+            UpdateThumbnail(message, game.Game.Photo.GetSmall(), game.Game.Photo?.Minithumbnail);
         }
 
         private void SetContactTemplate(MessageViewModel message, MessageSender sender, MessageContact contact, string title, bool outgoing, bool white)
@@ -764,7 +799,7 @@ namespace Telegram.Controls.Messages
                 outgoing,
                 sender,
                 title,
-                $"\uD83C\uDFB5 {audio.Audio.GetTitle()}",
+                quote != null ? null : $"\uD83C\uDFB5 {audio.Audio.GetTitle()}",
                 quote,
                 manual,
                 white);
@@ -784,18 +819,33 @@ namespace Telegram.Controls.Messages
                 white);
         }
 
-        private void SetChecklistTemplate(MessageViewModel message, MessageSender sender, MessageChecklist checklist, string title, bool outgoing, bool white)
+        private void SetChecklistTemplate(MessageViewModel message, MessageSender sender, MessageChecklist checklist, int checklistTaskId, string title, bool outgoing, bool white)
         {
             HideThumbnail();
 
-            SetText(message,
-                outgoing,
-                sender,
-                title,
-                $"\u2611",
-                checklist.List.Title,
-                false,
-                white);
+            var task = checklistTaskId > 0 ? checklist.List.Tasks.FirstOrDefault(x => x.Id == checklistTaskId) : null;
+            if (task != null)
+            {
+                SetText(message,
+                    outgoing,
+                    sender,
+                    title,
+                    string.Empty,
+                    TdExtensions.Concat(ClientEx.CustomEmoji(task.CompletionDate != 0 ? "\uEACF " : "\uEAD0 "), task.Text),
+                    false,
+                    white);
+            }
+            else
+            {
+                SetText(message,
+                    outgoing,
+                    sender,
+                    title,
+                    string.Empty,
+                    ClientEx.Format("\u2611 {0}", checklist.List.Title),
+                    false,
+                    white);
+            }
         }
 
         private void SetVoiceNoteTemplate(MessageViewModel message, MessageSender sender, FormattedText quote, bool manual, MessageVoiceNote voiceNote, string title, bool outgoing, bool white)
@@ -806,7 +856,7 @@ namespace Telegram.Controls.Messages
                 outgoing,
                 sender,
                 title,
-                Strings.AttachAudio,
+                quote != null ? null : Strings.AttachAudio,
                 quote,
                 manual,
                 white);
@@ -846,7 +896,7 @@ namespace Telegram.Controls.Messages
                 outgoing,
                 sender,
                 title,
-                Strings.AttachVideo,
+                quote != null ? null : Strings.AttachVideo,
                 quote,
                 manual,
                 white);
@@ -902,7 +952,7 @@ namespace Telegram.Controls.Messages
                 outgoing,
                 sender,
                 title,
-                Strings.AttachGif,
+                quote != null ? null : Strings.AttachGif,
                 quote,
                 manual,
                 white);
@@ -946,7 +996,7 @@ namespace Telegram.Controls.Messages
                 outgoing,
                 sender,
                 title,
-                document.Document.FileName,
+                quote != null ? null : document.Document.FileName,
                 quote,
                 manual,
                 white);
@@ -1037,13 +1087,10 @@ namespace Telegram.Controls.Messages
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected abstract void SetThumbnail(ImageSource value);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected abstract void HideThumbnail();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected abstract void ShowThumbnail(CornerRadius radius = default);
+        protected abstract ImageBrush ShowThumbnail(CornerRadius radius = default);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected abstract void SetText(MessageViewModel message, bool outgoing, MessageSender sender, string title, string service, FormattedText quote, bool manual = false, bool white = false);

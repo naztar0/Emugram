@@ -257,9 +257,16 @@ namespace Telegram.Views.Popups
                     }
                     else if (clientService.TryGetUser(privata.UserId, out User user))
                     {
-                        if (user.Type is UserTypeBot)
+                        if (user.Type is UserTypeDeleted)
                         {
-                            return AllowBotChats && !CanShareContact;
+                            return false;
+                        }
+                        else if (user.Type is UserTypeBot)
+                        {
+                            return AllowBotChats
+                                && !CanShareContact
+                                && chat.Id != clientService.Options.RepliesBotChatId
+                                && chat.Id != clientService.Options.VerificationCodesBotChatId;
                         }
                         else if (CanShareContact)
                         {
@@ -272,7 +279,7 @@ namespace Telegram.Views.Popups
                 case ChatTypeSupergroup supergroup:
                     if ((supergroup.IsChannel ? AllowChannelChats : AllowGroupChats) && clientService.TryGetSupergroup(supergroup.SupergroupId, out Supergroup super))
                     {
-                        if (super.IsDirectMessagesGroup)
+                        if (super.IsDirectMessagesGroup && !CanPostMessages)
                         {
                             return false;
                         }
@@ -362,6 +369,11 @@ namespace Telegram.Views.Popups
         {
             if (clientService.TryGetUser(chat, out User user))
             {
+                if (chat.Id == clientService.Options.RepliesBotChatId || chat.Id == clientService.Options.VerificationCodesBotChatId)
+                {
+                    return false;
+                }
+
                 return Allow(clientService, user);
             }
 
@@ -610,15 +622,76 @@ namespace Telegram.Views.Popups
 
     public partial class ChooseChatsConfigurationReplyToMessage : ChooseChatsConfiguration
     {
-        public ChooseChatsConfigurationReplyToMessage(MessageViewModel message, InputTextQuote quote = null)
+        public ChooseChatsConfigurationReplyToMessage(MessageViewModel message, InputTextQuote quote = null, int checklistTaskId = 0)
         {
             Message = message;
             Quote = quote;
+            ChecklistTaskId = checklistTaskId;
         }
 
         public MessageViewModel Message { get; }
 
         public InputTextQuote Quote { get; }
+
+        public int ChecklistTaskId { get; }
+    }
+
+    public partial class ChooseChatsConfigurationInviteToChat : ChooseChatsConfiguration
+    {
+        public ChooseChatsConfigurationInviteToChat(long chatId)
+        {
+            ChatId = chatId;
+        }
+
+        public long ChatId { get; }
+
+        public override bool CanBeSelected(ChooseChatsViewModel viewModel, Chat chat)
+        {
+            if (viewModel.ClientService.TryGetChat(ChatId, out Chat target)
+                && target.Type is ChatTypeBasicGroup or ChatTypeSupergroup { IsChannel: false }
+                && viewModel.ClientService.TryGetUser(chat, out User user))
+            {
+                if (user.Type is UserTypeBot { CanJoinGroups: false })
+                {
+                    viewModel.ShowToast(Strings.BotCantJoinGroups, ToastPopupIcon.Info);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override Task<ContentDialogResult> ConfirmSelectionAsync(ChooseChatsViewModel viewModel, IList<Chat> chats)
+        {
+            if (!viewModel.ClientService.TryGetChat(ChatId, out Chat chat))
+            {
+                return Task.FromResult(ContentDialogResult.Primary);
+            }
+
+            if (chat.Type is ChatTypeSupergroup { IsChannel: true })
+            {
+                var selected = chats.FirstOrDefault(x => x.Type is ChatTypePrivate && viewModel.ClientService.GetUser(x).Type is UserTypeBot);
+                if (selected != null)
+                {
+                    return viewModel.ShowPopupAsync(Strings.AddBotAsAdmin, Strings.AddBotAdminAlert, Strings.AddAsAdmin, Strings.Cancel);
+                }
+            }
+
+            string title = Locale.Declension(Strings.R.AddManyMembersAlertTitle, chats.Count);
+            string message;
+
+            if (chats.Count <= 5)
+            {
+                var names = string.Join(", ", chats.Select(x => x.Title));
+                message = string.Format(Strings.AddMembersAlertNamesText, names, chat.Title);
+            }
+            else
+            {
+                message = Locale.Declension(Strings.R.AddManyMembersAlertNamesText, chats.Count, chat.Title);
+            }
+
+            return viewModel.ShowPopupAsync(message, title, Strings.Add, Strings.Cancel);
+        }
     }
 
     public partial class ChooseChatsConfigurationShareStory : ChooseChatsConfiguration
@@ -694,7 +767,7 @@ namespace Telegram.Views.Popups
 
         public string GetSenderId(IClientService clientService)
         {
-            if (ChatId == clientService.Options.MyId && ForwardInfo != null)
+            if (ChatId == clientService.Options.MyId && ForwardInfo == null)
             {
                 return null;
             }
@@ -748,6 +821,26 @@ namespace Telegram.Views.Popups
         public IList<MessageToShare> Messages { get; }
 
         public override int NumberOfSentMessages => Messages.Count;
+    }
+
+    public partial class ChooseChatsConfigurationSetTheme : ChooseChatsConfiguration
+    {
+        public ChooseChatsConfigurationSetTheme(UpgradedGift gift)
+        {
+            Gift = gift;
+        }
+
+        public UpgradedGift Gift { get; }
+
+        public override Task<ContentDialogResult> ConfirmSelectionAsync(ChooseChatsViewModel viewModel, IList<Chat> chats)
+        {
+            if (Gift.UsedThemeChatId != chats[0].Id && viewModel.ClientService.TryGetChat(Gift.UsedThemeChatId, out Chat usedChat))
+            {
+                return viewModel.ShowPopupAsync(string.Format(Strings.GiftThemesSetInReuseInfo, usedChat.Title), Strings.AppName, Strings.GiftThemesSetInReuseConfirm, Strings.Cancel);
+            }
+
+            return Task.FromResult(ContentDialogResult.Primary);
+        }
     }
 
     public partial class ChooseChatsConfigurationPostLink : ChooseChatsConfiguration
@@ -931,6 +1024,63 @@ namespace Telegram.Views.Popups
     public abstract class ChooseChatsConfiguration
     {
         public virtual int NumberOfSentMessages => 0;
+
+        public virtual bool CanBeSelected(ChooseChatsViewModel viewModel, Chat chat)
+        {
+            return true;
+        }
+
+        public virtual Task<ContentDialogResult> ConfirmSelectionAsync(ChooseChatsViewModel viewModel, IList<Chat> chats)
+        {
+            if (NumberOfSentMessages > 0)
+            {
+                var messageCount = NumberOfSentMessages;
+
+                int chatCount = 0;
+                long starCount = 0;
+
+                foreach (var chat in chats)
+                {
+                    var paidMessageStarCount = 0L;
+
+                    if (viewModel.ClientService.TryGetUserFull(chat, out UserFullInfo userFullInfo))
+                    {
+                        paidMessageStarCount = userFullInfo.OutgoingPaidMessageStarCount;
+                    }
+                    else if (viewModel.ClientService.TryGetSupergroup(chat, out Supergroup supergroup))
+                    {
+                        paidMessageStarCount = supergroup.PaidMessageStarCount;
+                    }
+
+                    if (paidMessageStarCount > 0)
+                    {
+                        chatCount++;
+                        starCount += paidMessageStarCount;
+                    }
+                }
+
+                if (starCount != 0)
+                {
+                    if (!string.IsNullOrEmpty(viewModel.SendMessage?.Text) || !string.IsNullOrEmpty(viewModel.Caption?.Text))
+                    {
+                        messageCount++;
+                    }
+
+                    var message1 = Locale.Declension(Strings.R.MessageLockedStarsConfirmMessageMulti1, chatCount);
+                    var message3 = Locale.Declension(Strings.R.MessageLockedStarsConfirmMessageMulti2Messages, chatCount * messageCount);
+                    var message2 = Locale.Declension(Strings.R.MessageLockedStarsConfirmMessageMulti2, starCount * messageCount, message3);
+
+                    var title = Strings.MessageLockedStarsConfirmTitle;
+                    var message = string.Format("{0} {1}", message1, message2);
+                    var primaryButtonText = Icons.Premium16 + Icons.Spacing + (starCount * messageCount).ToString("N0"); //Locale.Declension(Strings.R.MessageLockedStarsConfirmMessagePay, messageCount),
+                    var secondaryButtonText = Strings.Cancel;
+
+                    return viewModel.ShowPopupAsync(message, title, primaryButtonText, secondaryButtonText);
+                }
+            }
+
+            return Task.FromResult(ContentDialogResult.Primary);
+        }
     }
 
     #endregion
@@ -1000,7 +1150,7 @@ namespace Telegram.Views.Popups
                 && ViewModel.ClientService.TryGetUser(ViewModel.ClientService.Options.MyId, out User user))
             {
                 Alias.Visibility = Visibility.Visible;
-                Photo.SetUser(ViewModel.ClientService, user, 28);
+                Photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
             }
         }
 
@@ -1717,7 +1867,7 @@ namespace Telegram.Views.Popups
                     maxExceeded = true;
                 }
 
-                if (maxExceeded || (ViewModel.ClientService.IsForum(newItem) && !ViewModel.SelectedTopics.ContainsKey(newItem.Id)))
+                if (maxExceeded || (ViewModel.Options.CanPostMessages && ViewModel.ClientService.IsForum(newItem) && !ViewModel.SelectedTopics.ContainsKey(newItem.Id)))
                 {
                     if (ChatsPanel.SelectionMode == ListViewSelectionMode.Multiple)
                     {
@@ -1853,7 +2003,11 @@ namespace Telegram.Views.Popups
 
         private bool ItemClick(Chat chat, bool origin)
         {
-            if (ViewModel.Options.CanPostMessages && ViewModel.Configuration is not ChooseChatsConfigurationShareOperation && ViewModel.ClientService.IsSavedMessages(chat))
+            if (ViewModel.Configuration != null && !ViewModel.Configuration.CanBeSelected(ViewModel, chat))
+            {
+                return true;
+            }
+            else if (ViewModel.Options.CanPostMessages && ViewModel.Configuration is not ChooseChatsConfigurationShareOperation && ViewModel.ClientService.IsSavedMessages(chat))
             {
                 if (ViewModel.SelectedItems.Empty())
                 {
@@ -1863,7 +2017,7 @@ namespace Telegram.Views.Popups
                     return true;
                 }
             }
-            else if (ViewModel.Options.CanPostMessages && origin && (ViewModel.ClientService.IsForum(chat) || ViewModel.ClientService.IsDirectMessagesGroup(chat)))
+            else if (ViewModel.Options.CanPostMessages && origin && (ViewModel.ClientService.IsForum(chat) || ViewModel.ClientService.IsAdministeredDirectMessagesGroup(chat)))
             {
                 if (ViewModel.SelectedItems.Contains(chat))
                 {
@@ -1927,7 +2081,7 @@ namespace Telegram.Views.Popups
                 return;
             }
 
-            var focused = FocusManager.GetFocusedElement();
+            var focused = FocusManagerEx.TryGetFocusedElement();
             if (focused is null or (not TextBox and not RichEditBox and not Button and not MenuFlyoutItem))
             {
                 if (character == "\u0016" && CaptionInput.CanPasteClipboardContent)
@@ -2053,9 +2207,8 @@ namespace Telegram.Views.Popups
                 if (session.ClientService.TryGetUser(session.ClientService.Options.MyId, out User user))
                 {
                     var photo = new ProfilePicture();
-                    photo.Width = 20;
-                    photo.Height = 20;
-                    photo.SetUser(session.ClientService, user, 20);
+                    photo.Size = 20;
+                    photo.Source = ProfilePictureSource.User(session.ClientService, user);
 
                     var item = new ToggleMenuFlyoutItem();
                     item.Style = BootStrapper.Current.Resources["ProfilePictureToggleMenuFlyoutItemStyle"] as Style;

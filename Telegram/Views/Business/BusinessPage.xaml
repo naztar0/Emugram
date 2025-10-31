@@ -171,20 +171,12 @@
                        RadiusX="4"
                        RadiusY="4">
             </Rectangle>
-            <Border Background="{StaticResource PremiumLinearGradientBrush}"
-                    CornerRadius="4"
+            <Button x:Name="PurchaseCommand"
+                    Click="{x:Bind ViewModel.Purchase}"
+                    Content="{x:Bind ConvertPurchase(ViewModel.IsPremium, ViewModel.SelectedOption), Mode=OneWay, FallbackValue=Empty}"
+                    Style="{StaticResource PremiumButtonStyle}"
+                    HorizontalAlignment="Stretch"
                     Height="36" />
-            <controls:BadgeButton x:Name="PurchaseCommand"
-                                  Click="{x:Bind ViewModel.Purchase}"
-                                  Content="{x:Bind ConvertPurchase(ViewModel.IsPremium, ViewModel.SelectedOption), Mode=OneWay, FallbackValue=Empty}"
-                                  Style="{StaticResource StartButtonStyle}"
-                                  HorizontalAlignment="Stretch"
-                                  HorizontalContentAlignment="Center"
-                                  FontWeight="SemiBold"
-                                  Padding="16,3,16,5"
-                                  CornerRadius="4"
-                                  Margin="0"
-                                  Height="36" />
         </Grid>
 
     </Grid>

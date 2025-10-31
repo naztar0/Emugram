@@ -102,7 +102,8 @@ namespace Telegram.Views.Stars.Popups
                 }
                 else
                 {
-                    ViewModel.NavigationService.NavigateToInvoice(new InputInvoiceTelegram(new TelegramPaymentPurposeStars(option.Currency, option.Amount, option.StarCount)));
+                    // TODO: chatId
+                    ViewModel.NavigationService.NavigateToInvoice(new InputInvoiceTelegram(new TelegramPaymentPurposeStars(option.Currency, option.Amount, option.StarCount, 0)));
                 }
             }
         }

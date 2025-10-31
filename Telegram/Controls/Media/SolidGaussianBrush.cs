@@ -6,142 +6,51 @@
 //
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Effects;
-using System;
-using Telegram.Common;
 using Telegram.Navigation;
 using Windows.UI;
 using Windows.UI.Composition;
-using Windows.UI.Core;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Media;
 
 namespace Telegram.Controls.Media
 {
-    public partial class SolidGaussianBrush : XamlCompositionBrushBase
+    public partial class SolidGaussianBrush : PowerSavingBrushBase
     {
-        private bool m_isConnected;
-        private CompositionBrush m_brush;
-
-        private void PowerSavingPolicy_Changed(object sender, EventArgs e)
+        protected override CompositionBrush OnUpdateBrush()
         {
-            if (m_isConnected)
+            var gaussianBlur = new GaussianBlurEffect
             {
-                try
-                {
-                    UpdateBrushByDispatcher();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex);
-                }
-            }
-        }
+                Name = "Blur",
+                BlurAmount = 30,
+                Optimization = EffectOptimization.Speed,
+                BorderMode = EffectBorderMode.Hard,
+                Source = new CompositionEffectSourceParameter("Backdrop"),
+            };
 
-        private void UpdateBrushByDispatcher()
-        {
-            if (Dispatcher.HasThreadAccess)
+            var saturationEffect = new SaturationEffect
             {
-                UpdateBrush();
-            }
-            else
+                Name = "Saturation",
+                Saturation = 1.7f,
+                Source = gaussianBlur
+            };
+
+            var tintColorEffect = new ColorSourceEffect
             {
-                _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, UpdateBrush);
-            }
-        }
+                Name = "TintColor",
+                Color = TintColor
+            };
 
-        private void UpdateBrush()
-        {
-            if (m_brush is CompositionEffectBrush && !PowerSavingPolicy.AreMaterialsEnabled)
-            {
-                m_brush.Dispose();
-                m_brush = null;
-            }
-            else if (m_brush is CompositionColorBrush && PowerSavingPolicy.AreMaterialsEnabled)
-            {
-                m_brush.Dispose();
-                m_brush = null;
-            }
+            var compositeEffect = new CompositeEffect();
+            compositeEffect.Mode = CanvasComposite.SourceOver;
+            compositeEffect.Sources.Add(saturationEffect);
+            compositeEffect.Sources.Add(tintColorEffect);
 
-            if (m_brush == null)
-            {
-                if (!PowerSavingPolicy.AreMaterialsEnabled)
-                {
-                    m_brush = BootStrapper.Current.Compositor.CreateColorBrush(FallbackColor);
-                    CompositionBrush = m_brush;
-                }
-                else
-                {
-                    var gaussianBlur = new GaussianBlurEffect
-                    {
-                        Name = "Blur",
-                        BlurAmount = 30,
-                        Optimization = EffectOptimization.Speed,
-                        BorderMode = EffectBorderMode.Hard,
-                        Source = new CompositionEffectSourceParameter("Backdrop"),
-                    };
+            var effectFactory = BootStrapper.Current.Compositor.CreateEffectFactory(compositeEffect);
+            var backdrop = BootStrapper.Current.Compositor.CreateBackdropBrush();
 
-                    var saturationEffect = new SaturationEffect
-                    {
-                        Name = "Saturation",
-                        Saturation = 1.7f,
-                        Source = gaussianBlur
-                    };
+            var brush = effectFactory.CreateBrush();
+            brush.SetSourceParameter("Backdrop", backdrop);
 
-                    var tintColorEffect = new ColorSourceEffect
-                    {
-                        Name = "TintColor",
-                        Color = TintColor
-                    };
-
-                    var compositeEffect = new CompositeEffect();
-                    compositeEffect.Mode = CanvasComposite.SourceOver;
-                    compositeEffect.Sources.Add(saturationEffect);
-                    compositeEffect.Sources.Add(tintColorEffect);
-
-                    var effectFactory = BootStrapper.Current.Compositor.CreateEffectFactory(compositeEffect);
-                    var backdrop = BootStrapper.Current.Compositor.CreateBackdropBrush();
-
-                    var brush = effectFactory.CreateBrush();
-                    brush.SetSourceParameter("Backdrop", backdrop);
-
-                    m_brush = brush;
-                    CompositionBrush = m_brush;
-                }
-            }
-        }
-
-        protected override void OnConnected()
-        {
-            PowerSavingPolicy.Changed += PowerSavingPolicy_Changed;
-
-            try
-            {
-                UpdateBrush();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex);
-            }
-
-            m_isConnected = true;
-            base.OnConnected();
-        }
-
-        protected override void OnDisconnected()
-        {
-            PowerSavingPolicy.Changed -= PowerSavingPolicy_Changed;
-
-            m_isConnected = false;
-
-            if (m_brush != null)
-            {
-                m_brush.Dispose();
-                m_brush = null;
-            }
-
-            CompositionBrush = null;
-
-            base.OnDisconnected();
+            return brush;
         }
 
         #region TintColor

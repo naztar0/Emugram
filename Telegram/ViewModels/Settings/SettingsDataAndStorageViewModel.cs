@@ -6,8 +6,10 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Common;
+using Telegram.Converters;
 using Telegram.Native.Calls;
 using Telegram.Navigation;
 using Telegram.Navigation.Services;
@@ -35,6 +37,26 @@ namespace Telegram.ViewModels.Settings
 
         protected override async Task OnNavigatedToAsync(object parameter, NavigationMode mode, NavigationState state)
         {
+            ClientService.Send(new GetStorageStatisticsFast(), result =>
+            {
+                if (result is StorageStatisticsFast statistics)
+                {
+                    BeginOnUIThread(() => StorageUsage = FileSizeConverter.Convert(statistics.FilesSize, true));
+                }
+            });
+
+            ClientService.Send(new GetNetworkStatistics(false), result =>
+            {
+                if (result is NetworkStatistics statistics)
+                {
+                    var sum = statistics.Entries
+                        .OfType<NetworkStatisticsEntryFile>()
+                        .Sum(x => x.ReceivedBytes + x.SentBytes);
+
+                    BeginOnUIThread(() => NetworkUsage = FileSizeConverter.Convert(sum, true));
+                }
+            });
+
             DownloadFolder = await _storageService.GetDownloadFolderAsync();
         }
 
@@ -65,6 +87,19 @@ namespace Telegram.ViewModels.Settings
             new SettingsOptionItem<VoipDataSaving>(VoipDataSaving.Always, Strings.UseLessDataAlways),
         };
 
+        private string _storageUsage;
+        public string StorageUsage
+        {
+            get => _storageUsage;
+            set => Set(ref _storageUsage, value);
+        }
+
+        private string _networkUsage;
+        public string NetworkUsage
+        {
+            get => _networkUsage;
+            set => Set(ref _networkUsage, value);
+        }
 
         public Services.Settings.AutoDownloadSettings AutoDownload => Settings.AutoDownload;
 

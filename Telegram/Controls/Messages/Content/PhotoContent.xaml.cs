@@ -30,6 +30,8 @@ namespace Telegram.Controls.Messages.Content
         private long _fileToken;
         private long _thumbnailToken;
 
+        private ThumbnailController _thumbnailController;
+
         private bool _hidden = true;
 
         public PhotoContent(MessageViewModel message, PaidMediaPhoto paidMedia = null, bool album = false)
@@ -51,6 +53,7 @@ namespace Telegram.Controls.Messages.Content
         private AutomaticDragHelper ButtonDrag;
 
         private AspectView LayoutRoot;
+        private ImageBrush ThumbnailTexture;
         private ImageBrush Texture;
         private AnimatedImage Particles;
         private Border Overlay;
@@ -62,6 +65,7 @@ namespace Telegram.Controls.Messages.Content
         protected override void OnApplyTemplate()
         {
             LayoutRoot = GetTemplateChild(nameof(LayoutRoot)) as AspectView;
+            ThumbnailTexture = LayoutRoot.Background as ImageBrush;
             Texture = GetTemplateChild(nameof(Texture)) as ImageBrush;
             Particles = GetTemplateChild(nameof(Particles)) as AnimatedImage;
             Overlay = GetTemplateChild(nameof(Overlay)) as Border;
@@ -112,7 +116,7 @@ namespace Telegram.Controls.Messages.Content
             _hidden = (prevId != nextId || _hidden) && hasSpoiler;
 
             LayoutRoot.Constraint = _album ? null : isSecret ? Constants.SecretSize : ((object)_paidMedia ?? photo);
-            LayoutRoot.Background = null;
+            //LayoutRoot.Background = null;
             Texture.Stretch = _album
                 ? Stretch.UniformToFill
                 : Stretch.Uniform;
@@ -333,31 +337,13 @@ namespace Telegram.Controls.Messages.Content
 
         private void UpdateThumbnail(MessageViewModel message, File file, Minithumbnail minithumbnail, bool download, bool isSecret, bool hasSpoiler)
         {
-            BitmapImage source = null;
-            ImageBrush brush;
-
-            if (LayoutRoot.Background is ImageBrush existing)
-            {
-                brush = existing;
-            }
-            else
-            {
-                brush = new ImageBrush
-                {
-                    Stretch = Stretch.UniformToFill,
-                    AlignmentX = AlignmentX.Center,
-                    AlignmentY = AlignmentY.Center
-                };
-
-                LayoutRoot.Background = brush;
-            }
+            _thumbnailController ??= new ThumbnailController(ThumbnailTexture);
 
             if (file != null)
             {
                 if (file.Local.IsDownloadingCompleted)
                 {
-                    source = new BitmapImage();
-                    PlaceholderHelper.GetBlurred(source, file.Local.Path, isSecret || (hasSpoiler && _hidden) ? 15 : 3);
+                    _thumbnailController.Blur(file.Local.Path, isSecret || (hasSpoiler && _hidden) ? 15 : 3, HashCode.Combine(message.ChatId, message.Id));
                 }
                 else
                 {
@@ -373,18 +359,23 @@ namespace Telegram.Controls.Messages.Content
 
                     if (minithumbnail != null)
                     {
-                        source = new BitmapImage();
-                        PlaceholderHelper.GetBlurred(source, minithumbnail.Data, isSecret || (hasSpoiler && _hidden) ? 15 : 3);
+                        _thumbnailController.Blur(minithumbnail.Data, isSecret || (hasSpoiler && _hidden) ? 15 : 3, HashCode.Combine(message.ChatId, message.Id));
+                    }
+                    else
+                    {
+                        _thumbnailController.Recycle();
                     }
                 }
             }
             else if (minithumbnail != null)
             {
-                source = new BitmapImage();
-                PlaceholderHelper.GetBlurred(source, minithumbnail.Data, isSecret || (hasSpoiler && _hidden) ? 15 : 3);
+                _thumbnailController.Blur(minithumbnail.Data, isSecret || (hasSpoiler && _hidden) ? 15 : 3, HashCode.Combine(message.ChatId, message.Id));
+            }
+            else
+            {
+                _thumbnailController.Recycle();
             }
 
-            brush.ImageSource = source;
             Particles.Source = isSecret || (hasSpoiler && _hidden)
                 ? new ParticlesImageSource()
                 : null;
@@ -393,9 +384,10 @@ namespace Telegram.Controls.Messages.Content
         public void Recycle()
         {
             _message = null;
+            _thumbnailController?.Recycle();
 
             UpdateManager.Unsubscribe(this, ref _fileToken);
-            UpdateManager.Unsubscribe(this, ref _thumbnailToken, true);
+            UpdateManager.Unsubscribe(this, ref _thumbnailToken);
         }
 
         public bool IsValid(MessageContent content, bool primary)
@@ -469,6 +461,7 @@ namespace Telegram.Controls.Messages.Content
                     LinkPreviewTypeEmbeddedAnimationPlayer embeddedAnimationPlayer => embeddedAnimationPlayer.Thumbnail,
                     LinkPreviewTypeEmbeddedVideoPlayer embeddedVideoPlayer => embeddedVideoPlayer.Thumbnail,
                     LinkPreviewTypeSupergroupBoost supergroupBoost => supergroupBoost.Photo.ToPhoto(),
+                    LinkPreviewTypeStoryAlbum storyAlbum => storyAlbum.PhotoIcon,
                     LinkPreviewTypeUser user => user.Photo.ToPhoto(),
                     LinkPreviewTypeVideoChat videoChat => videoChat.Photo.ToPhoto(),
                     LinkPreviewTypeWebApp webApp => webApp.Photo,

@@ -5,6 +5,7 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System.Linq;
+using Telegram.Controls;
 using Telegram.Controls.Media;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Delegates;
@@ -83,7 +84,7 @@ namespace Telegram.Views.Supergroups
             }
             else
             {
-                Photo.SetChat(ViewModel.ClientService, chat, 96);
+                Photo.Source = ProfilePictureSource.Chat(ViewModel.ClientService, chat);
             }
         }
 

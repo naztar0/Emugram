@@ -9,6 +9,7 @@ using Telegram.Navigation;
 using Telegram.Navigation.Services;
 using Telegram.ViewModels;
 using Telegram.ViewModels.Delegates;
+using Windows.UI.Composition;
 
 namespace Telegram.Views.Profile
 {
@@ -71,6 +72,16 @@ namespace Telegram.Views.Profile
         public void PopupClosed()
         {
             View.PopupClosed();
+        }
+
+        public void StartBannerAnimation(ScalarKeyFrameAnimation translate)
+        {
+            View.StartBannerAnimation(translate);
+        }
+
+        public void CompleteBannerAnimation()
+        {
+            View.CompleteBannerAnimation();
         }
 
         public double HeaderHeight

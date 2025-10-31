@@ -5,15 +5,11 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System.Linq;
-using System.Numerics;
 using Telegram.Common;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
 using Telegram.Views;
-using Windows.UI.Composition;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Hosting;
 
 namespace Telegram.Controls.Chats
 {
@@ -22,32 +18,25 @@ namespace Telegram.Controls.Chats
         public DialogViewModel ViewModel => DataContext as DialogViewModel;
 
         private ChatView _chatView;
-        private UIElement _parent;
         private Chat _chat;
 
         public ChatJoinRequestsHeader()
         {
             InitializeComponent();
+
+            _collapsed = new SlidePanel.SlideState(this, false, 40);
         }
 
         public float AnimatedHeight => _collapsed ? 0 : 40;
 
-        public void InitializeParent(ChatView chatView, UIElement parent)
+        public void InitializeParent(ChatView chatView)
         {
             _chatView = chatView;
-            ElementCompositionPreview.SetIsTranslationEnabled(_parent = parent, true);
         }
 
         private void RecentUsers_RecentUserHeadChanged(ProfilePicture sender, MessageSender messageSender)
         {
-            if (ViewModel.ClientService.TryGetUser(messageSender, out User user))
-            {
-                sender.SetUser(ViewModel.ClientService, user, 28);
-            }
-            else if (ViewModel.ClientService.TryGetChat(messageSender, out Chat chat))
-            {
-                sender.SetChat(ViewModel.ClientService, chat, 28);
-            }
+            sender.Source = ProfilePictureSource.MessageSender(ViewModel.ClientService, messageSender);
         }
 
         public bool UpdateChat(Chat chat)
@@ -89,7 +78,7 @@ namespace Telegram.Controls.Chats
             return visible;
         }
 
-        private bool _collapsed = true;
+        private SlidePanel.SlideState _collapsed;
 
         public void ShowHide(bool show)
         {
@@ -98,41 +87,8 @@ namespace Telegram.Controls.Chats
                 return;
             }
 
-            _collapsed = !show;
-            Visibility = Visibility.Visible;
-
-            var parent = ElementComposition.GetElementVisual(_parent);
-            var visual = ElementComposition.GetElementVisual(this);
-            visual.Clip = visual.Compositor.CreateInsetClip();
-
-            var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-            batch.Completed += (s, args) =>
-            {
-                visual.Clip = null;
-                parent.Properties.InsertVector3("Translation", Vector3.Zero);
-
-                if (_collapsed)
-                {
-                    Visibility = Visibility.Collapsed;
-                }
-            };
-
+            _collapsed.IsVisible = show;
             _chatView.UpdateMessagesHeaderPadding();
-
-            var clip = visual.Compositor.CreateScalarKeyFrameAnimation();
-            clip.InsertKeyFrame(show ? 0 : 1, 40);
-            clip.InsertKeyFrame(show ? 1 : 0, 0);
-            clip.Duration = Constants.FastAnimation;
-
-            var offset = visual.Compositor.CreateScalarKeyFrameAnimation();
-            offset.InsertKeyFrame(show ? 0 : 1, -40);
-            offset.InsertKeyFrame(show ? 1 : 0, 0);
-            offset.Duration = Constants.FastAnimation;
-
-            visual.Clip.StartAnimation("TopInset", clip);
-            parent.StartAnimation("Translation.Y", offset);
-
-            batch.End();
         }
     }
 }

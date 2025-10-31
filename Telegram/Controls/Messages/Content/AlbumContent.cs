@@ -210,21 +210,15 @@ namespace Telegram.Controls.Messages.Content
                 textBlock.SetText(message.ClientService, pos.Text);
 
                 textBlock.Tag = pos;
-                textBlock.ContextMenuOpening += Message_ContextMenuOpening;
                 textBlock.TextEntityClick += Message_TextEntityClick;
 
                 Children.Add(textBlock);
             }
         }
 
-        private void Message_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
-            e.Handled = true;
-        }
-
         private void Message_TextEntityClick(object sender, TextEntityClickEventArgs e)
         {
-            if (sender is not FormattedTextBlock textBlock || textBlock.Tag is not MessageViewModel message || message.Delegate == null || message.PlaybackService == null)
+            if (sender is not FormattedTextBlock textBlock || textBlock.Tag is not MessageViewModel message || message.Delegate == null)
             {
                 return;
             }

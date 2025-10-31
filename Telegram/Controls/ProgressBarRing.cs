@@ -6,6 +6,7 @@
 //
 using System;
 using System.Numerics;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Windows.UI.Composition;
 using Windows.UI.Xaml;
@@ -26,9 +27,6 @@ namespace Telegram.Controls
         public ProgressBarRing()
         {
             DefaultStyleKey = typeof(ProgressBarRing);
-
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
 
             var ellipse = BootStrapper.Current.Compositor.CreateEllipseGeometry();
             ellipse.Radius = new Vector2((float)Radius);
@@ -101,7 +99,7 @@ namespace Telegram.Controls
             }
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             if (_spinning is false && Value is > 0 and < 1 && Spin)
             {
@@ -110,7 +108,7 @@ namespace Telegram.Controls
             }
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             if (_spinning)
             {

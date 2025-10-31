@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Numerics;
 using Telegram.Assets.Icons;
+using Telegram.Common;
 using Telegram.Controls.Drawers;
 using Telegram.Controls.Media;
 using Telegram.Navigation;
@@ -156,14 +157,25 @@ namespace Telegram.Controls.Chats
             Redirect?.Invoke(this, EventArgs.Empty);
             Opening?.Invoke(this, EventArgs.Empty);
 
+            ControlledPanel.Visibility = Visibility.Visible;
+            ControlledPanel.Activate();
+
+            if (!PowerSavingPolicy.AreSmoothTransitionsEnabled)
+            {
+                _stickersPanel.Opacity = 1;
+                _stickersPanel.Clip = _stickersPanel.Compositor.CreateInsetClip(0, 0, 0, 0);
+
+                _stickersShadow.Opacity = 1;
+                _stickersShadow.Clip = _stickersPanel.Compositor.CreateInsetClip(-48, -48, -48, -4);
+
+                return;
+            }
+
             _stickersPanel.Opacity = 0;
             _stickersPanel.Clip = _stickersPanel.Compositor.CreateInsetClip(48, 48, 0, 0);
 
             _stickersShadow.Opacity = 0;
             _stickersShadow.Clip = _stickersPanel.Compositor.CreateInsetClip(48, 48, -48, -4);
-
-            ControlledPanel.Visibility = Visibility.Visible;
-            ControlledPanel.Activate();
 
             var opacity = _stickersPanel.Compositor.CreateScalarKeyFrameAnimation();
             opacity.InsertKeyFrame(0, 0);
@@ -197,6 +209,20 @@ namespace Telegram.Controls.Chats
             SettingsService.Current.IsSidebarOpen = false;
 
             Closing?.Invoke(this, EventArgs.Empty);
+
+            if (!PowerSavingPolicy.AreSmoothTransitionsEnabled)
+            {
+                _stickersPanel.Opacity = 0;
+                _stickersPanel.Clip = _stickersPanel.Compositor.CreateInsetClip(48, 48, 0, 0);
+
+                _stickersShadow.Opacity = 0;
+                _stickersShadow.Clip = _stickersPanel.Compositor.CreateInsetClip(48, 48, -48, -4);
+
+                ControlledPanel.Visibility = Visibility.Collapsed;
+                ControlledPanel.Deactivate();
+
+                return;
+            }
 
             var batch = BootStrapper.Current.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
             batch.Completed += (s, args) =>

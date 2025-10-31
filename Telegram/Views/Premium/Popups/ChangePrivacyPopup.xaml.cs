@@ -81,11 +81,6 @@ namespace Telegram.Views.Premium.Popups
             Icon.Play();
         }
 
-        private void PurchaseShadow_Loaded(object sender, RoutedEventArgs e)
-        {
-            VisualUtilities.DropShadow(PurchaseShadow);
-        }
-
         private void Change_Click(object sender, RoutedEventArgs e)
         {
             Hide(ContentDialogResult.Primary);

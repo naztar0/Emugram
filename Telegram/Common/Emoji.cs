@@ -337,7 +337,7 @@ namespace Telegram.Common
                 }
                 else if (entity.Offset - previous == 1)
                 {
-                    if (text.Text[entity.Offset - 1] != '\n')
+                    if (text.Text[entity.Offset - 1] is not '\n' and not ' ')
                     {
                         return false;
                     }

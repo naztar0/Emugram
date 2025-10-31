@@ -37,7 +37,7 @@ namespace Telegram.Controls.Messages.Content
         private StackPanel ParticipantsPanel;
         private TextBlock FromLabel;
         private TextBlock WinnersLabel;
-        private BadgeButton Button;
+        private ButtonEx Button;
         private bool _templateApplied;
 
         protected override void OnApplyTemplate()
@@ -49,7 +49,7 @@ namespace Telegram.Controls.Messages.Content
             ParticipantsPanel = GetTemplateChild(nameof(ParticipantsPanel)) as StackPanel;
             FromLabel = GetTemplateChild(nameof(FromLabel)) as TextBlock;
             WinnersLabel = GetTemplateChild(nameof(WinnersLabel)) as TextBlock;
-            Button = GetTemplateChild(nameof(Button)) as BadgeButton;
+            Button = GetTemplateChild(nameof(Button)) as ButtonEx;
 
             Button.Click += Button_Click;
 

@@ -33,7 +33,7 @@ namespace Telegram.Views.Calls.Popups
 
             _groupCall = groupCall;
 
-            Photo.Source = PlaceholderImage.GetGlyph(Icons.LinkDiagonal);
+            Photo.Source = ProfilePictureSourceText.GetGlyph(Icons.LinkDiagonal);
             InitializeInviteLink();
         }
 

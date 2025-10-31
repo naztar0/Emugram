@@ -131,7 +131,7 @@ namespace Telegram.Views.Supergroups
         {
             if (List.SelectedItem is ChatThemeViewModel chatTheme)
             {
-                BackgroundControl?.UpdateChat(ViewModel.ClientService, null, chatTheme);
+                BackgroundControl?.UpdateChat(ViewModel.ClientService, null, chatTheme.Type);
             }
         }
 

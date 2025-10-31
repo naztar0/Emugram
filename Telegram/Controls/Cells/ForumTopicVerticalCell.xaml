@@ -128,8 +128,7 @@
                             <controls:ProfilePicture x:Name="Photo"
                                                      HorizontalAlignment="Center"
                                                      VerticalAlignment="Center"
-                                                     Width="28"
-                                                     Height="28" />
+                                                     Size="28" />
                         </Grid>
 
                         <TextBlock x:Name="TitleLabel"
@@ -174,7 +173,7 @@
 
                         <Rectangle x:Name="DropVisual"
                                    x:Load="False"
-                                   Stroke="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                                   Stroke="{ThemeResource TextFillColorPrimaryBrush}"
                                    StrokeThickness="2"
                                    RadiusX="4"
                                    RadiusY="4"

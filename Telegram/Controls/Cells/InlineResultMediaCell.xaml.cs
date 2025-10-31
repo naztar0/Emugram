@@ -42,7 +42,7 @@ namespace Telegram.Controls.Cells
                 if (file.Local.IsDownloadingCompleted)
                 {
                     Texture.Source = UriEx.ToBitmap(file.Local.Path);
-                    UpdateManager.Unsubscribe(this, ref _thumbnailToken, true);
+                    UpdateManager.Unsubscribe(this, ref _thumbnailToken);
                 }
                 else
                 {

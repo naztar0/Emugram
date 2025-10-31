@@ -20,6 +20,7 @@ namespace Telegram.Controls.Media
         public const string ZWJ = "\u200D";
         public const string ZWNJ = "\u200C";
         public const string Spacing = "\u2004\u200A";
+        public const string Space = "\u0020";
 
         public const string DollarArrowUp = "\uEAAE";
         public const string DollarArrowUp16 = "\uEAAD";
@@ -100,6 +101,7 @@ namespace Telegram.Controls.Media
         public const string ArrowDownload = "\uE118";
         public const string DownloadSmall = "\uE92A";
         public const string Dismiss = "\uE711";
+        public const string DismissFilled = "\uEAE4";
         public const string DismissCircle = "\uEA4E";
         public const string DismissFilled24 = "\uEA1F";
         public const string Cancel = "\uE978";
@@ -112,7 +114,9 @@ namespace Telegram.Controls.Media
         public const string PauseFilled24 = "\uEA18";
         public const string Checkmark = "\uE10B";
         public const string CheckmarkFilled24 = "\uEA20";
+        public const string CheckmarkCircleFilled = "\uEACC";
         public const string CheckmarkCircleFilled24 = "\uE9F4";
+        public const string DismissCircleFilled = "\uEACD";
         public const string DismissCircleFilled24 = "\uE9F3";
         public const string TtlFilled24 = "\uEA21";
         public const string Document = "\uE7C3";
@@ -143,6 +147,8 @@ namespace Telegram.Controls.Media
         public const string CopyFilled16 = "\uEA97";
 
         public const string NumberSymbolFilled16 = "\uE9FB";
+
+        public const string WarningFilled = "\uEAD9";
 
         public const string TextBold = "\uE8DD";
         public const string TextItalic = "\uE8DB";
@@ -223,6 +229,7 @@ namespace Telegram.Controls.Media
         public const string BotFilled = "\uEA77";
 
         public const string Image = "\uEB9F";
+        public const string ImageFilled = "\uEADA";
         public const string ImageFilled24 = "\uEA1D";
 
         public const string ArrowUpload = "\uEA01";
@@ -247,6 +254,9 @@ namespace Telegram.Controls.Media
         public const string Star = "\uE734";
         public const string StarOff = "\uE8D9";
 
+        public const string Chat = "\uE9BF";
+        public const string ChatFilled = "\uEAE1";
+        public const string ChatOff = "\uEAE2";
         public const string ChatEmpty = "\uE8BD";
         public const string ChatEmptyFilled = "\uE9B0";
         public const string ChatEmptyFilled16 = "\uEA4C";
@@ -385,6 +395,7 @@ namespace Telegram.Controls.Media
         public const string SpeakerMuteFilled = "\uEA30";
         public const string SpeakerOff = "\uE74F";
         public const string SendFilled = "\uE919";
+        public const string SendFilled32 = "\uEAE8";
 
         public const string MoreHorizontal = "\uE712";
         public const string MoreHorizontalFilled = "\uEA59";
@@ -400,6 +411,7 @@ namespace Telegram.Controls.Media
 
         public const string BotMarkup24 = "\uE9D5";
 
+        public const string ChatDollar24 = "\uEACE";
         public const string ChatBubblesQuestion = "\uE783";
         public const string ChatMultiple = "\uE992";
         public const string ChatMultipleFilled = "\uEA0D";
@@ -425,7 +437,6 @@ namespace Telegram.Controls.Media
 
         public const string Multiplier2xFilled = "\uE9BA";
         public const string PlayCircleFilled = "\uE9AE";
-        public const string ChatFilled = "\uE9B0";
         public const string ChatInfoFilled = "\uEA82";
         public const string ChatLinkFilled = "\uEA83";
         public const string ChatSettingsFilled = "\uEA6E";
@@ -444,6 +455,7 @@ namespace Telegram.Controls.Media
 
         public const string FragmentFilled = "\uEA8E";
         public const string Premium = "\uEA87";
+        public const string Ton = "\uEA7E";
         public const string Premium16 = "\uE9B5";
         public const string LockClosed16 = "\uE9BE";
         public const string Verified16 = "\uE97A";

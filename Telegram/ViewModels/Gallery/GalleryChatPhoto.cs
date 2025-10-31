@@ -37,6 +37,7 @@ namespace Telegram.ViewModels.Gallery
             }
 
             Thumbnail = _photo?.GetSmall()?.Photo;
+            Minithumbnail = _photo.Minithumbnail;
         }
 
         public long Id => _photo.Id;

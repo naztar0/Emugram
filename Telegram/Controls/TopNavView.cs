@@ -371,7 +371,7 @@ namespace Telegram.Controls
         {
             if (!fromCache)
             {
-                SelectionIndicator ??= GetTemplateChild("SelectionIndicator") as UIElement;
+                SelectionIndicator ??= GetTemplateChild(nameof(SelectionIndicator)) as UIElement;
             }
 
             return SelectionIndicator;

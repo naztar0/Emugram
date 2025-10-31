@@ -5,9 +5,8 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Collections;
 using Telegram.Common;
@@ -23,6 +22,75 @@ using WinRT;
 
 namespace Telegram.ViewModels.Profile
 {
+    public class ProfileTabArchivedPosts : ProfileTab
+    {
+        public override string ToString()
+        {
+            return nameof(ProfileTabArchivedPosts);
+        }
+
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
+    public class ProfileTabSavedChats : ProfileTab
+    {
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
+    public class ProfileTabPreviews : ProfileTab
+    {
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
+    public class ProfileTabGroups : ProfileTab
+    {
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
+    public class ProfileTabSimilarBots : ProfileTab
+    {
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
+    public class ProfileTabSimilarChannels : ProfileTab
+    {
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
+    public class ProfileTabMembers : ProfileTab
+    {
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
+    public class ProfileTabSavedMessages : ProfileTab
+    {
+        public NativeObject ToUnmanaged()
+        {
+            return null;
+        }
+    }
+
     [GeneratedBindableCustomProperty]
     public partial class ProfileTabItem : BindableBase
     {
@@ -30,16 +98,18 @@ namespace Telegram.ViewModels.Profile
         private readonly int _totalCount;
         private readonly string _locale;
 
-        public ProfileTabItem(string text, Type type, object parameter = null)
+        public ProfileTabItem(ProfileTab type, object parameter = null)
         {
-            Text = text;
+            (Text, PageType) = GetText(type);
+
             Type = type;
             Parameter = parameter;
         }
 
-        public ProfileTabItem(string text, Type type, object parameter, int totalCount, string locale)
+        public ProfileTabItem(ProfileTab type, object parameter, int totalCount, string locale)
         {
-            Text = text;
+            (Text, PageType) = GetText(type);
+
             Type = type;
             Parameter = parameter;
 
@@ -47,9 +117,10 @@ namespace Telegram.ViewModels.Profile
             _locale = locale;
         }
 
-        public ProfileTabItem(string text, Type type, object parameter, ICollectionWithTotalCount items, string locale)
+        public ProfileTabItem(ProfileTab type, object parameter, ICollectionWithTotalCount items, string locale)
         {
-            Text = text;
+            (Text, PageType) = GetText(type);
+
             Type = type;
             Parameter = parameter;
 
@@ -59,9 +130,35 @@ namespace Telegram.ViewModels.Profile
             _locale = locale;
         }
 
+        private (string, Type) GetText(ProfileTab type)
+        {
+            return type switch
+            {
+                ProfileTabPosts => (Strings.ProfileStories, typeof(ProfileStoriesTabPage)),
+                ProfileTabGifts => (Strings.ProfileGifts, typeof(ProfileGiftsTabPage)),
+                ProfileTabArchivedPosts => (Strings.ArchivedStories, typeof(ProfileStoriesTabPage)),
+                ProfileTabSavedChats => (Strings.SavedDialogsTab, typeof(ProfileSavedChatsTabPage)),
+                ProfileTabPreviews => (Strings.ProfileBotPreviewTab, typeof(ProfileStoriesTabPage)),
+                ProfileTabGroups => (Strings.SharedGroupsTab2, typeof(ProfileGroupsTabPage)),
+                ProfileTabSimilarBots => (Strings.SimilarBotsTab, typeof(ProfileBotsTabPage)),
+                ProfileTabSimilarChannels => (Strings.SimilarChannelsTab, typeof(ProfileChannelsTabPage)),
+                ProfileTabMembers => (Strings.ChannelMembers, typeof(ProfileMembersTabPage)),
+                ProfileTabMedia => (Strings.SharedMediaTab2, typeof(ProfileMediaTabPage)),
+                ProfileTabSavedMessages => (Strings.SavedMessagesTab2, typeof(ProfileSavedMessagesTabPage)),
+                ProfileTabFiles => (Strings.SharedFilesTab2, typeof(ProfileFilesTabPage)),
+                ProfileTabLinks => (Strings.SharedLinksTab2, typeof(ProfileLinksTabPage)),
+                ProfileTabMusic => (Strings.SharedMusicTab2, typeof(ProfileMusicTabPage)),
+                ProfileTabVoice => (Strings.SharedVoiceTab2, typeof(ProfileVoiceTabPage)),
+                ProfileTabGifs => (Strings.SharedGIFsTab2, typeof(ProfileAnimationsTabPage)),
+                _ => (string.Empty, null)
+            };
+        }
+
+        public ProfileTab Type { get; set; }
+
         public string Text { get; set; }
 
-        public Type Type { get; set; }
+        public Type PageType { get; set; }
 
         public object Parameter { get; set; }
 
@@ -74,11 +171,8 @@ namespace Telegram.ViewModels.Profile
                 RaisePropertyChanged(nameof(Subtitle));
             }
         }
-    }
 
-    public partial class ProfileMyArgs
-    {
-
+        public bool CanSetAsMain => Type is ProfileTabPosts or ProfileTabGifts or ProfileTabMedia or ProfileTabFiles or ProfileTabLinks or ProfileTabMusic or ProfileTabGifs;
     }
 
     public abstract partial class ProfileTabsViewModel : MediaTabsViewModelBase, IHandle
@@ -117,10 +211,10 @@ namespace Telegram.ViewModels.Profile
             Children.Add(_giftsTabViewModel);
             Children.Add(_membersTabVieModel);
 
-            Items = new ObservableCollection<ProfileTabItem>();
+            Items = new MvxObservableCollection<ProfileTabItem>();
         }
 
-        public ObservableCollection<ProfileTabItem> Items { get; }
+        public MvxObservableCollection<ProfileTabItem> Items { get; }
 
         protected ForumTopic _forumTopic;
         public ForumTopic ForumTopic
@@ -142,15 +236,9 @@ namespace Telegram.ViewModels.Profile
 
         public override Task NavigatedToAsync(object parameter, NavigationMode mode, NavigationState state)
         {
-            if (parameter is ProfileMyArgs)
+            if (parameter is long chatId)
             {
-                parameter = ClientService.Options.MyId;
-                MyProfile = true;
-            }
-
-            if (parameter is long chatId && !MyProfile)
-            {
-                IsSavedMessages = chatId == ClientService.Options.MyId;
+                MyProfile = chatId == ClientService.Options.MyId;
             }
             else if (parameter is ChatMessageTopic chatMessageTopic)
             {
@@ -168,12 +256,6 @@ namespace Telegram.ViewModels.Profile
             }
 
             var chatId = (long)parameter;
-
-            if (state.TryGet("selectedIndex", out int selectedIndex))
-            {
-                SelectedIndex = selectedIndex;
-            }
-
             Chat = ClientService.GetChat(chatId);
 
             Media.UpdateQuery(string.Empty);
@@ -198,7 +280,7 @@ namespace Telegram.ViewModels.Profile
 
         protected abstract Task UpdateTabsAsync(Chat chat);
 
-        protected async Task UpdateSharedCountAsync(Chat chat)
+        protected async Task UpdateSharedCountAsync(Chat chat, IList<ProfileTabItem> tabs)
         {
             var filters = new SearchMessagesFilter[]
             {
@@ -207,12 +289,11 @@ namespace Telegram.ViewModels.Profile
                 new SearchMessagesFilterDocument(),
                 new SearchMessagesFilterUrl(),
                 new SearchMessagesFilterAudio(),
-                new SearchMessagesFilterVoiceNote(),
+                new SearchMessagesFilterVoiceAndVideoNote(),
                 new SearchMessagesFilterAnimation(),
             };
 
-            var sparseMessagesAvailable = SettingsService.Current.Diagnostics.SparseMessagesDebug
-                && Topic is MessageTopicSavedMessages or null;
+            var sparseMessagesAvailable = Topic is MessageTopicSavedMessages or null;
 
             var savedMessagesTopicId = 0L;
             if (Topic is MessageTopicSavedMessages savedMessagesTopic)
@@ -224,7 +305,7 @@ namespace Telegram.ViewModels.Profile
             {
                 if (filter is SearchMessagesFilterEmpty)
                 {
-                    if (IsSavedMessages || MyProfile || !SettingsService.Current.Diagnostics.SavedMessagesDebug)
+                    if (IsSavedMessages || MyProfile)
                     {
                         return new Count(0);
                     }
@@ -238,34 +319,34 @@ namespace Telegram.ViewModels.Profile
                     return new Count(0);
                 }
 
-                if (sparseMessagesAvailable && filter is SearchMessagesFilterPhotoAndVideo or SearchMessagesFilterDocument or SearchMessagesFilterAudio or SearchMessagesFilterVoiceNote or SearchMessagesFilterAnimation)
+                if (sparseMessagesAvailable && filter is SearchMessagesFilterPhotoAndVideo or SearchMessagesFilterDocument or SearchMessagesFilterAudio or SearchMessagesFilterVoiceAndVideoNote or SearchMessagesFilterAnimation)
                 {
-                    var source = await MediaDataSource.Create(ClientService, chat.Id, savedMessagesTopicId, filter);
-                    if (source.Count > 0)
+                    var source = await ClientService.SendAsync(new GetChatMessageCount(chat.Id, Topic, filter, false)) as Count;
+                    if (source?.CountValue > 50)
                     {
                         switch (filter)
                         {
                             case SearchMessagesFilterPhotoAndVideo:
                             case SearchMessagesFilterPhoto:
                             case SearchMessagesFilterVideo:
-                                Media.DataSource = source;
+                                Media.DataSource = new MediaDataSource(ClientService, chat.Id, savedMessagesTopicId, filter);
                                 break;
                             case SearchMessagesFilterDocument:
-                                Files.DataSource = source;
+                                Files.DataSource = new MediaDataSource(ClientService, chat.Id, savedMessagesTopicId, filter);
                                 break;
                             case SearchMessagesFilterAudio:
-                                Music.DataSource = source;
+                                Music.DataSource = new MediaDataSource(ClientService, chat.Id, savedMessagesTopicId, filter);
                                 break;
-                            case SearchMessagesFilterVoiceNote:
-                                Voice.DataSource = source;
+                            case SearchMessagesFilterVoiceAndVideoNote:
+                                Voice.DataSource = new MediaDataSource(ClientService, chat.Id, savedMessagesTopicId, filter);
                                 break;
                             case SearchMessagesFilterAnimation:
-                                Animations.DataSource = source;
+                                Animations.DataSource = new MediaDataSource(ClientService, chat.Id, savedMessagesTopicId, filter);
                                 break;
                         }
                     }
 
-                    return new Count(source.Count);
+                    return source;
                 }
 
                 return await ClientService.SendAsync(new GetChatMessageCount(chat.Id, Topic, filter, false)) as Count;
@@ -280,29 +361,19 @@ namespace Telegram.ViewModels.Profile
                     {
                         var item = filters[i] switch
                         {
-                            SearchMessagesFilterPhotoAndVideo => new ProfileTabItem(Strings.SharedMediaTab2, typeof(ProfileMediaTabPage), null, count.CountValue, Strings.R.Media),
-                            SearchMessagesFilterEmpty => new ProfileTabItem(Strings.SavedMessagesTab2, typeof(ProfileSavedMessagesTabPage), new ChatMessageTopic(ClientService.Options.MyId, new MessageTopicSavedMessages(chat.Id)), count.CountValue, Strings.R.SavedMessagesCount),
-                            SearchMessagesFilterDocument => new ProfileTabItem(Strings.SharedFilesTab2, typeof(ProfileFilesTabPage), null, count.CountValue, Strings.R.Files),
-                            SearchMessagesFilterUrl => new ProfileTabItem(Strings.SharedLinksTab2, typeof(ProfileLinksTabPage), null, count.CountValue, Strings.R.Links),
-                            SearchMessagesFilterAudio => new ProfileTabItem(Strings.SharedMusicTab2, typeof(ProfileMusicTabPage), null, count.CountValue, Strings.R.MusicFiles),
-                            SearchMessagesFilterVoiceNote => new ProfileTabItem(Strings.SharedVoiceTab2, typeof(ProfileVoiceTabPage), null, count.CountValue, Strings.R.Voice),
-                            SearchMessagesFilterAnimation => new ProfileTabItem(Strings.SharedGIFsTab2, typeof(ProfileAnimationsTabPage), null, count.CountValue, Strings.R.GIFs),
+                            SearchMessagesFilterPhotoAndVideo => new ProfileTabItem(new ProfileTabMedia(), null, count.CountValue, Strings.R.Media),
+                            SearchMessagesFilterEmpty => new ProfileTabItem(new ProfileTabSavedMessages(), new ChatMessageTopic(ClientService.Options.MyId, new MessageTopicSavedMessages(chat.Id)), count.CountValue, Strings.R.SavedMessagesCount),
+                            SearchMessagesFilterDocument => new ProfileTabItem(new ProfileTabFiles(), null, count.CountValue, Strings.R.Files),
+                            SearchMessagesFilterUrl => new ProfileTabItem(new ProfileTabLinks(), null, count.CountValue, Strings.R.Links),
+                            SearchMessagesFilterAudio => new ProfileTabItem(new ProfileTabMusic(), null, count.CountValue, Strings.R.MusicFiles),
+                            SearchMessagesFilterVoiceAndVideoNote => new ProfileTabItem(new ProfileTabVoice(), null, count.CountValue, Strings.R.Voice),
+                            SearchMessagesFilterAnimation => new ProfileTabItem(new ProfileTabGifs(), null, count.CountValue, Strings.R.GIFs),
                             _ => null
                         };
 
-                        AddTab(item);
+                        tabs.Add(item);
                     }
                 }
-            }
-        }
-
-        protected void AddTab(ProfileTabItem item)
-        {
-            Items.Add(item);
-
-            if (Items.Count == 1)
-            {
-                SelectedItem ??= Items.FirstOrDefault();
             }
         }
 
@@ -318,13 +389,6 @@ namespace Telegram.ViewModels.Profile
             set => Set(ref _chat, value);
         }
 
-        private int _selectedIndex;
-        public int SelectedIndex
-        {
-            get => _selectedIndex;
-            set => Set(ref _selectedIndex, value);
-        }
-
         public override MediaCollection SetSearch(object sender, string query)
         {
             var target = sender switch
@@ -334,7 +398,7 @@ namespace Telegram.ViewModels.Profile
                 SearchMessagesFilterVideo => Media,
                 SearchMessagesFilterDocument => Files,
                 SearchMessagesFilterAudio => Music,
-                SearchMessagesFilterVoiceNote => Voice,
+                SearchMessagesFilterVoiceAndVideoNote => Voice,
                 SearchMessagesFilterAnimation => Animations,
                 _ => null
             };

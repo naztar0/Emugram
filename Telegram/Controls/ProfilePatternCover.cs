@@ -5,11 +5,10 @@
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Telegram.Common;
-using Telegram.Native;
 using Telegram.Streams;
+using Windows.Foundation;
 using Windows.UI.Composition;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -54,6 +53,7 @@ namespace Telegram.Controls
 
         protected override void OnApplyTemplate()
         {
+            // TODO: Names
             var animated = GetTemplateChild("Animated") as AnimatedImage;
             var layoutRoot = GetTemplateChild("LayoutRoot") as Border;
 
@@ -61,10 +61,6 @@ namespace Telegram.Controls
 
             var visual = ElementComposition.GetElementVisual(animated);
             var compositor = visual.Compositor;
-
-            var avatarSize = new Vector2(140, 140);
-            var newSize = new Vector2(1000 + 36, 320);
-            var centerFrame = new RectangleF((-72 + newSize.X - avatarSize.X) / 2f, (-36 + 204 - avatarSize.Y) / 2f, avatarSize.X, avatarSize.Y);
 
             // Create a VisualSurface positioned at the same location as this control and feed that
             // through the color effect.
@@ -83,29 +79,11 @@ namespace Telegram.Controls
             surfaceBrush.SnapToPixels = true;
 
             var container = compositor.CreateContainerVisual();
-            container.Size = new Vector2(1000, 320);
+            container.RelativeSizeAdjustment = Vector2.One;
 
             for (int i = 0; i < _positions.Length; i++)
             {
-                OrbitGenerator.Position iconPosition = _positions[i];
-
-                var itemDistanceFraction = 0.6f - Math.Max(0.0f, Math.Min(0.5f, (iconPosition.Distance - avatarSize.X / 2.0f) / 74));
-                var itemScaleFraction = OrbitGenerator.PatternScaleValueAt(fraction: 0, t: itemDistanceFraction, reverse: false);
-
-                var toAngle = MathF.PI * 0.18f;
-                var centerPosition = new OrbitGenerator.Position(distance: 0.0f, angle: iconPosition.Angle + toAngle, scale: iconPosition.Scale);
-                var effectivePosition = OrbitGenerator.InterpolatePosition(from: iconPosition, to: centerPosition, t: itemScaleFraction);
-                var effectiveAngle = toAngle * itemScaleFraction;
-
-                var absolutePosition = effectivePosition.GetAbsolutePosition(centerFrame.Center);
-
                 var redirect = compositor.CreateSpriteVisual();
-                redirect.Size = new Vector2(MathF.Floor((IsSmall ? 32 : 36) * (iconPosition.Scale * (1.0f - itemScaleFraction))));
-                redirect.Offset = new Vector3(absolutePosition, 0);
-                //redirect.Scale = new Vector3(clone.Scale * (1.0f - itemScaleFraction));
-                redirect.RotationAngle = 0; // effectiveAngle;
-                redirect.CenterPoint = new Vector3(redirect.Size / 2, 0);
-                redirect.Opacity = 1.0f - itemScaleFraction;
                 redirect.Brush = surfaceBrush;
 
                 container.Children.InsertAtTop(redirect);
@@ -133,14 +111,45 @@ namespace Telegram.Controls
             batch.End();
         }
 
-        public void Update(float avatarTransitionFraction)
+        private RectangleF _center = new RectangleF(0, 48, 160, 160);
+        public RectangleF Center
+        {
+            get => _center;
+            set => SetCenter(value);
+        }
+
+        private void SetCenter(RectangleF center)
+        {
+            _center = center;
+            InvalidateArrange();
+        }
+
+        private float _avatarTransitionFraction;
+        public float TransitionFraction
+        {
+            get => _avatarTransitionFraction;
+            set => Update(_avatarTransitionFraction = value, ActualSize);
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            Update(_avatarTransitionFraction, finalSize.ToVector2());
+            return base.ArrangeOverride(finalSize);
+        }
+
+        private void Update(float avatarTransitionFraction, Vector2 finalSize)
         {
             var layoutRoot = GetTemplateChild("LayoutRoot") as Border;
             var container = ElementCompositionPreview.GetElementChildVisual(layoutRoot) as ContainerVisual;
 
-            var avatarSize = new Vector2(140, 140);
-            var newSize = new Vector2(1000 + 36, 320);
-            var centerFrame = new RectangleF((-72 + newSize.X - avatarSize.X) / 2f, (-36 + 204 - avatarSize.Y) / 2f, avatarSize.X, avatarSize.Y);
+            var y = _center.Width * 0.2f * 1.5f;
+
+            var avatarSize = new Vector2(_center.Width, _center.Width);
+            var newSize = new Vector2(finalSize.X, y + _center.Width);
+            var centerFrame = new RectangleF((newSize - avatarSize) / 2, avatarSize);
+            //var avatarSize = new Vector2(140, 140);
+            //var newSize = new Vector2(1000 + 36, 320);
+            //var centerFrame = new RectangleF((-72 + newSize.X - avatarSize.X) / 2f, (-36 + 204 - avatarSize.Y) / 2f, avatarSize.X, avatarSize.Y);
 
             //var test = Generate2(0);
             //var builder = new StringBuilder();
@@ -163,7 +172,12 @@ namespace Telegram.Controls
                 }
 
                 var iconPosition = _positions[i++];
-                var itemDistanceFraction = 0.6f - Math.Max(0.0f, Math.Min(0.5f, (iconPosition.Distance - avatarSize.X / 2.0f) / 74));
+                var iconOpacity = iconPosition.Distance / 260f;
+
+                iconPosition = new OrbitGenerator.Position(distance: iconPosition.Distance / 100f * (_center.Width * 0.6f), iconPosition.Angle, iconPosition.Scale);
+
+                // TODO: find a way to calculate 2.3f dynamically
+                var itemDistanceFraction = 0.6f - Math.Max(0.0f, Math.Min(0.5f, (iconPosition.Distance - avatarSize.X / 2.3f) / 74));
                 var itemScaleFraction = OrbitGenerator.PatternScaleValueAt(fraction: Math.Min(1.0f, avatarTransitionFraction * 1.33f), t: itemDistanceFraction, reverse: false);
 
                 var toAngle = MathF.PI * 0.18f;
@@ -173,108 +187,17 @@ namespace Telegram.Controls
 
                 var absolutePosition = effectivePosition.GetAbsolutePosition(centerFrame.Center);
 
+                var size = _center.Width * 0.2f;
+
                 //redirect.Size = new Vector2(36, 36);
-                redirect.Size = new Vector2(MathF.Floor((IsSmall ? 32 : 36) * (iconPosition.Scale * (1.0f - itemScaleFraction))));
-                redirect.Offset = new Vector3(absolutePosition, 0);
+                redirect.Size = new Vector2(MathF.Floor(size * (iconPosition.Scale * (1.0f - itemScaleFraction))));
+                redirect.Offset = new Vector3(absolutePosition - new Vector2(size / 2), 0);
                 //redirect.Scale = new Vector3(iconPosition.Scale * (1.0f - itemScaleFraction));
                 redirect.RotationAngle = 0; // effectiveAngle;
-                redirect.Opacity = 1.0f - itemScaleFraction;
+                redirect.CenterPoint = new Vector3(redirect.Size / 2, 0);
+                redirect.Opacity = (1.0f - itemScaleFraction) * (1.0f - iconOpacity);
             }
         }
-
-        private IList<OrbitGenerator.Position> Generate(float avatarTransitionFraction)
-        {
-            var results = new List<OrbitGenerator.Position>();
-
-            var avatarPatternFrame = new Vector2(1000 - 36, 86 + 48 * 2);
-            //var avatarPatternFrame = new Vector2(1000 - 36, 24 + 140 + 24);
-
-            var lokiRng = new LokiRng(seed0: 123, seed1: 0, seed2: 0);
-            var numRows = 4;
-
-            for (int row = 0; row < numRows; row++)
-            {
-                int avatarPatternCount = 7;
-                float avatarPatternAngleSpan = MathF.PI * 2.0f / (avatarPatternCount - 1f);
-
-                for (int i = 0; i < avatarPatternCount - 1; i++)
-                {
-                    float baseItemDistance;
-                    float itemDistanceFraction;
-                    float itemScaleFraction;
-                    float itemDistance;
-
-                    if (IsSmall)
-                    {
-                        baseItemDistance = 72.0f + row * 28.0f;
-
-                        itemDistanceFraction = MathF.Max(0.0f, MathF.Min(1.0f, baseItemDistance / 140.0f));
-                        itemScaleFraction = PatternScaleValueAt(fraction: avatarTransitionFraction, t: itemDistanceFraction, reverse: false);
-                        itemDistance = baseItemDistance * (1.0f - itemScaleFraction) + 20.0f * itemScaleFraction;
-                    }
-                    else
-                    {
-                        baseItemDistance = 100.0f + row * 40.0f;
-
-                        itemDistanceFraction = MathF.Max(0.0f, MathF.Min(1.0f, baseItemDistance / 196.0f));
-                        itemScaleFraction = PatternScaleValueAt(fraction: avatarTransitionFraction, t: itemDistanceFraction, reverse: false);
-                        itemDistance = baseItemDistance * (1.0f - itemScaleFraction) + 28.0f * itemScaleFraction;
-                    }
-
-
-                    float itemAngle = -MathF.PI * 0.5f + i * avatarPatternAngleSpan;
-
-                    if (row % 2 != 0)
-                    {
-                        itemAngle += avatarPatternAngleSpan * 0.5f;
-                    }
-
-                    Vector2 itemPosition = new Vector2(avatarPatternFrame.X * 0.5f + MathF.Cos(itemAngle) * itemDistance, avatarPatternFrame.Y * 0.5f + MathF.Sin(itemAngle) * itemDistance);
-
-                    float itemScale = 0.7f + lokiRng.Next() * (1.0f - 0.7f);
-                    float itemSize = MathF.Floor((IsSmall ? 32 : 36) * itemScale);
-
-                    //results.Add(new Vector4(itemPosition.X, itemPosition.Y, itemSize, 1.0f - itemScaleFraction));
-                    results.Add(new OrbitGenerator.Position(itemDistance, itemAngle, itemScale));
-                }
-            }
-
-            return results;
-        }
-
-        private float WindowFunction(float t)
-        {
-            return BezierPoint.Calculate(0.6f, 0.0f, 0.4f, 1.0f, t);
-        }
-
-        private float PatternScaleValueAt(float fraction, float t, bool reverse)
-        {
-            float windowSize = 0.8f;
-
-            float effectiveT;
-            float windowStartOffset;
-            float windowEndOffset;
-            if (reverse)
-            {
-                effectiveT = 1.0f - t;
-                windowStartOffset = 1.0f;
-                windowEndOffset = -windowSize;
-            }
-            else
-            {
-                effectiveT = t;
-                windowStartOffset = -0.3f;
-                windowEndOffset = 1.0f;
-            }
-
-            float windowPosition = (1.0f - fraction) * windowStartOffset + fraction * windowEndOffset;
-            float windowT = MathF.Max(0.0f, MathF.Min(windowSize, effectiveT - windowPosition)) / windowSize;
-            float localT = 1.0f - WindowFunction(t: windowT);
-
-            return localT;
-        }
-
-        public bool IsSmall { get; set; } = false;
 
         #region Source
 

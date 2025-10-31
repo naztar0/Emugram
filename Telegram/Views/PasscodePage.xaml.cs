@@ -14,23 +14,25 @@ using Windows.Security.Credentials;
 using Windows.Security.Cryptography;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 
 namespace Telegram.Views
 {
-    public sealed partial class PasscodePage : ContentPopup
+    public sealed partial class PasscodePage : UserControlEx
     {
+        private readonly WindowContext _window;
+
         private readonly IPasscodeService _passcodeService;
         private readonly bool _biometrics;
 
         private readonly DispatcherTimer _retryTimer;
 
-        private bool _accepted;
-
-        public PasscodePage(bool biometrics)
+        public PasscodePage(WindowContext window, bool biometrics)
         {
             InitializeComponent();
+
+            _window = window;
+            _window.SetTitleBar(TitleBar);
 
             _passcodeService = TypeResolver.Current.Passcode;
             _biometrics = biometrics;
@@ -87,7 +89,7 @@ namespace Telegram.Views
 
         private void Field_KeyDown(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == Windows.System.VirtualKey.Enter)
+            if (e.Key == VirtualKey.Enter)
             {
                 TryUnlock();
             }
@@ -112,12 +114,8 @@ namespace Telegram.Views
 
         private async void OnLoaded(object sender, RoutedEventArgs args)
         {
-            var context = WindowContext.ForXamlRoot(this);
-            if (context != null)
-            {
-                context.Activated += Window_Activated;
-                context.SizeChanged += Window_SizeChanged;
-            }
+            _window.Activated += Window_Activated;
+            _window.SizeChanged += Window_SizeChanged;
 
             Field.LosingFocus += Field_LosingFocus;
 
@@ -140,30 +138,20 @@ namespace Telegram.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs args)
         {
-            var context = WindowContext.ForXamlRoot(this);
-            if (context != null)
-            {
-                context.Activated -= Window_Activated;
-                context.SizeChanged -= Window_SizeChanged;
-            }
+            _window.Activated -= Window_Activated;
+            _window.SizeChanged -= Window_SizeChanged;
 
             Field.LosingFocus -= Field_LosingFocus;
 
             _retryTimer.Stop();
         }
 
-        private void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
-        {
-            if (_passcodeService.IsLocked || !_accepted)
-            {
-                args.Cancel = true;
-            }
-        }
-
         #region Bounds
 
         private void Window_Activated(object sender, WindowActivatedEventArgs e)
         {
+            _window.SetTitleBar(TitleBar);
+
             if (e.WindowActivationState != CoreWindowActivationState.Deactivated)
             {
                 Field.Focus(FocusState.Keyboard);
@@ -205,15 +193,7 @@ namespace Telegram.Views
         private void Unlock()
         {
             _passcodeService.Unlock();
-
             _retryTimer.Stop();
-            _accepted = true;
-        }
-
-        public void Update()
-        {
-            _accepted = true;
-            Hide();
         }
 
         private async void Biometrics_Click(object sender, RoutedEventArgs e)

@@ -69,12 +69,12 @@ namespace Telegram.ViewModels.Settings.Privacy
                 var confirm = await ShowPopupAsync(Strings.PrivacySettingsChangedAlert, Strings.UnsavedChanges, Strings.ApplyTheme, Strings.PassportDiscard);
                 if (confirm == ContentDialogResult.Primary)
                 {
-                    Continue();
+                    ContinueImpl(args);
                 }
                 else if (confirm == ContentDialogResult.Secondary)
                 {
                     _completed = true;
-                    NavigationService.GoBack();
+                    NavigationService.GoBack(args);
                 }
             }
         }
@@ -148,21 +148,28 @@ namespace Telegram.ViewModels.Settings.Privacy
             return false;
         }
 
-        public async void Continue()
+        public void Continue()
         {
-            _completed = true;
+            ContinueImpl(null);
+        }
 
+        private async void ContinueImpl(NavigatingEventArgs args)
+        {
             if (IsPremium)
             {
                 var response = await ClientService.SendAsync(new SetNewChatPrivacySettings(GetSettings()));
                 if (response is Ok)
                 {
+                    _completed = true;
+
                     if (_selectedItem is PrivacyValue.DisallowAll)
                     {
                         _allowUnpaidRules.Continue();
                     }
-
-                    NavigationService.GoBack();
+                    else
+                    {
+                        NavigationService.GoBack(args);
+                    }
 
                     if (await CheckAllowAllAsync(new UserPrivacySettingAllowCalls()))
                     {
@@ -181,14 +188,15 @@ namespace Telegram.ViewModels.Settings.Privacy
                         }
                     }
                 }
-                else
+                else if (response is Error error)
                 {
-                    // TODO: ...
+                    ShowToast(error);
                 }
             }
             else
             {
-                NavigationService.GoBack();
+                _completed = true;
+                NavigationService.GoBack(args);
             }
         }
 

@@ -11,7 +11,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Telegram.Collection;
 using Telegram.Collections;
 using Telegram.Common;
 using Telegram.Controls.Media;
@@ -175,12 +174,12 @@ namespace Telegram.ViewModels.Folders
                 var confirm = await ShowPopupAsync(message, title, primary, Strings.PassportDiscard);
                 if (confirm == ContentDialogResult.Primary)
                 {
-                    Continue();
+                    ContinueImpl(args);
                 }
                 else if (confirm == ContentDialogResult.Secondary)
                 {
                     _completed = true;
-                    NavigationService.GoBack();
+                    NavigationService.GoBack(args);
                 }
             }
         }
@@ -281,13 +280,10 @@ namespace Telegram.ViewModels.Folders
                     Links.ReplaceWith(links.InviteLinks);
                     Exclude.Clear();
                     Exclude.SynchronizeHead();
-
-                    IsShareable = true;
                 }
                 else
                 {
                     Links.Clear();
-                    IsShareable = false;
                 }
             }
         }
@@ -395,13 +391,22 @@ namespace Telegram.ViewModels.Folders
             return false;
         }
 
-        public async void Continue()
+        public void Continue()
+        {
+            ContinueImpl(null);
+        }
+
+        private async void ContinueImpl(NavigatingEventArgs args)
         {
             var response = await SendAsync();
             if (response is ChatFolderInfo)
             {
                 _completed = true;
-                NavigationService.GoBack();
+                NavigationService.GoBack(args);
+            }
+            else if (response is Error error)
+            {
+                ShowToast(error);
             }
         }
 
@@ -589,9 +594,15 @@ namespace Telegram.ViewModels.Folders
             if (shareableItems.Count > 0)
             {
                 var response = await ClientService.SendAsync(new CreateChatFolderInviteLink(Id.Value, string.Empty, shareableItems));
-                if (response is ChatFolderInviteLink link)
+                if (response is ChatFolderInviteLink inviteLink)
                 {
-                    OpenLink(link);
+                    Links.Insert(0, inviteLink);
+                    Exclude.Clear();
+                    Exclude.SynchronizeHead();
+
+                    IsShareable = true;
+
+                    OpenLink(inviteLink);
                 }
                 else if (response is Error error)
                 {

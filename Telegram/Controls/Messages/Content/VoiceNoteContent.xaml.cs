@@ -8,10 +8,12 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using Telegram.Assets.Icons;
 using Telegram.Common;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
+using Telegram.Views;
 using Windows.UI;
 using Windows.UI.Composition;
 using Windows.UI.Xaml;
@@ -37,8 +39,6 @@ namespace Telegram.Controls.Messages.Content
             _message = message;
 
             DefaultStyleKey = typeof(VoiceNoteContent);
-
-            Disconnected += OnUnloaded;
         }
 
         public VoiceNoteContent()
@@ -46,14 +46,11 @@ namespace Telegram.Controls.Messages.Content
             DefaultStyleKey = typeof(VoiceNoteContent);
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
-            if (_message != null)
-            {
-                _message.PlaybackService.SourceChanged -= OnPlaybackStateChanged;
-                _message.PlaybackService.StateChanged -= OnPlaybackStateChanged;
-                _message.PlaybackService.PositionChanged -= OnPositionChanged;
-            }
+            TypeResolver.Current.Playback.SourceChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.StateChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.PositionChanged -= OnPositionChanged;
         }
 
         #region InitializeComponent
@@ -104,7 +101,7 @@ namespace Telegram.Controls.Messages.Content
         {
             _message = message;
 
-            message.PlaybackService.SourceChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.SourceChanged -= OnPlaybackStateChanged;
 
             var voiceNote = GetContent(message);
             if (voiceNote == null || !_templateApplied)
@@ -112,9 +109,9 @@ namespace Telegram.Controls.Messages.Content
                 return;
             }
 
-            message.PlaybackService.SourceChanged += OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.SourceChanged += OnPlaybackStateChanged;
 
-            Progress.UpdateWaveform(voiceNote);
+            Progress.UpdateWaveform(voiceNote.Waveform, voiceNote.Duration);
             ViewOnce.Visibility = message.SelfDestructType is MessageSelfDestructTypeImmediately
                 ? Visibility.Visible
                 : Visibility.Collapsed;
@@ -147,8 +144,13 @@ namespace Telegram.Controls.Messages.Content
         {
             if (result != null && Recognize.IsChecked is true)
             {
-                RecognizedText ??= GetTemplateChild(nameof(RecognizedText)) as RichTextBlock;
-                RecognizedSpan ??= GetTemplateChild(nameof(RecognizedSpan)) as Run;
+                if (RecognizedText == null)
+                {
+                    RecognizedText = GetTemplateChild(nameof(RecognizedText)) as RichTextBlock;
+                    RecognizedSpan = GetTemplateChild(nameof(RecognizedSpan)) as Run;
+
+                    RecognizedText.ContextMenuOpening += RecognizedText_ContextMenuOpening;
+                }
 
                 if (result is SpeechRecognitionResultError)
                 {
@@ -176,6 +178,11 @@ namespace Telegram.Controls.Messages.Content
                 RecognizedText.Visibility = Visibility.Collapsed;
                 UnloadPending();
             }
+        }
+
+        private void RecognizedText_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            e.Handled = true;
         }
 
         private CompositionPropertySet _props;
@@ -243,8 +250,8 @@ namespace Telegram.Controls.Messages.Content
 
         public void Mockup(MessageVoiceNote voiceNote)
         {
-            Progress.UpdateWaveform(voiceNote.VoiceNote);
-            Progress.UpdateValue(0.3, 1, PlaybackState.None);
+            Progress.UpdateWaveform(voiceNote.VoiceNote.Waveform, voiceNote.VoiceNote.Duration);
+            Progress.UpdateValue(0.3, 1, false);
 
             Subtitle.Text = FormatTime(TimeSpan.FromSeconds(1), 0) + " / " + FormatTime(TimeSpan.FromSeconds(3), 0);
 
@@ -260,7 +267,7 @@ namespace Telegram.Controls.Messages.Content
                 var voiceNote = GetContent(_message);
                 if (voiceNote == null)
                 {
-                    Recycle(sender);
+                    Recycle();
                     return;
                 }
 
@@ -272,9 +279,9 @@ namespace Telegram.Controls.Messages.Content
         {
             var position = args.Position;
             var duration = args.Duration;
-            var state = sender.PlaybackState;
+            var playing = sender.IsPlaying;
 
-            this.BeginOnUIThread(() => UpdatePosition(position, duration, state));
+            this.BeginOnUIThread(() => UpdatePosition(position, duration, playing));
         }
 
         private void UpdateDuration()
@@ -294,16 +301,16 @@ namespace Telegram.Controls.Messages.Content
             if (message.Content is MessageVoiceNote voiceNoteMessage)
             {
                 Subtitle.Text = voiceNote.GetDuration() + (voiceNoteMessage.IsListened ? string.Empty : " ●");
-                Progress.UpdateValue(message.IsOutgoing || voiceNoteMessage.IsListened ? 0 : voiceNote.Duration, voiceNote.Duration, PlaybackState.None);
+                Progress.UpdateValue(message.IsOutgoing || voiceNoteMessage.IsListened ? 0 : voiceNote.Duration, voiceNote.Duration, false);
             }
             else
             {
                 Subtitle.Text = voiceNote.GetDuration();
-                Progress.UpdateValue(0, voiceNote.Duration, PlaybackState.None);
+                Progress.UpdateValue(0, voiceNote.Duration, false);
             }
         }
 
-        private void UpdatePosition(TimeSpan position, TimeSpan duration, PlaybackState state)
+        private void UpdatePosition(TimeSpan position, TimeSpan duration, bool playing)
         {
             var message = _message;
             if (message == null || Progress.IsScrubbing)
@@ -311,7 +318,7 @@ namespace Telegram.Controls.Messages.Content
                 return;
             }
 
-            if (message.AreTheSame(message.PlaybackService.CurrentItem) /*&& !_pressed*/)
+            if (message.AreTheSame(TypeResolver.Current.Playback.CurrentItem) /*&& !_pressed*/)
             {
                 if (duration.TotalSeconds == 0)
                 {
@@ -319,7 +326,7 @@ namespace Telegram.Controls.Messages.Content
                 }
 
                 Subtitle.Text = FormatTime(duration - position, duration.TotalHours);
-                Progress.UpdateValue(position, duration, state);
+                Progress.UpdateValue(position, duration, playing);
             }
         }
 
@@ -355,86 +362,83 @@ namespace Telegram.Controls.Messages.Content
                 return;
             }
 
-            message.PlaybackService.StateChanged -= OnPlaybackStateChanged;
-            message.PlaybackService.PositionChanged -= OnPositionChanged;
+            TypeResolver.Current.Playback.StateChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.PositionChanged -= OnPositionChanged;
 
             if (voiceNote.Voice.Id != file.Id)
             {
                 return;
             }
 
-            var canBeDownloaded = file.Local.CanBeDownloaded
-                && !file.Local.IsDownloadingCompleted
-                && !file.Local.IsDownloadingActive;
-
-            var size = Math.Max(file.Size, file.ExpectedSize);
-            if (file.Local.IsDownloadingActive || (canBeDownloaded && message.Delegate.CanBeDownloaded(voiceNote, file)))
+            if (message.AreTheSame(TypeResolver.Current.Playback.CurrentItem))
             {
-                if (canBeDownloaded)
+                if (TypeResolver.Current.Playback.PlaybackState == PlaybackState.Paused)
                 {
-                    _message.ClientService.DownloadFile(file.Id, 32);
+                    Button.SetGlyph(file.Id, MessageContentState.Play);
+                }
+                else
+                {
+                    Button.SetGlyph(file.Id, MessageContentState.Pause);
                 }
 
-                Button.SetGlyph(file.Id, MessageContentState.Downloading);
-                Button.Progress = (double)file.Local.DownloadedSize / size;
+                UpdatePosition(TypeResolver.Current.Playback.Position, TypeResolver.Current.Playback.Duration, TypeResolver.Current.Playback.IsPlaying);
 
-                UpdateDuration();
-            }
-            else if (file.Remote.IsUploadingActive || message.SendingState is MessageSendingStateFailed || (message.SendingState is MessageSendingStatePending && !file.Remote.IsUploadingCompleted))
-            {
-                Button.SetGlyph(file.Id, MessageContentState.Uploading);
-                Button.Progress = (double)file.Remote.UploadedSize / size;
+                TypeResolver.Current.Playback.StateChanged += OnPlaybackStateChanged;
+                TypeResolver.Current.Playback.PositionChanged += OnPositionChanged;
 
-                UpdateDuration();
-            }
-            else if (canBeDownloaded)
-            {
-                Button.SetGlyph(file.Id, MessageContentState.Download);
-                Button.Progress = 0;
-
-                UpdateDuration();
+                Button.Progress = 1;
+                Progress.IsEnabled = true;
             }
             else
             {
-                if (message.AreTheSame(message.PlaybackService.CurrentItem))
+                var canBeDownloaded = file.Local.CanBeDownloaded
+                    && !file.Local.IsDownloadingCompleted
+                    && !file.Local.IsDownloadingActive;
+
+                var size = Math.Max(file.Size, file.ExpectedSize);
+                if (file.Local.IsDownloadingActive || (canBeDownloaded && message.Delegate.CanBeDownloaded(voiceNote, file)))
                 {
-                    if (message.PlaybackService.PlaybackState == PlaybackState.Paused)
+                    if (canBeDownloaded)
                     {
-                        Button.SetGlyph(file.Id, MessageContentState.Play);
-                    }
-                    else
-                    {
-                        Button.SetGlyph(file.Id, MessageContentState.Pause);
+                        _message.ClientService.DownloadFile(file.Id, 32);
                     }
 
-                    UpdatePosition(message.PlaybackService.Position, message.PlaybackService.Duration, message.PlaybackService.PlaybackState);
+                    Button.SetGlyph(file.Id, MessageContentState.Downloading);
+                    Button.Progress = (double)file.Local.DownloadedSize / size;
 
-                    message.PlaybackService.StateChanged += OnPlaybackStateChanged;
-                    message.PlaybackService.PositionChanged += OnPositionChanged;
+                    UpdateDuration();
+                }
+                else if (file.Remote.IsUploadingActive || message.SendingState is MessageSendingStateFailed || (message.SendingState is MessageSendingStatePending && !file.Remote.IsUploadingCompleted))
+                {
+                    Button.SetGlyph(file.Id, MessageContentState.Uploading);
+                    Button.Progress = (double)file.Remote.UploadedSize / size;
+
+                    UpdateDuration();
+                }
+                else if (canBeDownloaded)
+                {
+                    Button.SetGlyph(file.Id, MessageContentState.Download);
+                    Button.Progress = 0;
+
+                    UpdateDuration();
                 }
                 else
                 {
                     Button.SetGlyph(file.Id, MessageContentState.Play);
                     UpdateDuration();
+
+                    Button.Progress = 1;
                 }
 
-                Button.Progress = 1;
+                Progress.IsEnabled = false;
             }
         }
 
         public void Recycle()
         {
-            Recycle(_message?.PlaybackService);
-        }
-
-        private void Recycle(object sender)
-        {
-            if (sender is IPlaybackService playback)
-            {
-                playback.SourceChanged -= OnPlaybackStateChanged;
-                playback.StateChanged -= OnPlaybackStateChanged;
-                playback.PositionChanged -= OnPositionChanged;
-            }
+            TypeResolver.Current.Playback.SourceChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.StateChanged -= OnPlaybackStateChanged;
+            TypeResolver.Current.Playback.PositionChanged -= OnPositionChanged;
 
             _message = null;
 
@@ -477,7 +481,7 @@ namespace Telegram.Controls.Messages.Content
 
         private void Progress_PositionChanged(PlaybackSlider sender, PlaybackSliderPositionChanged args)
         {
-            _message?.PlaybackService.Seek(args.NewPosition);
+            TypeResolver.Current.Playback.Seek(args.NewPosition);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -504,27 +508,20 @@ namespace Telegram.Controls.Messages.Content
                     _message.ClientService.Send(new CancelPreliminaryUploadFile(file.Id));
                 }
             }
-            else if (file.Local.CanBeDownloaded && !file.Local.IsDownloadingActive && !file.Local.IsDownloadingCompleted)
+            else if (_message.AreTheSame(TypeResolver.Current.Playback.CurrentItem))
             {
-                _message.Delegate.PlayMessage(_message);
-            }
-            else
-            {
-                if (_message.AreTheSame(_message.PlaybackService.CurrentItem))
+                if (TypeResolver.Current.Playback.PlaybackState == PlaybackState.Paused)
                 {
-                    if (_message.PlaybackService.PlaybackState == PlaybackState.Paused)
-                    {
-                        _message.PlaybackService.Play();
-                    }
-                    else
-                    {
-                        _message.PlaybackService.Pause();
-                    }
+                    TypeResolver.Current.Playback.Play();
                 }
                 else
                 {
-                    _message.Delegate.PlayMessage(_message);
+                    TypeResolver.Current.Playback.Pause();
                 }
+            }
+            else
+            {
+                _message.Delegate.PlayMessage(_message);
             }
         }
 

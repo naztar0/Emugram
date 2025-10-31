@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Telegram.Collections;
 using Telegram.Common;
 using Telegram.Native;
 using Telegram.Td;
@@ -24,6 +25,7 @@ namespace Telegram.Services
     {
         bool TryInitialize();
         void Close(bool restart);
+        void Delete(bool restart);
 
         //void Send(Function function);
         //void Send(Function function, ClientResultHandler handler);
@@ -46,17 +48,17 @@ namespace Telegram.Services
         void AddFileToDownloads(File file, long chatId, long messageId, int priority = 30);
         void CancelDownloadFile(File file, bool onlyIfPending = false);
         bool IsDownloadFileCanceled(int fileId);
-        bool IsDownloadFilePartial(int fileId);
 
+        Task<Object> GetCustomEmojiStickerSets(IList<long> customEmojiIds);
         Task<bool> HasPrivacySettingsRuleAsync<T>(UserPrivacySetting setting) where T : UserPrivacySettingRule;
 
         Task<Chats> GetChatListAsync(ChatList chatList, int offset, int limit);
 
         void LoadFullInfo(Chat chat);
 
-        void ViewMessages(long chatId, long messageThreadId, IList<long> messageIds, MessageSource source, bool forceRead);
+        void ViewMessages(long chatId, MessageTopic topicId, IList<long> messageIds, MessageSource source, bool forceRead);
 
-        Task<Object> GetStarTransactionsAsync(MessageSender ownerId, string subscriptionId, StarTransactionDirection direction, string offset, int limit);
+        Task<Object> GetStarTransactionsAsync(MessageSender ownerId, string subscriptionId, TransactionDirection direction, string offset, int limit);
 
         Sticker NextGreetingSticker();
 
@@ -67,6 +69,11 @@ namespace Telegram.Services
     {
         bool IsPremium { get; }
         bool IsPremiumAvailable { get; }
+
+        long UnixTime { get; }
+
+        bool TranslateMessages { get; }
+        bool TranslateChats { get; }
 
         PaidReactionType DefaultPaidReactionType { get; }
 
@@ -105,6 +112,8 @@ namespace Telegram.Services
 
         UpdateSpeechRecognitionTrial SpeechRecognitionTrial { get; }
 
+        AgeVerificationParameters AgeVerificationParameters { get; }
+
         IList<CloseBirthdayUser> CloseBirthdayUsers { get; }
 
         Background GetDefaultBackground(bool darkTheme);
@@ -133,7 +142,7 @@ namespace Telegram.Services
         Chat GetChat(long id);
         IEnumerable<Chat> GetChats(IEnumerable<long> ids);
 
-        IDictionary<MessageSender, ChatAction> GetChatActions(long id, long threadId = 0);
+        IDictionary<MessageSender, ChatAction> GetChatActions(long id, MessageTopic topicId = null);
 
         QuickReplyShortcut GetQuickReplyShortcut(int id);
         QuickReplyShortcut GetQuickReplyShortcut(string name);
@@ -148,8 +157,12 @@ namespace Telegram.Services
         bool IsSavedMessages(User user);
         bool IsSavedMessages(Chat chat);
 
+        bool HasActiveUsername(Chat chat, out string username);
+        bool HasActiveUsername(MessageSender sender, out string username);
+
         bool IsForum(Chat chat);
         bool IsDirectMessagesGroup(Chat chat);
+        bool IsAdministeredDirectMessagesGroup(Chat chat);
         bool HasTabs(Chat chat);
 
         bool IsPaid(Chat chat);
@@ -241,14 +254,19 @@ namespace Telegram.Services
 
         UpdateStoryStealthMode StealthMode { get; }
 
-        ChatTheme GetChatTheme(string themeName);
-        IList<ChatTheme> ChatThemes { get; }
+        bool TryGetEmojiChatTheme(ChatTheme theme, out EmojiChatTheme emoji);
+        bool TryGetEmojiChatTheme(string themeName, out EmojiChatTheme emoji);
+        IList<EmojiChatTheme> ChatThemes { get; }
 
         bool IsDiceEmoji(string text, out string dice);
 
         bool HasSuggestedAction(SuggestedAction action);
 
         Settings.NotificationsSettings Notifications { get; }
+
+        void AddRecentlyOpenedChat(long chatId);
+        int RecentlyOpenedChatsCount { get; }
+        IList<Chat> GetRecentlyOpenedChats();
     }
 
     public partial class ClientService : IClientService, ClientResultHandler
@@ -275,32 +293,37 @@ namespace Telegram.Services
         private readonly ILocaleService _locale;
         private readonly IEventAggregator _aggregator;
 
-        private readonly ConcurrentDictionary<long, MessageEffect> _effects = new();
+        private readonly RefAction<Object> _processFilesDelegate;
 
-        private readonly Action<Object> _processFilesDelegate;
+        private readonly ReaderWriterDictionary<long, MessageEffect> _effects = new();
 
-        private readonly Dictionary<long, Chat> _chats = new();
+        private readonly ReaderWriterDictionary<long, Chat> _chats = new();
+
         private readonly ConcurrentDictionary<long, ConcurrentDictionary<MessageSender, ChatAction>> _chatActions = new();
-        private readonly ConcurrentDictionary<ChatMessageId, ConcurrentDictionary<MessageSender, ChatAction>> _topicActions = new();
+        private readonly ConcurrentDictionary<ChatMessageTopic, ConcurrentDictionary<MessageSender, ChatAction>> _topicActions = new();
 
-        private readonly Dictionary<int, SecretChat> _secretChats = new();
+        private readonly ReaderWriterDictionary<int, SecretChat> _secretChats = new();
 
-        private readonly Dictionary<long, long> _usersToChats = new();
+        private readonly ReaderWriterDictionary<long, long> _usersToChats = new();
 
-        private readonly Dictionary<long, User> _users = new();
-        private readonly ConcurrentDictionary<long, UserFullInfo> _usersFull = new();
+        private readonly ReaderWriterDictionary<long, User> _users = new();
+        private readonly ReaderWriterDictionary<long, UserFullInfo> _usersFull = new();
 
-        private readonly Dictionary<long, BasicGroup> _basicGroups = new();
-        private readonly ConcurrentDictionary<long, BasicGroupFullInfo> _basicGroupsFull = new();
+        private readonly ReaderWriterDictionary<long, BasicGroup> _basicGroups = new();
+        private readonly ReaderWriterDictionary<long, BasicGroupFullInfo> _basicGroupsFull = new();
 
-        private readonly Dictionary<long, Supergroup> _supergroups = new();
-        private readonly ConcurrentDictionary<long, SupergroupFullInfo> _supergroupsFull = new();
+        private readonly ReaderWriterDictionary<long, Supergroup> _supergroups = new();
+        private readonly ReaderWriterDictionary<long, SupergroupFullInfo> _supergroupsFull = new();
 
         private readonly ConcurrentDictionary<int, ChatListUnreadCount> _unreadCounts = new();
 
+        private readonly ReaderWriterDictionary<long, MessageAlbumLastMessageService> _lastMessageAlbums = new();
+
+        // Files are currently accessed only from TDLib thread
         private readonly Dictionary<int, File> _files = new();
 
-        private readonly ConcurrentDictionary<long, MessageAlbumLastMessageService> _lastMessageAlbums = new();
+        private readonly List<long> _recentChats = new();
+        private readonly object _recentChatsLock = new();
 
         private UnconfirmedSession _unconfirmedSession;
 
@@ -332,7 +355,7 @@ namespace Telegram.Services
 
         private UpdateAnimationSearchParameters _animationSearchParameters;
 
-        private UpdateChatThemes _chatThemes;
+        private UpdateEmojiChatThemes _chatThemes;
 
         private UpdateStoryStealthMode _storyStealthMode = new();
 
@@ -346,12 +369,14 @@ namespace Telegram.Services
         private UpdateFreezeState _freezeState = new();
 
         private StarAmount _ownedStarCount;
+        private long? _ownedTonCount;
 
         private JsonValueObject _config;
 
         private Background _selectedBackground;
         private Background _selectedBackgroundDark;
 
+        private bool _cleanAfterClose;
         private bool _initializeAfterClose;
 
         private static volatile Task _longRunningTask;
@@ -366,18 +391,18 @@ namespace Telegram.Services
             _options = new OptionsService(this);
             _aggregator = aggregator;
 
-            _processFilesDelegate = new Action<Object>(ProcessFiles);
+            _processFilesDelegate = new RefAction<Object>(ProcessFiles);
 
             Initialize(online);
         }
 
-        public void ViewMessages(long chatId, long messageThreadId, IList<long> messageIds, MessageSource source, bool forceRead)
+        public void ViewMessages(long chatId, MessageTopic topicId, IList<long> messageIds, MessageSource source, bool forceRead)
         {
             Send(new ViewMessages(chatId, messageIds, source, forceRead));
 
-            if (source is MessageSourceForumTopicHistory && _forums.TryGetValue(chatId, out ForumTopicService manager))
+            if (source is MessageSourceForumTopicHistory && topicId is MessageTopicForum forumTopic && _forums.TryGetValue(chatId, out ForumTopicService manager))
             {
-                manager.ViewMessages(messageThreadId, messageIds);
+                manager.ViewMessages(forumTopic.ForumTopicId, messageIds);
             }
         }
 
@@ -395,6 +420,14 @@ namespace Telegram.Services
         public void Close(bool restart)
         {
             _initializeAfterClose = restart;
+            _cleanAfterClose = false;
+            _client.Send(new Close());
+        }
+
+        public void Delete(bool restart)
+        {
+            _initializeAfterClose = restart;
+            _cleanAfterClose = true;
             _client.Send(new Close());
         }
 
@@ -409,10 +442,10 @@ namespace Telegram.Services
                 }
             }
 
-#if TD_CX
-            _client = Client.Create(this);
-#else
+#if TD_WINRT
             _client = new Client(this);
+#else
+            _client = Client.Create(this);
 #endif
 
 #if MOCKUP
@@ -567,7 +600,7 @@ namespace Telegram.Services
                     DeviceModel = deviceModel,
                     UseTestDc = _settings.UseTestDC
                 });
-                _client.Send(new GetApplicationConfig(), UpdateConfig);
+                Send(new GetApplicationConfig(), UpdateConfig);
             });
         }
 
@@ -596,6 +629,7 @@ namespace Telegram.Services
 
         private void InitializeReady()
         {
+            Send(new CreatePrivateChat(Options.MyId, true));
             Send(new LoadChats(new ChatListMain(), 20));
             Send(new SearchEmojis("cucumber", new[] { NativeUtils.GetKeyboardCulture() }));
 
@@ -648,13 +682,26 @@ namespace Telegram.Services
             });
         }
 
+        private bool _translateMessages;
+        private bool _translateChats;
+
         private void UpdateConfig(Object value)
         {
             if (value is JsonValueObject obj)
             {
                 _config = obj;
+
+                var translationsManual = obj.GetNamedString("translations_manual_enabled", "disabled");
+                var translationsAuto = obj.GetNamedString("translations_auto_enabled", "disabled");
+
+                _translateMessages = translationsManual != "disabled";
+                _translateChats = translationsAuto != "disabled";
             }
         }
+
+        public bool TranslateMessages => _translateMessages && _settings.Translate.Messages;
+
+        public bool TranslateChats => _translateChats && _settings.Translate.Chats;
 
         private void UpdateTimeZones()
         {
@@ -827,16 +874,23 @@ namespace Telegram.Services
             return false;
         }
 
-        public void CleanUp()
+        private void Clear()
         {
+            _unixTimeDifference = 0;
             _options.Clear();
 
             _files.Clear();
+            _effects.Clear();
 
             _activeReactions = Array.Empty<string>();
+            _cachedReactions.Clear();
 
             _chats.Clear();
+            _chatList.Clear();
+            _haveFullChatList.Clear();
+
             _chatActions.Clear();
+            _topicActions.Clear();
 
             _secretChats.Clear();
 
@@ -851,6 +905,17 @@ namespace Telegram.Services
             _supergroups.Clear();
             _supergroupsFull.Clear();
 
+            _forums.Clear();
+            _directMessagesChats.Clear();
+
+            _storyList.Clear();
+            _haveFullStoryList.Clear();
+
+            _haveFullSavedMessages = false;
+            _savedMessages.Clear();
+            _savedMessagesTopics.Clear();
+            _savedMessagesTags.Clear();
+
             _settings.Notifications.Scope.Clear();
 
             _unreadCounts.Clear();
@@ -860,6 +925,7 @@ namespace Telegram.Services
             _suggestedActions.Clear();
 
             _savedAnimations = null;
+            _recentStickers = null;
             _favoriteStickers = null;
             _installedStickerSets = null;
             _installedMaskSets = null;
@@ -867,6 +933,8 @@ namespace Telegram.Services
 
             _chatFolders = Array.Empty<ChatFolderInfo>();
             _chatFolders2.Clear();
+            _mainChatListPosition = 0;
+            _areTagsEnabled = false;
 
             _timezones.Clear();
 
@@ -875,6 +943,51 @@ namespace Telegram.Services
             _authorizationStateTask = new();
             _authorizationState = null;
             _connectionState = null;
+            _freezeState = new();
+
+            _config = null;
+            _translateMessages = false;
+            _translateChats = false;
+            _defaultReaction = null;
+            _attachmentMenuBots = Array.Empty<AttachmentMenuBot>();
+            _availableMessageEffects = null;
+            _speechRecognitionTrial = null;
+            _chatThemes = null;
+            _storyStealthMode = new();
+            _contactCloseBirthdays = null;
+            _unconfirmedSession = null;
+            AccentColors = null;
+            AvailableAccentColors = null;
+            ProfileColors = null;
+            AvailableProfileColors = null;
+            _ownedStarCount = null;
+            _ownedTonCount = null;
+            DefaultPaidReactionType = new PaidReactionTypeRegular();
+            AgeVerificationParameters = null;
+            SavedMessagesTopicCount = 0;
+            _quickReplyShortcuts.Clear();
+            _quickReplyShortcutIds = null;
+            _selectedBackground = null;
+            _selectedBackgroundDark = null;
+
+            _lastMessageAlbums.Clear();
+
+            lock (_recentChatsLock)
+            {
+                _recentChats.Clear();
+            }
+
+            _greetingStickers = null;
+            _nextGreetingSticker = null;
+            _waitGreetingSticker = false;
+
+            _chatAccessibleUntil.Clear();
+
+            if (_cleanAfterClose)
+            {
+                _cleanAfterClose = false;
+                DeleteDatabase();
+            }
 
             if (_initializeAfterClose)
             {
@@ -883,18 +996,47 @@ namespace Telegram.Services
             }
         }
 
-
+        private void DeleteDatabase()
+        {
+            var databasePath = System.IO.Path.Combine(ApplicationData.Current.LocalFolder.Path, $"{_session}", "db.sqlite");
+            if (System.IO.File.Exists(databasePath))
+            {
+                try
+                {
+                    System.IO.File.Delete(databasePath);
+                }
+                catch
+                {
+                    // Shit happens...
+                }
+            }
+            if (System.IO.File.Exists(databasePath + "-shm"))
+            {
+                try
+                {
+                    System.IO.File.Delete(databasePath + "-shm");
+                }
+                catch
+                {
+                    // Shit happens...
+                }
+            }
+            if (System.IO.File.Exists(databasePath + "-wal"))
+            {
+                try
+                {
+                    System.IO.File.Delete(databasePath + "-wal");
+                }
+                catch
+                {
+                    // Shit happens...
+                }
+            }
+        }
 
         public void Send(Function function, Action<Object> handler = null)
         {
-            if (handler != null)
-            {
-                _client.Send(function, _processFilesDelegate + handler);
-            }
-            else
-            {
-                _client.Send(function, _processFilesDelegate);
-            }
+            _client.Send(function, _processFilesDelegate, handler);
         }
 
         public Task<Object> SendAsync(Function function)
@@ -925,7 +1067,9 @@ namespace Telegram.Services
                 message.Content is MessageGameScore ||
                 message.Content is MessagePaymentSuccessful ||
                 message.Content is MessageChecklistTasksAdded ||
-                message.Content is MessageChecklistTasksDone)
+                message.Content is MessageChecklistTasksDone ||
+                message.Content is MessageSuggestedPostPaid ||
+                message.Content is MessageSuggestedPostRefunded)
             {
                 Send(new GetRepliedMessage(message.ChatId, message.Id), handler);
             }
@@ -976,15 +1120,6 @@ namespace Telegram.Services
 
         public void DownloadFile(int fileId, int priority, long offset = 0, long limit = 0, bool synchronous = false)
         {
-            if (limit != 0)
-            {
-                _partialDownloads.Add(fileId);
-            }
-            else
-            {
-                _partialDownloads.Remove(fileId);
-            }
-
             Send(new DownloadFile(fileId, priority, offset, limit, synchronous));
         }
 
@@ -1000,7 +1135,7 @@ namespace Telegram.Services
         }
 
 
-        public async Task<Object> GetStarTransactionsAsync(MessageSender ownerId, string subscriptionId, StarTransactionDirection direction, string offset, int limit)
+        public async Task<Object> GetStarTransactionsAsync(MessageSender ownerId, string subscriptionId, TransactionDirection direction, string offset, int limit)
         {
             var response = await SendAsync(new GetStarTransactions(ownerId, subscriptionId, direction, offset, limit));
             if (response is StarTransactions transactions)
@@ -1015,6 +1150,34 @@ namespace Telegram.Services
             return response;
         }
 
+        public async Task<Object> GetCustomEmojiStickerSets(IList<long> customEmojiIds)
+        {
+            var stickers = await SendAsync(new GetCustomEmojiStickers(customEmojiIds)) as Stickers;
+            if (stickers?.StickersValue.Count > 0)
+            {
+                var setIds = new HashSet<long>();
+
+                foreach (var sticker in stickers.StickersValue)
+                {
+                    setIds.Add(sticker.SetId);
+                }
+
+                var result = new List<StickerSetInfo>();
+
+                foreach (var setId in setIds)
+                {
+                    var response = await SendAsync(new GetStickerSet(setId));
+                    if (response is StickerSet stickerSet)
+                    {
+                        result.Add(stickerSet.ToInfo());
+                    }
+                }
+
+                return new StickerSets(result.Count, result);
+            }
+
+            return new Error();
+        }
 
         public async Task<bool> HasPrivacySettingsRuleAsync<T>(UserPrivacySetting setting) where T : UserPrivacySettingRule
         {
@@ -1150,6 +1313,45 @@ namespace Telegram.Services
 
 
 
+        public void AddRecentlyOpenedChat(long chatId)
+        {
+            lock (_recentChatsLock)
+            {
+                if (_recentChats.Contains(chatId))
+                {
+                    _recentChats.Remove(chatId);
+                }
+
+                _recentChats.Insert(0, chatId);
+
+                if (_recentChats.Count > 50)
+                {
+                    _recentChats.RemoveAt(_recentChats.Count - 1);
+                }
+            }
+        }
+
+        public int RecentlyOpenedChatsCount
+        {
+            get
+            {
+                lock (_recentChatsLock)
+                {
+                    return _recentChats.Count;
+                }
+            }
+        }
+
+        public IList<Chat> GetRecentlyOpenedChats()
+        {
+            lock (_recentChatsLock)
+            {
+                return GetChats(_recentChats).ToList();
+            }
+        }
+
+
+
         public async Task<AuthorizationState> GetAuthorizationStateAsync()
         {
             if (_authorizationState is not null)
@@ -1175,6 +1377,10 @@ namespace Telegram.Services
 
         public bool IsPremiumAvailable => _options.IsPremium || _options.IsPremiumAvailable;
 
+        private long _unixTimeDifference;
+
+        public long UnixTime => _unixTimeDifference + MonotonicUnixTime.Now();
+
         public StarAmount OwnedStarCount
         {
             get
@@ -1186,6 +1392,20 @@ namespace Telegram.Services
                 }
 
                 return _ownedStarCount;
+            }
+        }
+
+        public long OwnedTonCount
+        {
+            get
+            {
+                if (_ownedTonCount == null)
+                {
+                    Send(new GetTonTransactions(null, string.Empty, 1));
+                    return 0;
+                }
+
+                return _ownedTonCount ?? 0;
             }
         }
 
@@ -1284,6 +1504,8 @@ namespace Telegram.Services
         }
 
         public UpdateSpeechRecognitionTrial SpeechRecognitionTrial => _speechRecognitionTrial ??= new();
+
+        public AgeVerificationParameters AgeVerificationParameters { get; private set; }
 
         public IList<CloseBirthdayUser> CloseBirthdayUsers => _contactCloseBirthdays?.CloseBirthdayUsers ?? Array.Empty<CloseBirthdayUser>();
 
@@ -1534,11 +1756,11 @@ namespace Telegram.Services
             return null;
         }
 
-        public IDictionary<MessageSender, ChatAction> GetChatActions(long id, long threadId = 0)
+        public IDictionary<MessageSender, ChatAction> GetChatActions(long id, MessageTopic topicId = null)
         {
-            if (threadId != 0)
+            if (topicId != null)
             {
-                if (_topicActions.TryGetValue(new ChatMessageId(id, threadId), out ConcurrentDictionary<MessageSender, ChatAction> value))
+                if (_topicActions.TryGetValue(new ChatMessageTopic(id, topicId), out ConcurrentDictionary<MessageSender, ChatAction> value))
                 {
                     return value;
                 }
@@ -1633,11 +1855,45 @@ namespace Telegram.Services
             return false;
         }
 
+        public bool HasActiveUsername(Chat chat, out string username)
+        {
+            if (TryGetUser(chat, out User user))
+            {
+                return user.HasActiveUsername(out username);
+            }
+            else if (TryGetSupergroup(chat, out Supergroup supergroup))
+            {
+                return supergroup.HasActiveUsername(out username);
+            }
+
+            username = null;
+            return false;
+        }
+
+        public bool HasActiveUsername(MessageSender sender, out string username)
+        {
+            if (TryGetUser(sender, out User user))
+            {
+                return user.HasActiveUsername(out username);
+            }
+            else if (TryGetSupergroup(sender, out Supergroup supergroup))
+            {
+                return supergroup.HasActiveUsername(out username);
+            }
+
+            username = null;
+            return false;
+        }
+
         public bool IsForum(Chat chat)
         {
             if (TryGetSupergroup(chat, out Supergroup supergroup))
             {
                 return supergroup.IsForum;
+            }
+            else if (TryGetUser(chat, out User user))
+            {
+                return user.Type is UserTypeBot { HasTopics: true };
             }
 
             return false;
@@ -1648,6 +1904,16 @@ namespace Telegram.Services
             if (TryGetSupergroup(chat, out Supergroup supergroup))
             {
                 return supergroup.IsDirectMessagesGroup;
+            }
+
+            return false;
+        }
+
+        public bool IsAdministeredDirectMessagesGroup(Chat chat)
+        {
+            if (TryGetSupergroup(chat, out Supergroup supergroup))
+            {
+                return supergroup.IsAdministeredDirectMessagesGroup;
             }
 
             return false;
@@ -1942,7 +2208,7 @@ namespace Telegram.Services
 
         public SecretChat GetSecretChatForUser(long id)
         {
-            return _secretChats.FirstOrDefault(x => x.Value.UserId == id).Value;
+            return _secretChats.Find(x => x.UserId == id);
         }
 
         public User GetUser(Chat chat)
@@ -2390,17 +2656,25 @@ namespace Telegram.Services
             return false;
         }
 
-        public ChatTheme GetChatTheme(string themeName)
+        public bool TryGetEmojiChatTheme(ChatTheme theme, out EmojiChatTheme value)
         {
-            if (string.IsNullOrEmpty(themeName))
+            if (theme is ChatThemeEmoji emoji)
             {
-                return null;
+                value = ChatThemes.FirstOrDefault(x => string.Equals(x.Name, emoji.Name));
+                return value != null;
             }
 
-            return ChatThemes.FirstOrDefault(x => string.Equals(x.Name, themeName));
+            value = null;
+            return false;
         }
 
-        public IList<ChatTheme> ChatThemes => _chatThemes?.ChatThemes ?? Array.Empty<ChatTheme>();
+        public bool TryGetEmojiChatTheme(string themeName, out EmojiChatTheme value)
+        {
+            value = ChatThemes.FirstOrDefault(x => string.Equals(x.Name, themeName));
+            return value != null;
+        }
+
+        public IList<EmojiChatTheme> ChatThemes => _chatThemes?.ChatThemes ?? Array.Empty<EmojiChatTheme>();
 
         public bool IsDiceEmoji(string text, out string dice)
         {
@@ -2490,7 +2764,7 @@ namespace Telegram.Services
 
             if (lastMessage == null || lastMessage.MediaAlbumId == 0 || lastMessage.Content is not MessagePhoto and not MessageVideo || !SettingsService.Current.Diagnostics.AlbumPreloadDebug)
             {
-                _lastMessageAlbums.TryRemove(chat.Id, out _);
+                _lastMessageAlbums.Remove(chat.Id);
                 return;
             }
 
@@ -2535,10 +2809,10 @@ namespace Telegram.Services
             }
         }
 
-#if TD_CX
-        public void OnResult(BaseObject update)
-#else
+#if TD_WINRT
         public void OnResult(Object update)
+#else
+        public void OnResult(BaseObject update)
 #endif
         {
             ProcessFiles(update);
@@ -2630,14 +2904,15 @@ namespace Telegram.Services
                     break;
                 case UpdateNewChat updateNewChat:
                     {
-                        _chats[updateNewChat.Chat.Id] = updateNewChat.Chat;
+                        var projection = new ChatProjection(updateNewChat.Chat);
+                        _chats[updateNewChat.Chat.Id] = projection;
 
-                        Monitor.Enter(updateNewChat.Chat);
+                        Monitor.Enter(projection);
 
-                        UpdateChatLastMessage(updateNewChat.Chat, updateNewChat.Chat.LastMessage);
-                        SetChatPositions(updateNewChat.Chat, updateNewChat.Chat.Positions);
+                        UpdateChatLastMessage(projection, updateNewChat.Chat.LastMessage);
+                        SetChatPositions(projection, updateNewChat.Chat.Positions);
 
-                        Monitor.Exit(updateNewChat.Chat);
+                        Monitor.Exit(projection);
 
                         if (updateNewChat.Chat.Type is ChatTypePrivate privata)
                         {
@@ -2714,7 +2989,7 @@ namespace Telegram.Services
                             _settings.Clear();
                             break;
                         case AuthorizationStateClosed:
-                            CleanUp();
+                            Clear();
                             break;
                         case AuthorizationStateReady:
                             InitializeReady();
@@ -2749,9 +3024,9 @@ namespace Telegram.Services
                     break;
                 case UpdateChatAction updateUserChatAction:
                     {
-                        if (updateUserChatAction.MessageThreadId != 0)
+                        if (updateUserChatAction.TopicId != null)
                         {
-                            var threadActions = _topicActions.GetOrAdd(new ChatMessageId(updateUserChatAction.ChatId, updateUserChatAction.MessageThreadId), x => new ConcurrentDictionary<MessageSender, ChatAction>(new MessageSenderEqualityComparer()));
+                            var threadActions = _topicActions.GetOrAdd(new ChatMessageTopic(updateUserChatAction.ChatId, updateUserChatAction.TopicId), x => new ConcurrentDictionary<MessageSender, ChatAction>(new MessageSenderEqualityComparer()));
                             if (updateUserChatAction.Action is ChatActionCancel)
                             {
                                 threadActions.TryRemove(updateUserChatAction.SenderId, out _);
@@ -2890,6 +3165,7 @@ namespace Telegram.Services
                             value.BackgroundCustomEmojiId = updateChatAccentColors.BackgroundCustomEmojiId;
                             value.ProfileAccentColorId = updateChatAccentColors.ProfileAccentColorId;
                             value.ProfileBackgroundCustomEmojiId = updateChatAccentColors.ProfileBackgroundCustomEmojiId;
+                            value.UpgradedGiftColors = updateChatAccentColors.UpgradedGiftColors;
                         }
 
                         break;
@@ -3000,13 +3276,13 @@ namespace Telegram.Services
                     {
                         if (_chats.TryGetValue(updateChatTheme.ChatId, out Chat value))
                         {
-                            value.ThemeName = updateChatTheme.ThemeName;
+                            value.Theme = updateChatTheme.Theme;
                         }
 
                         break;
                     }
 
-                case UpdateChatThemes updateChatThemes:
+                case UpdateEmojiChatThemes updateChatThemes:
                     _chatThemes = updateChatThemes;
                     break;
                 case UpdateChatTitle updateChatTitle:
@@ -3147,7 +3423,11 @@ namespace Telegram.Services
                     {
                         _options.Update(updateOption.Name, updateOption.Value);
 
-                        if (updateOption.Name == OptionsService.R.MyId && updateOption.Value is OptionValueInteger myId)
+                        if (updateOption.Name == OptionsService.R.UnixTime && updateOption.Value is OptionValueInteger unixTime)
+                        {
+                            _unixTimeDifference = MonotonicUnixTime.Now() - unixTime.Value;
+                        }
+                        else if (updateOption.Name == OptionsService.R.MyId && updateOption.Value is OptionValueInteger myId)
                         {
                             _settings.UserId = myId.Value;
                         }
@@ -3359,11 +3639,17 @@ namespace Telegram.Services
                 case UpdateOwnedStarCount updateOwnedStarCount:
                     _ownedStarCount = updateOwnedStarCount.StarAmount;
                     break;
+                case UpdateOwnedTonCount updateOwnedTonCount:
+                    _ownedTonCount = updateOwnedTonCount.TonAmount;
+                    break;
                 case UpdateDefaultPaidReactionType updateDefaultPaidReactionType:
                     DefaultPaidReactionType = updateDefaultPaidReactionType.Type;
                     break;
                 case UpdateFreezeState updateFreezeState:
                     _freezeState = updateFreezeState;
+                    break;
+                case UpdateAgeVerificationParameters updateAgeVerificationParameters:
+                    AgeVerificationParameters = updateAgeVerificationParameters.Parameters;
                     break;
                 case UpdateSavedMessagesTopicCount updateSavedMessagesTopicCount:
                     SavedMessagesTopicCount = updateSavedMessagesTopicCount.TopicCount;
@@ -3460,6 +3746,19 @@ namespace Telegram.Td.Api
         public IList<long> TopicIds { get; set; }
     }
 
+    public sealed partial class ForumTopics2
+    {
+        public ForumTopics2(int totalCount, IList<int> topics)
+        {
+            TotalCount = totalCount;
+            TopicIds = topics;
+        }
+
+        public int TotalCount { get; set; }
+
+        public IList<int> TopicIds { get; set; }
+    }
+
     public readonly struct OrderedItem : IComparable<OrderedItem>
     {
         public readonly long Id;
@@ -3497,4 +3796,43 @@ namespace Telegram.Td.Api
             return HashCode.Combine(Id, Order);
         }
     }
+
+    public readonly struct OrderedTopic : IComparable<OrderedTopic>
+    {
+        public readonly int Id;
+        public readonly long Order;
+
+        public OrderedTopic(int id, long order)
+        {
+            Id = id;
+            Order = order;
+        }
+
+        public int CompareTo(OrderedTopic o)
+        {
+            if (Order != o.Order)
+            {
+                return o.Order < Order ? -1 : 1;
+            }
+
+            if (Id != o.Id)
+            {
+                return o.Id < Id ? -1 : 1;
+            }
+
+            return 0;
+        }
+
+        public override bool Equals(object obj)
+        {
+            OrderedTopic o = (OrderedTopic)obj;
+            return Id == o.Id && Order == o.Order;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id, Order);
+        }
+    }
+
 }

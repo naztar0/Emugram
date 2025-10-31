@@ -18,7 +18,6 @@ using Telegram.Views.Settings;
 using Telegram.Views.Stars;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Navigation;
 
 namespace Telegram.Views
 {
@@ -53,34 +52,18 @@ namespace Telegram.Views
             Bindings?.StopTracking();
         }
 
-        private MasterDetailView _masterDetail;
-        public MasterDetailView MasterDetail
-        {
-            get => _masterDetail;
-            set
-            {
-                _masterDetail = value;
-                _masterDetail.NavigationService.Frame.Navigated += OnNavigated;
-            }
-        }
-
-        private void OnNavigated(object sender, NavigationEventArgs e)
-        {
-            UpdateSelection(false);
-        }
-
-        private void UpdateSelection(bool clearBackStack = true)
+        public void UpdateSelection(bool clearBackStack = true)
         {
             object FindRoot()
             {
-                if (_settings.TryGetValue(_masterDetail.NavigationService.CurrentPageType, out object item))
+                if (_settings.TryGetValue(ViewModel.NavigationService.CurrentPageType, out object item))
                 {
                     return item;
                 }
 
-                for (int i = _masterDetail.NavigationService.Frame.BackStack.Count - 1; i >= 0; i--)
+                for (int i = ViewModel.NavigationService.Frame.BackStack.Count - 1; i >= 0; i--)
                 {
-                    if (_settings.TryGetValue(_masterDetail.NavigationService.Frame.BackStack[i].SourcePageType, out item))
+                    if (_settings.TryGetValue(ViewModel.NavigationService.Frame.BackStack[i].SourcePageType, out item))
                     {
                         return item;
                     }
@@ -91,7 +74,7 @@ namespace Telegram.Views
 
             if (clearBackStack)
             {
-                MasterDetail.NavigationService.GoBackAt(0, false);
+                ViewModel.NavigationService.GoBackAt(0, false);
             }
 
             Navigation.SelectedItem = FindRoot();
@@ -99,7 +82,7 @@ namespace Telegram.Views
 
         private void Navigate(Type type)
         {
-            if (MasterDetail.NavigationService.Navigate(type))
+            if (ViewModel.NavigationService.Navigate(type))
             {
                 UpdateSelection();
             }
@@ -162,27 +145,27 @@ namespace Telegram.Views
 
         private void Questions_Click(object sender, RoutedEventArgs e)
         {
-            MasterDetail.NavigationService.NavigateToInstant(Strings.TelegramFaqUrl);
+            ViewModel.NavigationService.NavigateToInstant(Strings.TelegramFaqUrl);
         }
 
         private void PrivacyPolicy_Click(object sender, RoutedEventArgs e)
         {
-            MasterDetail.NavigationService.NavigateToInstant(Strings.PrivacyPolicyUrl);
+            ViewModel.NavigationService.NavigateToInstant(Strings.PrivacyPolicyUrl);
         }
 
         private void Premium_Click(object sender, RoutedEventArgs e)
         {
-            MasterDetail.NavigationService.ShowPromo(new PremiumSourceSettings());
+            ViewModel.NavigationService.ShowPromo(new PremiumSourceSettings());
         }
 
         private void Stars_Click(object sender, RoutedEventArgs e)
         {
-            MasterDetail.NavigationService.Navigate(typeof(StarsPage));
+            ViewModel.NavigationService.Navigate(typeof(StarsPage));
         }
 
         private void Business_Click(object sender, RoutedEventArgs e)
         {
-            MasterDetail.NavigationService.Navigate(typeof(BusinessPage));
+            ViewModel.NavigationService.Navigate(typeof(BusinessPage));
         }
 
         private async void Photo_Click(object sender, RoutedEventArgs e)
@@ -198,7 +181,7 @@ namespace Telegram.Views
         public void UpdateUser(Chat chat, User user, UserFullInfo fullInfo, bool secret, bool accessToken)
         {
             Title.Text = user.FullName();
-            Photo.SetUser(ViewModel.ClientService, user, 48);
+            Photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
             Identity.SetStatus(ViewModel.ClientService, user, BotVerified);
         }
 
@@ -210,7 +193,7 @@ namespace Telegram.Views
 
         private void VersionLabel_Navigate(object sender, RoutedEventArgs e)
         {
-            MasterDetail.NavigationService.Navigate(typeof(DiagnosticsPage));
+            ViewModel.NavigationService.Navigate(typeof(DiagnosticsPage));
         }
     }
 }

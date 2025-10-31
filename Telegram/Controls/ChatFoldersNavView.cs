@@ -6,6 +6,7 @@
 //
 using System;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 
 namespace Telegram.Controls
 {
@@ -20,6 +21,35 @@ namespace Telegram.Controls
             _switchTimer = new DispatcherTimer();
             _switchTimer.Interval = TimeSpan.FromSeconds(2);
             _switchTimer.Tick += OnTick;
+
+            DragItemsStarting += OnDragItemsStarting;
+            DragItemsCompleted += OnDragItemsCompleted;
+        }
+
+        private void OnDragItemsStarting(object sender, DragItemsStartingEventArgs e)
+        {
+            if (ItemsPanelRoot is not Panel panel)
+            {
+                return;
+            }
+
+            foreach (var container in panel.Children)
+            {
+                container.AllowDrop = false;
+            }
+        }
+
+        private void OnDragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+        {
+            if (ItemsPanelRoot is not Panel panel)
+            {
+                return;
+            }
+
+            foreach (var container in panel.Children)
+            {
+                container.AllowDrop = true;
+            }
         }
 
         private void OnTick(object sender, object e)

@@ -200,8 +200,7 @@
                         <selectors:StickerSetTemplateSelector.GroupTemplate>
                             <DataTemplate>
                                 <Grid>
-                                    <controls:ProfilePicture Width="24"
-                                                             Height="24" />
+                                    <controls:ProfilePicture Size="24" />
                                 </Grid>
                             </DataTemplate>
                         </selectors:StickerSetTemplateSelector.GroupTemplate>

@@ -66,11 +66,10 @@
                     <controls:HeaderedControl x:Name="AddNewPanel"
                                               Visibility="Collapsed"
                                               Margin="0,0,0,2">
-                        <controls:BadgeButton x:Name="AddNew"
-                                              Content="{CustomResource AddSubscriber}"
-                                              Click="{x:Bind ViewModel.Add}"
-                                              Style="{StaticResource GlyphBadgeButtonStyle}"
-                                              Glyph="&#xE8FA;" />
+                        <controls:SettingsButton x:Name="AddNew"
+                                                 Content="{CustomResource AddSubscriber}"
+                                                 Click="{x:Bind ViewModel.Add}"
+                                                 Glyph="&#xE8FA;" />
                     </controls:HeaderedControl>
                 </controls:SettingsPanel>
             </ListView.Header>

@@ -73,7 +73,7 @@ namespace Telegram.ViewModels
                     }
                 }
 
-                var response = await _viewModel.ClientService.SendAsync(new SearchChatMessages(chat.Id, _viewModel.Topic, string.Empty, null, fromMessageId, -9, 10, _filter));
+                var response = await _viewModel.ClientService.SendAsync(new SearchChatMessages(chat.Id, _viewModel.TopicId, string.Empty, null, fromMessageId, -9, 10, _filter));
                 if (response is FoundChatMessages messages)
                 {
                     List<long> stack = null;

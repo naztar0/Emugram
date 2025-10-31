@@ -26,17 +26,16 @@ using Telegram.Streams;
 using Telegram.Td;
 using Telegram.Td.Api;
 using Telegram.ViewModels;
+using Telegram.ViewModels.Delegates;
 using Telegram.Views;
 using Windows.Foundation;
 using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.Composition;
-using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Hosting;
-using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Shapes;
@@ -52,7 +51,7 @@ namespace Telegram.Controls.Cells
         Read
     }
 
-    public sealed partial class ChatCell : ControlEx, IMultipleElement
+    public sealed partial class ChatCell : ControlEx2, IMultipleElement
     {
         private bool _selected;
 
@@ -71,9 +70,6 @@ namespace Telegram.Controls.Cells
 
         private IClientService _clientService;
 
-        private Visual _onlineBadge;
-        private bool _onlineCall;
-
         private bool _compact;
         private bool _draft;
 
@@ -89,20 +85,17 @@ namespace Telegram.Controls.Cells
         public ChatCell()
         {
             DefaultStyleKey = typeof(ChatCell);
-
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
         }
 
         public event EventHandler<Chat> StoryClick;
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             _strokeBrush?.Register();
             _selectionStrokeBrush?.Register();
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _strokeBrush?.Unregister();
             _selectionStrokeBrush?.Unregister();
@@ -123,7 +116,7 @@ namespace Telegram.Controls.Cells
         private TextBlock PinnedIcon;
         private Border UnreadMentionsBadge;
         private BadgeControl UnreadBadge;
-        private BadgeButton BotOpen;
+        private Button BotOpen;
         private Rectangle DropVisual;
         private TextBlock UnreadMentionsLabel;
         private Run FromLabel;
@@ -137,6 +130,9 @@ namespace Telegram.Controls.Cells
         private Border OnlineBadge;
         private Border OnlineHeart;
         private StackPanel Folders;
+
+        private Grid AutoDeleteBadge;
+        private TextBlock AutoDeleteLabel;
 
         private BadgeControl DirectMessagesGroup;
 
@@ -160,7 +156,7 @@ namespace Telegram.Controls.Cells
             PinnedIcon = GetTemplateChild(nameof(PinnedIcon)) as TextBlock;
             UnreadMentionsBadge = GetTemplateChild(nameof(UnreadMentionsBadge)) as Border;
             UnreadBadge = GetTemplateChild(nameof(UnreadBadge)) as BadgeControl;
-            BotOpen = GetTemplateChild(nameof(BotOpen)) as BadgeButton;
+            BotOpen = GetTemplateChild(nameof(BotOpen)) as Button;
             DropVisual = GetTemplateChild(nameof(DropVisual)) as Rectangle;
             UnreadMentionsLabel = GetTemplateChild(nameof(UnreadMentionsLabel)) as TextBlock;
             FromLabel = GetTemplateChild(nameof(FromLabel)) as Run;
@@ -259,16 +255,14 @@ namespace Telegram.Controls.Cells
                 if (savedMessagesTopic.Type is SavedMessagesTopicTypeMyNotes)
                 {
                     TitleLabel.Text = Strings.MyNotes;
-                    Photo.Source = PlaceholderImage.GetGlyph(Icons.MyNotesFilled, 5);
-                    Photo.Shape = ProfilePictureShape.Ellipse;
+                    Photo.Source = ProfilePictureSourceText.GetGlyph(Icons.MyNotesFilled, 5);
                     Identity.ClearStatus();
                     BotVerified.Visibility = Visibility.Collapsed;
                 }
                 else if (savedMessagesTopic.Type is SavedMessagesTopicTypeAuthorHidden)
                 {
                     TitleLabel.Text = Strings.AnonymousForward;
-                    Photo.Source = PlaceholderImage.GetGlyph(Icons.AuthorHiddenFilled, 5);
-                    Photo.Shape = ProfilePictureShape.Ellipse;
+                    Photo.Source = ProfilePictureSourceText.GetGlyph(Icons.AuthorHiddenFilled, 5);
                     Identity.ClearStatus();
                     BotVerified.Visibility = Visibility.Collapsed;
                 }
@@ -351,7 +345,7 @@ namespace Telegram.Controls.Cells
                 }
 
                 TitleLabel.Text = Strings.ArchivedChats;
-                Photo.Source = PlaceholderImage.GetGlyph(Icons.ArchiveFilled, 5);
+                Photo.Source = ProfilePictureSourceText.GetGlyph(Icons.ArchiveFilled, 5);
 
                 UnreadMentionsBadge.Visibility = Visibility.Collapsed;
                 PinnedIcon.Visibility = Visibility.Collapsed;
@@ -803,10 +797,10 @@ namespace Telegram.Controls.Cells
             }
 
             Segments.SetChat(_clientService, chat, 48);
-            Photo.SetChat(_clientService, chat, 48);
+            Photo.Source = ProfilePictureSource.Chat(_clientService, chat);
 
-            SelectionOutline.RadiusX = Photo.Shape == ProfilePictureShape.Superellipse ? 12 : 24;
-            SelectionOutline.RadiusY = Photo.Shape == ProfilePictureShape.Superellipse ? 12 : 24;
+            SelectionOutline.RadiusX = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 12 : 24;
+            SelectionOutline.RadiusY = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 12 : 24;
         }
 
         public void UpdateChatEmojiStatus(Chat chat)
@@ -822,7 +816,7 @@ namespace Telegram.Controls.Cells
                 verification = user.VerificationStatus?.BotVerificationIconCustomEmojiId;
                 Identity.SetStatus(_clientService, user, true);
 
-                UnloadObject(ref DirectMessagesGroup);
+                UnloadTemplateChild(ref DirectMessagesGroup);
             }
             else if (_clientService.TryGetSupergroup(chat, out Supergroup supergroup))
             {
@@ -831,11 +825,11 @@ namespace Telegram.Controls.Cells
 
                 if (supergroup.IsDirectMessagesGroup)
                 {
-                    LoadObject(ref DirectMessagesGroup, nameof(DirectMessagesGroup));
+                    LoadTemplateChild(ref DirectMessagesGroup);
                 }
                 else
                 {
-                    UnloadObject(ref DirectMessagesGroup);
+                    UnloadTemplateChild(ref DirectMessagesGroup);
                 }
             }
             else
@@ -843,7 +837,7 @@ namespace Telegram.Controls.Cells
                 verification = null;
                 Identity.ClearStatus();
 
-                UnloadObject(ref DirectMessagesGroup);
+                UnloadTemplateChild(ref DirectMessagesGroup);
             }
 
             if (verification is not null and not 0)
@@ -902,7 +896,7 @@ namespace Telegram.Controls.Cells
                 return;
             }
 
-            UpdateOnlineBadge(chat.VideoChat?.HasParticipants ?? false, true);
+            ShowHideOnlineStatus(chat.VideoChat?.HasParticipants ?? false, true, chat.MessageAutoDeleteTime, true);
         }
 
         public void UpdateUserStatus(Chat chat, UserStatus status)
@@ -912,20 +906,55 @@ namespace Telegram.Controls.Cells
                 return;
             }
 
-            UpdateOnlineBadge(status is UserStatusOnline, false);
+            ShowHideOnlineStatus(status is UserStatusOnline, false, chat.MessageAutoDeleteTime, true);
         }
 
-        private void UpdateOnlineBadge(bool visible, bool activeCall)
+        public void UpdateChatMessageAutoDeleteTime(Chat chat, bool animate)
         {
+            if (_clientService == null || !_templateApplied)
+            {
+                return;
+            }
+
+            if (_clientService.TryGetUser(chat, out User user) && user.Type is UserTypeRegular && user.Id != _clientService.Options.MyId && !user.IsSupport)
+            {
+                ShowHideOnlineStatus(user.Status is UserStatusOnline, false, chat.MessageAutoDeleteTime, animate);
+            }
+            else if (chat.VideoChat.GroupCallId != 0)
+            {
+                ShowHideOnlineStatus(chat.VideoChat.HasParticipants, true, chat.MessageAutoDeleteTime, animate);
+            }
+            else
+            {
+                ShowHideOnlineStatus(false, false, chat.MessageAutoDeleteTime, animate);
+            }
+        }
+
+        private bool _onlineStatusCollapsed = true;
+        private bool _onlineStatusActiveCall;
+
+        private void ShowHideOnlineStatus(bool show, bool activeCall, int autoDeleteTime, bool animate)
+        {
+            if (show)
+            {
+                autoDeleteTime = 0;
+            }
+
+            if (_onlineStatusCollapsed != show && _onlineStatusActiveCall == activeCall && _autoDeleteTime == autoDeleteTime)
+            {
+                return;
+            }
+
+            _onlineStatusCollapsed = !show;
+            ShowHideAutoDelete(autoDeleteTime, animate);
+
             if (OnlineBadge == null)
             {
-                if (visible)
+                if (show)
                 {
                     OnlineBadge = GetTemplateChild(nameof(OnlineBadge)) as Border;
                     OnlineHeart = GetTemplateChild(nameof(OnlineHeart)) as Border;
 
-                    _onlineBadge = ElementComposition.GetElementVisual(OnlineBadge);
-                    _onlineBadge.CenterPoint = new Vector3(6);
                     //_onlineBadge.Opacity = 0;
                     //_onlineBadge.Scale = new Vector3(0);
                 }
@@ -934,12 +963,8 @@ namespace Telegram.Controls.Cells
                     return;
                 }
             }
-            else if (OnlineBadge.Visibility == Visibility.Collapsed && !visible)
-            {
-                return;
-            }
 
-            if (_onlineCall != activeCall)
+            if (_onlineStatusActiveCall != activeCall)
             {
                 if (activeCall)
                 {
@@ -948,8 +973,6 @@ namespace Telegram.Controls.Cells
                     OnlineBadge.CornerRadius = new CornerRadius(10);
                     OnlineHeart.Width = OnlineHeart.Height = 16;
                     OnlineHeart.CornerRadius = new CornerRadius(8);
-
-                    _onlineBadge.CenterPoint = new Vector3(10);
                 }
                 else
                 {
@@ -958,31 +981,50 @@ namespace Telegram.Controls.Cells
                     OnlineBadge.CornerRadius = new CornerRadius(6);
                     OnlineHeart.Width = OnlineHeart.Height = 8;
                     OnlineHeart.CornerRadius = new CornerRadius(4);
-
-                    _onlineBadge.CenterPoint = new Vector3(6);
                 }
 
-                _onlineCall = activeCall;
+                _onlineStatusActiveCall = activeCall;
+            }
+
+            if (!animate)
+            {
+                OnlineBadge.Visibility = show
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
             }
 
             OnlineBadge.Visibility = Visibility.Visible;
 
-            var scale = _onlineBadge.Compositor.CreateVector3KeyFrameAnimation();
-            //scale.InsertKeyFrame(0, new System.Numerics.Vector3(visible ? 0 : 1));
-            scale.InsertKeyFrame(1, new Vector3(visible ? 1 : 0));
+            var visual = ElementComposition.GetElementVisual(OnlineBadge);
+            visual.CenterPoint = new Vector3(activeCall ? 10 : 6);
 
-            var opacity = _onlineBadge.Compositor.CreateScalarKeyFrameAnimation();
-            //opacity.InsertKeyFrame(0, visible ? 0 : 1);
-            opacity.InsertKeyFrame(1, visible ? 1 : 0);
-
-            _onlineBadge.StopAnimation("Scale");
-            _onlineBadge.StopAnimation("Opacity");
-
-            _onlineBadge.StartAnimation("Scale", scale);
-            _onlineBadge.StartAnimation("Opacity", opacity);
-
-            if (visible && activeCall)
+            var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+            batch.Completed += (s, args) =>
             {
+                if (_onlineStatusCollapsed)
+                {
+                    OnlineBadge.Visibility = Visibility.Collapsed;
+                }
+            };
+
+            var scale = visual.Compositor.CreateVector3KeyFrameAnimation();
+            scale.InsertKeyFrame(1, new Vector3(show ? 1 : 0));
+
+            var opacity = visual.Compositor.CreateScalarKeyFrameAnimation();
+            opacity.InsertKeyFrame(1, show ? 1 : 0);
+
+            visual.StartAnimation("Scale", scale);
+            visual.StartAnimation("Opacity", opacity);
+
+            batch.End();
+
+            if (show && activeCall)
+            {
+                if (_size1 != null)
+                {
+                    return;
+                }
+
                 var compositor = BootStrapper.Current.Compositor;
 
                 var line1 = compositor.CreateRoundedRectangleGeometry();
@@ -1012,12 +1054,12 @@ namespace Telegram.Controls.Cells
                 shape3.Geometry = line3;
                 shape3.FillBrush = compositor.CreateColorBrush(Colors.White);
 
-                var visual = compositor.CreateShapeVisual();
-                visual.Shapes.Add(shape3);
-                visual.Shapes.Add(shape2);
-                visual.Shapes.Add(shape1);
-                visual.Size = new Vector2(16, 16);
-                visual.CenterPoint = new Vector3(8);
+                var shape = compositor.CreateShapeVisual();
+                shape.Shapes.Add(shape3);
+                shape.Shapes.Add(shape2);
+                shape.Shapes.Add(shape1);
+                shape.Size = new Vector2(16, 16);
+                shape.CenterPoint = new Vector3(8);
 
                 var size1 = compositor.CreateVector2KeyFrameAnimation();
                 var size2 = compositor.CreateVector2KeyFrameAnimation();
@@ -1095,7 +1137,7 @@ namespace Telegram.Controls.Cells
                 _offset2 = offset2;
                 _offset3 = offset3;
 
-                ElementCompositionPreview.SetElementChildVisual(OnlineHeart, visual);
+                ElementCompositionPreview.SetElementChildVisual(OnlineHeart, shape);
             }
             else
             {
@@ -1107,6 +1149,77 @@ namespace Telegram.Controls.Cells
 
                 ElementCompositionPreview.SetElementChildVisual(OnlineHeart, null);
             }
+        }
+
+        private int _autoDeleteTime = 0;
+
+        private void ShowHideAutoDelete(int autoDeleteTime, bool animate)
+        {
+            if (_autoDeleteTime == autoDeleteTime)
+            {
+                return;
+            }
+
+            var prevShow = _autoDeleteTime != 0;
+            var nextShow = autoDeleteTime != 0;
+
+            _autoDeleteTime = autoDeleteTime;
+
+            if (AutoDeleteBadge == null)
+            {
+                if (autoDeleteTime != 0)
+                {
+                    AutoDeleteBadge = GetTemplateChild(nameof(AutoDeleteBadge)) as Grid;
+                    AutoDeleteLabel = GetTemplateChild(nameof(AutoDeleteLabel)) as TextBlock;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            if (nextShow)
+            {
+                AutoDeleteLabel.Text = Locale.FormatAutoDelete(autoDeleteTime);
+
+                if (prevShow)
+                {
+                    return;
+                }
+            }
+
+            if (!animate)
+            {
+                AutoDeleteBadge.Visibility = autoDeleteTime != 0
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+                return;
+            }
+
+            AutoDeleteBadge.Visibility = Visibility.Visible;
+
+            var visual = ElementComposition.GetElementVisual(AutoDeleteBadge);
+            visual.CenterPoint = new Vector3(11);
+
+            var batch = visual.Compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+            batch.Completed += (s, args) =>
+            {
+                if (_autoDeleteTime == 0)
+                {
+                    AutoDeleteBadge.Visibility = Visibility.Collapsed;
+                }
+            };
+
+            var scale = visual.Compositor.CreateVector3KeyFrameAnimation();
+            scale.InsertKeyFrame(1, new Vector3(nextShow ? 1 : 0));
+
+            var opacity = visual.Compositor.CreateScalarKeyFrameAnimation();
+            opacity.InsertKeyFrame(1, nextShow ? 1 : 0);
+
+            visual.StartAnimation("Scale", scale);
+            visual.StartAnimation("Opacity", opacity);
+
+            batch.End();
         }
 
         private void Update(Chat chat, ChatList chatList)
@@ -1130,19 +1243,7 @@ namespace Telegram.Controls.Cells
             UpdateChatUnreadMentionCount(chat, position, false);
             UpdateChatNotificationSettings(chat);
             UpdateChatActions(chat, _clientService.GetChatActions(chat.Id));
-
-            if (_clientService.TryGetUser(chat, out User user) && user.Type is UserTypeRegular && user.Id != _clientService.Options.MyId && user.Id != 777000)
-            {
-                UpdateUserStatus(chat, user.Status);
-            }
-            else if (chat.VideoChat.GroupCallId != 0)
-            {
-                UpdateOnlineBadge(chat.VideoChat.HasParticipants, true);
-            }
-            else if (OnlineBadge != null)
-            {
-                OnlineBadge.Visibility = Visibility.Collapsed;
-            }
+            UpdateChatMessageAutoDeleteTime(chat, false);
 
             UpdateBotOpen(chat);
         }
@@ -1240,8 +1341,8 @@ namespace Telegram.Controls.Cells
 
             if (compact)
             {
-                LoadObject(ref CompactBadgeRoot, nameof(CompactBadgeRoot));
-                LoadObject(ref CompactBadge, nameof(CompactBadge));
+                LoadTemplateChild(ref CompactBadgeRoot);
+                LoadTemplateChild(ref CompactBadge);
 
                 CompactBadgeRoot.Visibility = UnreadBadge.Visibility;
                 CompactBadge.Text = UnreadBadge.Text;
@@ -1387,12 +1488,23 @@ namespace Telegram.Controls.Cells
             var topMessage = chat.LastMessage;
             if (topMessage != null)
             {
+                FormattedText text;
                 if (_clientService.TryGetMediaAlbum(chat.Id, topMessage.MediaAlbumId, out MessageAlbumLastMessage album))
                 {
-                    return UpdateBriefLabel(album, topMessage.IsOutgoing, chat.DraftMessage, false, out thumbnail);
+                    text = UpdateBriefLabel(album, topMessage.IsOutgoing, chat.DraftMessage, false, out thumbnail);
+                }
+                else
+                {
+                    text = UpdateBriefLabel(topMessage.Content, topMessage.IsOutgoing, chat.DraftMessage, false, out thumbnail);
                 }
 
-                return UpdateBriefLabel(topMessage.Content, topMessage.IsOutgoing, chat.DraftMessage, false, out thumbnail);
+                // TODO: this is better than nothing, although it's not the best 
+                if (topMessage.ForwardInfo != null && !topMessage.IsSaved(_clientService.Options.MyId))
+                {
+                    return TdExtensions.Concat(ClientEx.CustomEmoji(Icons.ShareFilled + Icons.Space), text);
+                }
+
+                return text;
             }
             else if (chat.Type is ChatTypeSecret secretType)
             {
@@ -1834,7 +1946,7 @@ namespace Telegram.Controls.Cells
             return string.Empty;
         }
 
-        public void ShowPreview(HoldingEventArgs args)
+        public void ShowPreview(Point? position)
         {
             Logger.Info();
 
@@ -1847,12 +1959,9 @@ namespace Telegram.Controls.Cells
             flyout.Items.Add(tooltip);
 
             var chat = _chat;
-            var message = chat?.LastMessage;
-
             if (chat == null && _message != null)
             {
                 chat = _clientService?.GetChat(_message.ChatId);
-                message = _message;
             }
 
             if (chat == null)
@@ -1860,47 +1969,46 @@ namespace Telegram.Controls.Cells
                 return;
             }
 
+            var context = WindowContext.ForXamlRoot(this);
+            var service = context.NavigationServices.GetByFrameId($"Main{_clientService.SessionId}") as NavigationService;
+
             var grid = new Grid();
-            var frame = new Frame
+            var chatView = new ChatView
             {
+                FromPreview = true,
                 Width = 320,
                 Height = 360
             };
 
-            var context = WindowContext.ForXamlRoot(this);
+            var viewModel = TypeResolver.Current.Resolve<DialogViewModel, IDialogDelegate>(chatView, service.SessionId);
+            viewModel.NavigationService = service;
+            viewModel.Dispatcher = service.Dispatcher;
+            chatView.Activate(viewModel);
+            _ = viewModel.NavigatedToAsync(chat.Id, Windows.UI.Xaml.Navigation.NavigationMode.New, new Telegram.Navigation.Services.NavigationState());
 
-            var service = new TLNavigationService(_clientService, null, context, frame, "ChatPreview");
-            service.NavigateToChat(_chat);
-
-            var chatPage = frame.Content as ChatPage;
-            var chatView = chatPage?.Content as ChatView;
-
-            if (chatView != null)
+            void handler(object sender, object e)
             {
-                void handler(object sender, RoutedEventArgs e)
-                {
-                    Logger.Info("Unloaded");
+                Logger.Info("Unloaded");
 
-                    chatView.Unloaded -= handler;
-                    chatView.ViewModel.NavigatedFrom(null, false);
-                    chatView.Deactivate(false);
-                }
-
-                chatView.Unloaded += handler;
+                flyout.Closing -= handler;
+                chatView.ViewModel.NavigatedFrom(null, false);
+                chatView.Deactivate(true);
             }
+
+            flyout.Closing += handler;
 
             var background = new ChatBackgroundControl();
             background.Update(_clientService, null);
 
             grid.Children.Add(background);
-            grid.Children.Add(frame);
+            grid.Children.Add(chatView);
             grid.CornerRadius = new CornerRadius(8);
 
             tooltip.Content = grid;
             tooltip.Padding = new Thickness();
             tooltip.MaxWidth = double.PositiveInfinity;
 
-            flyout.ShowAt(this, args.Position);
+            flyout.ShowAt(this, position ?? this.TransformToPointerPosition());
         }
 
         protected override void OnDragEnter(DragEventArgs e)
@@ -2000,7 +2108,7 @@ namespace Telegram.Controls.Cells
             }
 
             TitleLabel.Text = title;
-            Photo.Source = type is ChatTypeSupergroup ? PlaceholderImage.GetNameForChat(title, color) : PlaceholderImage.GetNameForUser(title, color);
+            Photo.Source = type is ChatTypeSupergroup ? ProfilePictureSourceText.GetNameForChat(title, color) : ProfilePictureSourceText.GetNameForUser(title, color);
 
             MutedIcon.Visibility = muted ? Visibility.Visible : Visibility.Collapsed;
 
@@ -2409,27 +2517,6 @@ namespace Telegram.Controls.Cells
         }
 
         #endregion
-
-        #region XamlMarkupHelper
-
-        private void LoadObject<T>(ref T element, /*[CallerArgumentExpression("element")]*/string name)
-            where T : DependencyObject
-        {
-            element ??= GetTemplateChild(name) as T;
-        }
-
-        private void UnloadObject<T>(ref T element)
-            where T : DependencyObject
-        {
-            if (element != null)
-            {
-                XamlMarkupHelper.UnloadObject(element);
-                element = null;
-            }
-        }
-
-        #endregion
-
     }
 
     public partial class ChatFoldersPanel : Panel

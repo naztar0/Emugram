@@ -243,7 +243,7 @@ namespace Telegram.Views.Chats
 
                     title.Text = user.FullName();
                     subtitle.Text = stringBuilder.ToString();
-                    photo.SetUser(ViewModel.ClientService, user, 36);
+                    photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
 
                     button.CommandParameter = senderInfo.UserId;
                     button.Command = ViewModel.OpenProfileCommand;
@@ -284,7 +284,7 @@ namespace Telegram.Views.Chats
 
                     title.Text = user.FullName();
                     subtitle.Text = stringBuilder.ToString();
-                    photo.SetUser(ViewModel.ClientService, user, 36);
+                    photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
 
                     button.CommandParameter = adminInfo.UserId;
                     button.Command = ViewModel.OpenProfileCommand;
@@ -307,7 +307,7 @@ namespace Telegram.Views.Chats
                     }
 
                     title.Text = user.FullName();
-                    photo.SetUser(ViewModel.ClientService, user, 36);
+                    photo.Source = ProfilePictureSource.User(ViewModel.ClientService, user);
 
                     button.CommandParameter = inviterInfo.UserId;
                     button.Command = ViewModel.OpenProfileCommand;

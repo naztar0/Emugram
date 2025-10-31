@@ -236,18 +236,15 @@ namespace Telegram.ViewModels.Settings
                 {
                     if (IsDisabled)
                     {
-                        _networkService.UseSystemProxy = false;
-                        await ClientService.SendAsync(new DisableProxy());
+                        await _networkService.UpdateProxyAsync(0);
                     }
                     else if (IsSystem)
                     {
-                        _networkService.UseSystemProxy = true;
-                        await ClientService.SendAsync(new EnableProxy(_systemProxyId));
+                        await _networkService.UpdateProxyAsync(_systemProxyId);
                     }
                     else if (IsCustom)
                     {
-                        _networkService.UseSystemProxy = false;
-                        await ClientService.SendAsync(new EnableProxy(Settings.LastProxyId));
+                        await _networkService.UpdateProxyAsync(Settings.LastProxyId);
                     }
 
                     Handle(ClientService.ConnectionState, ClientService.Options.EnabledProxyId);
@@ -329,9 +326,7 @@ namespace Telegram.ViewModels.Settings
 
             Settings.LastProxyId = proxy.Id;
 
-            _networkService.UseSystemProxy = false;
-            await ClientService.SendAsync(new EnableProxy(proxy.Id));
-
+            await _networkService.UpdateProxyAsync(proxy.Id);
             Handle(ClientService.ConnectionState, ClientService.Options.EnabledProxyId);
         }
 

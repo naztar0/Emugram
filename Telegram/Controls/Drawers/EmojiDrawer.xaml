@@ -157,7 +157,7 @@
                                            TextWrapping="NoWrap"
                                            Style="{StaticResource InfoBodyTextBlockStyle}" />
 
-                                <controls:BadgeButton Content="{CustomResource Add}"
+                                <controls:SettingsButton Content="{CustomResource Add}"
                                                       Visibility="{Binding IsInstalled, Mode=OneWay, Converter={StaticResource BooleanNegationConverter}}"
                                                       Style="{StaticResource PillButtonStyle}"
                                                       HorizontalAlignment="Right"

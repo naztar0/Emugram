@@ -65,6 +65,12 @@ namespace Telegram.Views.Popups
 
             _file = media.File;
             _media = media;
+            _rotation = media.EditState.Rotation;
+            _flip = media.EditState.Flip;
+
+            Rotate.IsChecked = _rotation != ImageRotation.None;
+            Flip.IsChecked = _flip != ImageFlip.None;
+            Proportions.IsChecked = media.EditState.Proportions != BitmapProportions.Custom;
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
@@ -401,7 +407,7 @@ namespace Telegram.Views.Popups
             var rotation = ImageRotation.None;
 
             var proportions = RotateProportions(Cropper.Proportions);
-            var rectangle = RotateArea(Cropper.CropRectangle);
+            var rectangle = ImageHelper.RotateArea(Cropper.CropRectangle, 1, 1, 1);
 
             switch (_rotation)
             {
@@ -421,14 +427,6 @@ namespace Telegram.Views.Popups
 
             Rotate.IsChecked = _rotation != ImageRotation.None;
             Canvas.Invalidate();
-        }
-
-        private Rect RotateArea(Rect area)
-        {
-            var point = new Point(1 - area.Bottom, 1 - (1 - area.X));
-            var result = new Rect(point.X, point.Y, area.Height, area.Width);
-
-            return result;
         }
 
         private BitmapProportions RotateProportions(BitmapProportions proportions)
@@ -474,7 +472,7 @@ namespace Telegram.Views.Popups
             var rotation = _rotation;
 
             var proportions = Cropper.Proportions;
-            var rectangle = FlipArea(Cropper.CropRectangle);
+            var rectangle = ImageHelper.FlipArea(Cropper.CropRectangle, 1, 1, ImageFlip.Horizontal);
 
             switch (rotation)
             {
@@ -525,14 +523,6 @@ namespace Telegram.Views.Popups
 
             Flip.IsChecked = _flip != ImageFlip.None;
             Canvas.Invalidate();
-        }
-
-        private Rect FlipArea(Rect area)
-        {
-            var point = new Point(1 - area.Right, area.Y);
-            var result = new Rect(point.X, point.Y, area.Width, area.Height);
-
-            return result;
         }
 
         private void Draw_Click(object sender, RoutedEventArgs e)

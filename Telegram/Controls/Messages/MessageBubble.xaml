@@ -69,6 +69,12 @@
                                         <Setter Target="Panel.(Grid.Column)"
                                                 Value="2" />
 
+                                        <!-- TODO: doesn't work because reply is going to eat up too much space -->
+                                        <!--<Setter Target="Column2.Width"
+                                                Value="*" />
+                                        <Setter Target="Column1.Width"
+                                                Value="Auto" />-->
+
                                         <Setter Target="MediaReactions.(Grid.Column)"
                                                 Value="0" />
                                         <Setter Target="MediaReactions.(Grid.ColumnSpan)"
@@ -115,6 +121,12 @@
                                         <Setter Target="Panel.(Grid.Column)"
                                                 Value="0" />
 
+                                        <!-- TODO: doesn't work because reply is going to eat up too much space -->
+                                        <!--<Setter Target="Column0.Width"
+                                                Value="*" />
+                                        <Setter Target="Column1.Width"
+                                                Value="Auto" />-->
+
                                         <Setter Target="MediaReactions.(Grid.Column)"
                                                 Value="1" />
                                         <Setter Target="MediaReactions.(Grid.ColumnSpan)"
@@ -143,6 +155,12 @@
                                 </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
+                        <!--
+                        Once again we have to work around some bug caused by Grid measure implementation:
+                        Setting RowSpan="3" while being on Column="0" (the one we need) causes the Grid to insert
+                        some vertical space between row zero and two. Since in code we already control column zero
+                        width programmatically, it's safe to use negative margins.
+                        -->
                         <HyperlinkButton x:Name="PhotoRoot"
                                          x:Load="False"
                                          Style="{StaticResource EmptyHyperlinkButtonStyle}"
@@ -150,11 +168,20 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Bottom"
                                          Width="30"
-                                         Height="30">
+                                         Height="30"
+                                         Margin="-38,0,0,0"
+                                         Grid.Column="1"
+                                         Grid.RowSpan="3">
                             <controls:ProfilePicture x:Name="Photo"
-                                                     Width="30"
-                                                     Height="30" />
+                                                     Size="30"
+                                                     Shape="Ellipse"
+                                                     IsCachingEnabled="True" />
                         </HyperlinkButton>
+
+                        <Rectangle x:Name="ShadowCaster"
+                                   RadiusX="15"
+                                   RadiusY="15"
+                                   Grid.Column="1" />
 
                         <Grid x:Name="ContentPanel"
                               Background="{ThemeResource MessageBackgroundBrush}"
@@ -163,9 +190,11 @@
                               Padding="0,4,0,0"
                               Grid.Column="1">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition x:Name="Column0"
+                                                  Width="Auto" />
+                                <ColumnDefinition x:Name="Column1" />
+                                <ColumnDefinition x:Name="Column2"
+                                                  Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
@@ -244,7 +273,6 @@
                                         <Hyperlink UnderlineStyle="None">
                                             <Run />
                                         </Hyperlink>
-                                        <Run Text="&#x200C;" />
                                     </TextBlock>
                                     <controls:IdentityIcon x:Name="Identity"
                                                            VerticalAlignment="Bottom"

@@ -6,19 +6,20 @@
                        xmlns:controls="using:Telegram.Controls"
                        mc:Ignorable="d"
                        PrimaryButtonClick="ContentDialog_PrimaryButtonClick"
-                       SecondaryButtonClick="ContentDialog_SecondaryButtonClick">
+                       CloseButtonClick="ContentDialog_SecondaryButtonClick"
+                       ButtonsLayout="Vertical"
+                       IsDismissButtonVisible="True">
 
     <StackPanel>
         <CalendarDatePicker x:Name="Date"
-                            Margin="0,12,0,12"
+                            Header="{CustomResource ScheduleMessageDate}"
+                            DateChanged="Date_DateChanged"
+                            Margin="0,0,0,12"
                             HorizontalAlignment="Stretch" />
         <TimePicker x:Name="Time"
+                    Header="{CustomResource ScheduleMessageTime}"
+                    TimeChanged="Time_TimeChanged"
                     BorderBrush="{ThemeResource ButtonBorderBrush}"
                     HorizontalAlignment="Stretch" />
-
-        <HyperlinkButton x:Name="Online"
-                         Click="Online_Click"
-                         HorizontalAlignment="Left"
-                         Margin="0,12,0,-20" />
     </StackPanel>
 </controls:ContentPopup>

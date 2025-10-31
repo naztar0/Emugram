@@ -78,7 +78,7 @@ namespace Telegram.Controls.Messages
                 return;
             }
 
-            if (e.Type is TextEntityTypeMention && e.Data is string username)
+            if (e.Type is TextEntityTypeMention && e.Text is string username)
             {
                 message.Delegate.OpenUsername(username);
             }
@@ -90,7 +90,7 @@ namespace Telegram.Controls.Messages
             {
                 message.Delegate.OpenUrl(textUrl.Url, true, new OpenUrlSourceChat(message.ChatId, message.SenderId));
             }
-            else if (e.Type is TextEntityTypeUrl && e.Data is string url)
+            else if (e.Type is TextEntityTypeUrl && e.Text is string url)
             {
                 message.Delegate.OpenUrl(url, false, new OpenUrlSourceChat(message.ChatId, message.SenderId));
             }
@@ -135,7 +135,7 @@ namespace Telegram.Controls.Messages
             if (message.ClientService.TryGetForumTopic(message.ChatId, message.TopicId, out ForumTopic topic))
             {
                 title.Text = topic.Info.Name;
-                photo.Clear();
+                photo.Source = null;
 
                 if (topic.Info.IsGeneral || topic.Info.Icon.CustomEmojiId != 0)
                 {
@@ -157,7 +157,7 @@ namespace Telegram.Controls.Messages
             else if (message.ClientService.TryGetDirectMessagesChatTopic(message.ChatId, message.TopicId, out DirectMessagesChatTopic directMessagesChatTopic))
             {
                 title.Text = message.ClientService.GetTitle(directMessagesChatTopic.SenderId);
-                photo.SetMessageSender(message.ClientService, directMessagesChatTopic.SenderId, 16);
+                photo.Source = ProfilePictureSource.MessageSender(message.ClientService, directMessagesChatTopic.SenderId);
 
                 typeIcon.ClearStatus();
                 iconRoot.Visibility = Visibility.Collapsed;
@@ -189,7 +189,7 @@ namespace Telegram.Controls.Messages
                 if (message.ClientService.TryGetForumTopic(message.ChatId, message.TopicId, out ForumTopic topic))
                 {
                     title.Text = topic.Info.Name;
-                    photo.Clear();
+                    photo.Source = null;
 
                     if (topic.Info.IsGeneral || topic.Info.Icon.CustomEmojiId != 0)
                     {
@@ -211,11 +211,13 @@ namespace Telegram.Controls.Messages
                 else if (message.ClientService.TryGetDirectMessagesChatTopic(message.ChatId, message.TopicId, out DirectMessagesChatTopic directMessagesChatTopic))
                 {
                     title.Text = message.ClientService.GetTitle(directMessagesChatTopic.SenderId);
-                    photo.SetMessageSender(message.ClientService, directMessagesChatTopic.SenderId, 16);
+                    photo.Source = ProfilePictureSource.MessageSender(message.ClientService, directMessagesChatTopic.SenderId);
 
                     typeIcon.ClearStatus();
                     iconRoot.Visibility = Visibility.Collapsed;
                 }
+
+                AutomationProperties.SetName(this, title.Text);
             }
             else if (message.Content is MessageGiveawayPrizeStars giveawayPrizeStars)
             {
@@ -235,13 +237,17 @@ namespace Telegram.Controls.Messages
                     return;
                 }
 
-                var pattern = FindName("Pattern") as PatternBackground;
-
-                var source = DelayedFileSource.FromSticker(message.ClientService, upgradedGift.Gift.Symbol.Sticker);
                 var centerColor = upgradedGift.Gift.Backdrop.Colors.CenterColor.ToColor();
                 var edgeColor = upgradedGift.Gift.Backdrop.Colors.EdgeColor.ToColor();
 
-                pattern.Update(source, centerColor, edgeColor);
+                var ribbonTop = FindName("RibbonTop") as GradientStop;
+                var ribbonBottom = FindName("RibbonBottom") as GradientStop;
+
+                ribbonTop.Color = centerColor.Darken();
+                ribbonBottom.Color = edgeColor.Darken();
+
+                var pattern = FindName("Pattern") as PatternBackground;
+                pattern.Update(message.ClientService, upgradedGift.Gift);
 
                 var animation = FindName("Animation") as AnimatedImage;
                 animation.Source = DelayedFileSource.FromSticker(message.ClientService, upgradedGift.Gift.Model.Sticker);
@@ -269,6 +275,8 @@ namespace Telegram.Controls.Messages
             {
                 var title = FindName("Title") as TextBlock;
                 var subtitle = FindName("Subtitle") as FormattedTextBlock;
+                var publisherRoot = FindName("Publisher") as Border;
+                var publisherLabel = FindName("PublisherLabel") as TextBlock;
                 var view = FindName("View") as Border;
                 var button = FindName("ViewLabel") as TextBlock;
                 var ribbonRoot = FindName("RibbonRoot") as Grid;
@@ -295,9 +303,13 @@ namespace Telegram.Controls.Messages
                     {
                         subtitle.SetText(message.ClientService, ClientEx.ParseMarkdown(string.Format(Strings.Gift2ActionUpgradeOut, user)));
                     }
-                    else
+                    else if (gift.SellStarCount > 0)
                     {
                         subtitle.SetText(message.ClientService, ClientEx.ParseMarkdown(Locale.Declension(Strings.R.Gift2ActionOutInfo, gift.SellStarCount, user)));
+                    }
+                    else
+                    {
+                        subtitle.SetText(message.ClientService, ClientEx.ParseMarkdown(string.Format(Strings.Gift2Info2OutExpired, user)));
                     }
 
                     view.Visibility = Visibility.Visible;
@@ -339,7 +351,19 @@ namespace Telegram.Controls.Messages
                 animation.Source = new DelayedFileSource(message.ClientService, gift.Gift.Sticker);
                 animation.Margin = new Thickness(0, 0, 0, 8);
 
-                if (gift.Gift.TotalCount > 0)
+                if (message.ClientService.TryGetChat(gift.Gift.PublisherChatId, out Chat publisherChat)
+                    && message.ClientService.TryGetSupergroup(publisherChat, out Supergroup publisher)
+                    && publisher.HasActiveUsername(out string username))
+                {
+                    publisherRoot.Visibility = Visibility.Visible;
+                    TextBlockHelper.SetMarkdown(publisherLabel, string.Format(Strings.Gift2ActionReleasedBy, $"@{username}"));
+                }
+                else
+                {
+                    publisherRoot.Visibility = Visibility.Collapsed;
+                }
+
+                if (gift.Gift.OverallLimits != null)
                 {
                     ribbonRoot.Visibility = Visibility.Visible;
 
@@ -447,7 +471,7 @@ namespace Telegram.Controls.Messages
                 view.Visibility = Visibility.Visible;
 
                 segments.SetChat(null, null, 120);
-                photo.SetChatPhoto(message.ClientService, chatChangePhoto.Photo, 120);
+                photo.Source = ProfilePictureSource.ChatPhoto(message.ClientService, message.Chat, chatChangePhoto.Photo, true);
 
                 if (view.Child is TextBlock label)
                 {
@@ -455,6 +479,45 @@ namespace Telegram.Controls.Messages
                         ? Strings.ViewVideoAction
                         : Strings.ViewPhotoAction;
                 }
+            }
+            else if (message.Content is MessageSuggestBirthdate suggestBirthdate)
+            {
+                var dateRoot = FindName("DateRoot") as Grid;
+                var dayTitle = FindName("DateDayTitle") as TextBlock;
+                var monthTitle = FindName("DateMonthTitle") as TextBlock;
+                var yearTitle = FindName("DateYearTitle") as TextBlock;
+                var dayValue = FindName("DateDayValue") as TextBlock;
+                var monthValue = FindName("DateMonthValue") as TextBlock;
+                var yearValue = FindName("DateYearValue") as TextBlock;
+                var view = FindName("View") as Border;
+
+                LocaleService.Current.GetDatePositions(out int dayPosition, out int monthPosition, out int yearPosition);
+
+                Grid.SetColumn(dayTitle, dayPosition);
+                Grid.SetColumn(dayValue, dayPosition);
+
+                Grid.SetColumn(monthTitle, monthPosition);
+                Grid.SetColumn(monthValue, monthPosition);
+
+                Grid.SetColumn(yearTitle, yearPosition);
+                Grid.SetColumn(yearValue, yearPosition);
+
+                dayValue.Text = suggestBirthdate.Birthdate.Day.ToString();
+                monthValue.Text = LocaleService.Current.CurrentCulture.DateTimeFormat.GetMonthName(suggestBirthdate.Birthdate.Month);
+                yearValue.Text = suggestBirthdate.Birthdate.Year.ToString();
+
+                if (suggestBirthdate.Birthdate.Year == 0)
+                {
+                    dateRoot.ColumnDefinitions[yearPosition].Width = new GridLength(0, GridUnitType.Pixel);
+                }
+                else
+                {
+                    dateRoot.ColumnDefinitions[yearPosition].Width = new GridLength(1, GridUnitType.Star);
+                }
+
+                view.Visibility = message.IsOutgoing
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
             }
             else if (message.Content is MessageSuggestProfilePhoto suggestProfilePhoto)
             {
@@ -467,8 +530,9 @@ namespace Telegram.Controls.Messages
                 segments.Visibility = Visibility.Visible;
                 view.Visibility = Visibility.Visible;
 
+                // TODO: Here it should probably be the user, but it's not critical
                 segments.SetChat(null, null, 120);
-                photo.SetChatPhoto(message.ClientService, suggestProfilePhoto.Photo, 120);
+                photo.Source = ProfilePictureSource.ChatPhoto(message.ClientService, message.Chat, suggestProfilePhoto.Photo, true);
 
                 if (view.Child is TextBlock label)
                 {
@@ -508,11 +572,11 @@ namespace Telegram.Controls.Messages
 
                     if (story.Story == null)
                     {
-                        photo.SetChat(message.ClientService, message.Chat, 120);
+                        photo.Source = ProfilePictureSource.Chat(message.ClientService, message.Chat);
                     }
                     else
                     {
-                        photo.SetStory(message.ClientService, story.Story, 120);
+                        photo.Source = ProfilePictureSource.Story(message.ClientService, story.Story);
                     }
 
                     if (view.Child is TextBlock label)
@@ -615,6 +679,7 @@ namespace Telegram.Controls.Messages
                 MessagePaymentRefunded paymentRefunded => UpdatePaymentRefunded(message, paymentRefunded, history),
                 MessagePinMessage pinMessage => UpdatePinMessage(message, pinMessage, history),
                 MessageScreenshotTaken screenshotTaken => UpdateScreenshotTaken(message, screenshotTaken, history),
+                MessageSuggestBirthdate suggestBirthdate => UpdateSuggestBirthdate(message, suggestBirthdate, history),
                 MessageSuggestProfilePhoto suggestProfilePhoto => UpdateSuggestProfilePhoto(message, suggestProfilePhoto, history),
                 MessageSupergroupChatCreate supergroupChatCreate => UpdateSupergroupChatCreate(message, supergroupChatCreate, history),
                 MessageUpgradedGift upgradedGift => UpdateUpgradedGift(message, upgradedGift, history),
@@ -630,6 +695,8 @@ namespace Telegram.Controls.Messages
                 MessageChatBoost chatBoost => UpdateChatBoost(message, chatBoost, history),
                 MessageChecklistTasksAdded checklistTasksAdded => UpdateChecklistTasksAdded(message, checklistTasksAdded, history),
                 MessageChecklistTasksDone checklistTasksDone => UpdateChecklistTasksDone(message, checklistTasksDone, history),
+                MessageSuggestedPostPaid suggestedPostPaid => UpdateSuggestedPostPaid(message, suggestedPostPaid, history),
+                MessageSuggestedPostRefunded suggestedPostRefunded => UpdateSuggestedPostRefunded(message, suggestedPostRefunded, history),
                 MessageAsyncStory story => UpdateStory(message, story, history),
                 MessageStory story => UpdateStory(message, story, history),
                 // Local types:
@@ -1470,25 +1537,29 @@ namespace Telegram.Controls.Messages
         {
             if (message.IsOutgoing)
             {
-                if (string.IsNullOrEmpty(chatSetTheme.ThemeName))
+                if (chatSetTheme.Theme is ChatThemeEmoji emoji)
                 {
-                    return Strings.ChatThemeDisabledYou.AsFormattedText();
+                    return string.Format(Strings.ChatThemeChangedYou, emoji.Name).AsFormattedText();
                 }
-                else
+                else if (chatSetTheme.Theme is ChatThemeGift gift)
                 {
-                    return string.Format(Strings.ChatThemeChangedYou, chatSetTheme.ThemeName).AsFormattedText();
+                    return string.Format(Strings.ChatThemeChangedYou, gift.GiftTheme.Gift.ToName()).AsFormattedText();
                 }
+
+                return Strings.ChatThemeDisabledYou.AsFormattedText();
             }
             else
             {
-                if (string.IsNullOrEmpty(chatSetTheme.ThemeName))
+                if (chatSetTheme.Theme is ChatThemeEmoji emoji)
                 {
-                    return ReplaceWithLink(string.Format(Strings.ChatThemeDisabled, "un1"), message.GetSender());
+                    return ReplaceWithLink(string.Format(Strings.ChatThemeChangedTo, "un1", emoji.Name), message.GetSender());
                 }
-                else
+                else if (chatSetTheme.Theme is ChatThemeGift gift)
                 {
-                    return ReplaceWithLink(string.Format(Strings.ChatThemeChangedTo, "un1", chatSetTheme.ThemeName), message.GetSender());
+                    return ReplaceWithLink(string.Format(Strings.ChatThemeChangedTo, "un1", gift.GiftTheme.Gift.ToName()), message.GetSender());
                 }
+
+                return ReplaceWithLink(string.Format(Strings.ChatThemeDisabled, "un1"), message.GetSender());
             }
         }
 
@@ -1713,8 +1784,12 @@ namespace Telegram.Controls.Messages
 
             if (true)
             {
-                content = string.Format(Strings.TopicWasCreatedAction, $"\U0001F4C3 {forumTopicCreated.Name}");
-                entities.Add(new TextEntity(0, 2, new TextEntityTypeCustomEmoji(forumTopicCreated.Icon.CustomEmojiId)));
+                var topicName = new FormattedText($"\U0001F4C3 {forumTopicCreated.Name}", new[]
+                {
+                    new TextEntity(0, 2, new TextEntityTypeCustomEmoji(forumTopicCreated.Icon.CustomEmojiId))
+                });
+
+                return ClientEx.Format(Strings.TopicWasCreatedAction, topicName);
             }
             else
             {
@@ -1808,14 +1883,23 @@ namespace Telegram.Controls.Messages
             }
             if (message.IsOutgoing)
             {
+                if (gift.IsPrepaidUpgrade && message.ClientService.TryGetMessageSender(gift.ReceiverId, out Object receiver))
+                {
+                    return ReplaceWithLink(Strings.ActionPrepaidGiftOutbound, receiver, gift);
+                }
+
                 return ReplaceWithLink(Strings.ActionGiftOutbound, "un2", gift);
             }
             else if (message.ClientService.TryGetMessageSender(gift.SenderId, out Object sender))
             {
                 if (gift.ReceiverId.IsUser(message.ClientService.Options.MyId))
                 {
-                    return ReplaceWithLink(Strings.ActionGiftInbound, sender, gift);
+                    if (gift.IsPrepaidUpgrade)
+                    {
+                        return ReplaceWithLink(Strings.ActionPrepaidGiftInbound, sender, gift);
+                    }
 
+                    return ReplaceWithLink(Strings.ActionGiftInbound, sender, gift);
                 }
                 else if (message.ClientService.TryGetMessageSender(gift.ReceiverId, out Object outboundUser))
                 {
@@ -1852,7 +1936,7 @@ namespace Telegram.Controls.Messages
         {
             // TODO: markdown
 
-            if (giftedStars.GifterUserId == message.ClientService.Options.MyId)
+            if (message.IsOutgoing)
             {
                 return ReplaceWithLink(Strings.ActionGiftOutbound, "un2", giftedStars);
             }
@@ -2070,7 +2154,7 @@ namespace Telegram.Controls.Messages
                 var content = Locale.Declension(Strings.R.PaidMessagesRefundedOut, paidMessagesRefunded.StarCount);
                 return ReplaceWithLink(content, receiverUser);
             }
-            else if (message.ClientService.TryGetUser(message.SenderId, out User senderUser))
+            else if (message.ClientService.TryGetMessageSender(message.SenderId, out Object senderUser))
             {
                 var content = Locale.Declension(Strings.R.PaidMessagesRefunded, paidMessagesRefunded.StarCount);
                 return ReplaceWithLink(content, senderUser);
@@ -2288,6 +2372,18 @@ namespace Telegram.Controls.Messages
             }
         }
 
+        private static FormattedText UpdateSuggestBirthdate(MessageWithOwner message, MessageSuggestBirthdate suggestBirthdate, bool history)
+        {
+            if (message.IsOutgoing)
+            {
+                return Strings.ActionYouSuggestBirthday.AsFormattedText();
+            }
+            else
+            {
+                return ReplaceWithLink(Strings.ActionSuggestBirthday, message.GetSender());
+            }
+        }
+
         private static FormattedText UpdateSuggestProfilePhoto(MessageWithOwner message, MessageSuggestProfilePhoto suggestProfilePhoto, bool history)
         {
             var content = string.Empty;
@@ -2327,7 +2423,7 @@ namespace Telegram.Controls.Messages
 
         private static FormattedText UpdateUpgradedGift(MessageWithOwner message, MessageUpgradedGift upgradedGift, bool history)
         {
-            if (upgradedGift.IsUpgrade)
+            if (upgradedGift.Origin is UpgradedGiftOriginUpgrade)
             {
                 if (upgradedGift.ReceiverId.IsUser(message.ClientService.Options.MyId))
                 {
@@ -2466,6 +2562,7 @@ namespace Telegram.Controls.Messages
             }
 
             formatted = ClientEx.ParseMarkdown(formatted);
+            formatted = TdExtensions.Concat(ClientEx.CustomEmoji("\uEAD2 "), formatted);
 
             if (message.IsOutgoing)
             {
@@ -2514,6 +2611,7 @@ namespace Telegram.Controls.Messages
                 }
 
                 var formatted = ClientEx.ParseMarkdown(text);
+                formatted = TdExtensions.Concat(ClientEx.CustomEmoji(markedAsDone ? "\uEAD3 " : "\uEAD4 "), formatted);
 
                 return ReplaceWithLink(formatted, message.GetSender());
             }
@@ -2535,9 +2633,67 @@ namespace Telegram.Controls.Messages
 
                 var formatted = ClientEx.Format(text, task.Text);
                 formatted = ClientEx.ParseMarkdown(formatted);
+                formatted = TdExtensions.Concat(ClientEx.CustomEmoji(markedAsDone ? "\uEAD3 " : "\uEAD4 "), formatted);
 
                 return ReplaceWithLink(formatted, message.GetSender());
             }
+        }
+
+        private static FormattedText UpdateSuggestedPostPaid(MessageWithOwner message, MessageSuggestedPostPaid suggestedPostPaid, bool history)
+        {
+            var sender = message.ClientService.GetTitle(message.SenderId);
+
+            if (suggestedPostPaid.StarAmount.IsPositive())
+            {
+                return string.Format(Strings.SuggestedOfferCompleteAmountF.ReplaceStar(Icons.Premium), sender, suggestedPostPaid.StarAmount.ToValue()).AsFormattedText();
+            }
+            else if (suggestedPostPaid.TonAmount > 0)
+            {
+                return string.Format(Strings.SuggestedOfferCompleteAmountF.ReplaceStar(Icons.Ton), sender, suggestedPostPaid.TonAmount / 1000000000d).AsFormattedText();
+            }
+
+            return string.Format(Strings.SuggestedOfferCompleteAmountUnknown, sender).AsFormattedText();
+        }
+
+        private static FormattedText UpdateSuggestedPostRefunded(MessageWithOwner message, MessageSuggestedPostRefunded suggestedPostRefunded, bool history)
+        {
+            var sender = message.ClientService.GetTitle(message.SenderId);
+
+            if (suggestedPostRefunded.Reason is SuggestedPostRefundReasonPostDeleted)
+            {
+                if (message is MessageViewModel { ReplyToItem: MessageViewModel replyTo })
+                {
+                    if (replyTo.SuggestedPostInfo.Price is SuggestedPostPriceStar priceStar)
+                    {
+                        return string.Format(Strings.SuggestedOfferRefundByAdminAmountF.ReplaceStar(Icons.Premium), sender, message.Chat.Title, priceStar.StarCount).AsFormattedText();
+                    }
+                    else if (replyTo.SuggestedPostInfo.Price is SuggestedPostPriceTon priceTon)
+                    {
+                        return string.Format(Strings.SuggestedOfferRefundByAdminAmountF.ReplaceStar(Icons.Ton), sender, message.Chat.Title, priceTon.ToncoinCentCount).AsFormattedText();
+                    }
+                }
+                else
+                {
+                    return string.Format(Strings.SuggestedOfferRefundByAdminAmountUnknown, sender, message.Chat.Title).AsFormattedText();
+                }
+            }
+            else if (message is MessageViewModel { ReplyToItem: MessageViewModel replyTo })
+            {
+                if (replyTo.SuggestedPostInfo.Price is SuggestedPostPriceStar priceStar)
+                {
+                    return string.Format(Strings.SuggestedOfferRefundByUserAmountF.ReplaceStar(Icons.Premium), sender, message.Chat.Title, priceStar.StarCount).AsFormattedText();
+                }
+                else if (replyTo.SuggestedPostInfo.Price is SuggestedPostPriceTon priceTon)
+                {
+                    return string.Format(Strings.SuggestedOfferRefundByUserAmountF.ReplaceStar(Icons.Ton), sender, message.Chat.Title, priceTon.ToncoinCentCount).AsFormattedText();
+                }
+            }
+            else
+            {
+                return string.Format(Strings.SuggestedOfferRefundByUserAmountUnknown, sender, message.Chat.Title).AsFormattedText();
+            }
+
+            return _emptyString;
         }
 
         private static FormattedText UpdateChatBoost(MessageWithOwner message, MessageChatBoost chatBoost, bool history)
@@ -2928,6 +3084,7 @@ namespace Telegram.Controls.Messages
 
         public void UpdateMessageReactions(MessageViewModel message, bool animate)
         {
+            // TODO: Name
             var reactions = GetTemplateChild("Reactions") as ReactionsPanel;
             if (reactions != null)
             {

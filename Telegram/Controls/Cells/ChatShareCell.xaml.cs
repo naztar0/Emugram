@@ -9,6 +9,7 @@ using System;
 using System.Numerics;
 using Telegram.Composition;
 using Telegram.Controls.Media;
+using Telegram.Native.Controls;
 using Telegram.Navigation;
 using Telegram.Services;
 using Telegram.Td.Api;
@@ -32,9 +33,6 @@ namespace Telegram.Controls.Cells
         {
             InitializeComponent();
 
-            Connected += OnLoaded;
-            Disconnected += OnUnloaded;
-
             _selectionPhoto = ElementComposition.GetElementVisual(Photo);
             _selectionOutline = ElementComposition.GetElementVisual(SelectionOutline);
             _selectionPhoto.CenterPoint = new Vector3(18);
@@ -46,13 +44,13 @@ namespace Telegram.Controls.Cells
         {
             set
             {
-                Photo.Source = PlaceholderImage.GetGlyph(value, long.MinValue);
+                Photo.Source = ProfilePictureSourceText.GetGlyph(value, long.MinValue);
                 SelectionOutline.RadiusX = 18;
                 SelectionOutline.RadiusY = 18;
             }
         }
 
-        public object PhotoSource
+        public ProfilePictureSource PhotoSource
         {
             set
             {
@@ -78,13 +76,13 @@ namespace Telegram.Controls.Cells
             set => TitleLabel.Text = value;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        protected override void OnLoaded()
         {
             _strokeBrush?.Register();
             _selectionStrokeBrush?.Register();
         }
 
-        private void OnUnloaded(object sender, RoutedEventArgs e)
+        protected override void OnUnloaded()
         {
             _strokeBrush?.Unregister();
             _selectionStrokeBrush?.Unregister();
@@ -116,11 +114,11 @@ namespace Telegram.Controls.Cells
             }
             else if (args.Phase == 2)
             {
-                Photo.SetChat(clientService, chat, 36);
+                Photo.Source = ProfilePictureSource.Chat(clientService, chat);
                 Identity.SetStatus(clientService, chat, BotVerified);
 
-                SelectionOutline.RadiusX = Photo.Shape == ProfilePictureShape.Superellipse ? 9 : 18;
-                SelectionOutline.RadiusY = Photo.Shape == ProfilePictureShape.Superellipse ? 9 : 18;
+                SelectionOutline.RadiusX = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 9 : 18;
+                SelectionOutline.RadiusY = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 9 : 18;
             }
 
             if (args.Phase < 2)
@@ -148,7 +146,7 @@ namespace Telegram.Controls.Cells
             }
             else if (args.Phase == 2)
             {
-                Photo.SetUser(clientService, user, 36);
+                Photo.Source = ProfilePictureSource.User(clientService, user);
                 Identity.SetStatus(clientService, user, BotVerified);
 
                 SelectionOutline.RadiusX = 18;
@@ -190,17 +188,17 @@ namespace Telegram.Controls.Cells
             {
                 if (clientService.TryGetUser(messageSender, out User user))
                 {
-                    Photo.SetUser(clientService, user, 36);
+                    Photo.Source = ProfilePictureSource.User(clientService, user);
                     Identity.SetStatus(clientService, user, BotVerified);
                 }
                 else if (clientService.TryGetChat(messageSender, out Chat chat))
                 {
-                    Photo.SetChat(clientService, chat, 36);
+                    Photo.Source = ProfilePictureSource.Chat(clientService, chat);
                     Identity.SetStatus(clientService, chat, BotVerified);
                 }
 
-                SelectionOutline.RadiusX = Photo.Shape == ProfilePictureShape.Superellipse ? 9 : 18;
-                SelectionOutline.RadiusY = Photo.Shape == ProfilePictureShape.Superellipse ? 9 : 18;
+                SelectionOutline.RadiusX = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 9 : 18;
+                SelectionOutline.RadiusY = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 9 : 18;
             }
 
             if (args.Phase < 2)
@@ -237,11 +235,11 @@ namespace Telegram.Controls.Cells
             }
             else if (args.Phase == 2)
             {
-                Photo.SetChat(clientService, chat, 36);
+                Photo.Source = ProfilePictureSource.Chat(clientService, chat);
                 Identity.SetStatus(clientService, chat, BotVerified);
 
-                SelectionOutline.RadiusX = Photo.Shape == ProfilePictureShape.Superellipse ? 9 : 18;
-                SelectionOutline.RadiusY = Photo.Shape == ProfilePictureShape.Superellipse ? 9 : 18;
+                SelectionOutline.RadiusX = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 9 : 18;
+                SelectionOutline.RadiusY = Photo.ComputedShape == ProfilePictureShape.Superellipse ? 9 : 18;
             }
 
             if (args.Phase < 2)
@@ -254,7 +252,7 @@ namespace Telegram.Controls.Cells
 
         public void UpdateChatFolder(FolderFlag folder)
         {
-            Photo.Source = PlaceholderImage.GetGlyph(MainPage.GetFolderIcon(folder.Flag), (int)folder.Flag);
+            Photo.Source = ProfilePictureSourceText.GetGlyph(MainPage.GetFolderIcon(folder.Flag), (int)folder.Flag);
             Identity.ClearStatus(BotVerified);
 
             SelectionOutline.RadiusX = 18;

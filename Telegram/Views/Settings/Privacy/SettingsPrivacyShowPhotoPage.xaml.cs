@@ -4,6 +4,7 @@
 // Distributed under the GNU General Public License v3.0. (See accompanying
 // file LICENSE or copy at https://www.gnu.org/licenses/gpl-3.0.txt)
 //
+using Telegram.Controls;
 using Telegram.Td.Api;
 using Telegram.ViewModels.Delegates;
 using Telegram.ViewModels.Settings;
@@ -30,7 +31,7 @@ namespace Telegram.Views.Settings.Privacy
             {
                 if (fullInfo.PublicPhoto != null)
                 {
-                    RemovePhotoPhoto.SetChatPhoto(ViewModel.ClientService, fullInfo.PublicPhoto, 28);
+                    RemovePhotoPhoto.Source = ProfilePictureSource.ChatPhoto(ViewModel.ClientService, user, fullInfo.PublicPhoto, false);
                     RemovePhoto.Visibility = Visibility.Visible;
 
                     UpdatePhoto.Content = Strings.UpdatePhotoForRest;

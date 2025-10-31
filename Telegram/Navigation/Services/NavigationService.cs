@@ -17,6 +17,7 @@ using Telegram.ViewModels.Gallery;
 using Telegram.Views;
 using Telegram.Views.Popups;
 using Telegram.Views.Settings;
+using Windows.ApplicationModel;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -29,6 +30,9 @@ namespace Telegram.Navigation.Services
 {
     public interface INavigationService
     {
+        void Connect();
+        void Disconnect();
+
         void GoBack(NavigationState state = null, NavigationTransitionInfo infoOverride = null);
         void GoBackAt(int index, bool back = true);
         void GoForward();
@@ -38,6 +42,8 @@ namespace Telegram.Navigation.Services
         XamlRoot XamlRoot { get; }
 
         bool Navigate(Type page, object parameter = null, NavigationState state = null, NavigationTransitionInfo infoOverride = null, bool navigationStackEnabled = true);
+        void GoBack(NavigatingEventArgs args);
+        void GoBack(NavigatingCancelEventArgs args);
 
         event EventHandler<NavigatedEventArgs> Navigated;
 
@@ -69,7 +75,7 @@ namespace Telegram.Navigation.Services
         Task<InputPopupResult> ShowInputAsync(InputPopupType type, string message, string title = null, string placeholderText = null, string primary = null, string secondary = null, bool destructive = false, ElementTheme requestedTheme = ElementTheme.Default);
         //Task<InputPopupResult> ShowInputAsync(FrameworkElement target, InputPopupType type, string message, string title = null, string placeholderText = null, string primary = null, string secondary = null, bool destructive = false, ElementTheme requestedTheme = ElementTheme.Default)
 
-        void Hide(Type type);
+        void HidePopup(Type type);
 
         ToastPopup ShowToast(string text, ElementTheme requestedTheme = ElementTheme.Dark, TimeSpan? dismissAfter = null);
         ToastPopup ShowToast(string text, ToastPopupIcon icon, ElementTheme requestedTheme = ElementTheme.Dark, TimeSpan? dismissAfter = null);
@@ -231,6 +237,40 @@ namespace Telegram.Navigation.Services
             FrameFacade.Navigated += OnNavigated;
         }
 
+        private bool _connected;
+
+        public void Connect()
+        {
+            if (_connected)
+            {
+                return;
+            }
+
+            _connected = true;
+            Application.Current.Resuming += OnResuming;
+            Application.Current.Suspending += OnSuspending;
+        }
+
+        public void Disconnect()
+        {
+            if (_connected)
+            {
+                _connected = false;
+                Application.Current.Resuming -= OnResuming;
+                Application.Current.Suspending -= OnSuspending;
+            }
+        }
+
+        private void OnResuming(object sender, object e)
+        {
+            Resume();
+        }
+
+        private void OnSuspending(object sender, SuspendingEventArgs e)
+        {
+            Suspend();
+        }
+
         private void OnNavigating(object sender, NavigatingEventArgs e)
         {
             if (e.Suspending)
@@ -320,6 +360,7 @@ namespace Telegram.Navigation.Services
             }
 
             Navigated?.Invoke(this, e);
+            OverlayWindow.Current?.TryHide(ContentDialogResult.None);
 
             try
             {
@@ -327,10 +368,30 @@ namespace Telegram.Navigation.Services
             }
             catch (Exception ex)
             {
-                Logger.Error(ex);
+                Logger.Exception(ex);
             }
+        }
 
-            OverlayWindow.Current?.TryHide(ContentDialogResult.None);
+        public async void Resume()
+        {
+            var page = FrameFacade.Content as Page;
+            if (page != null)
+            {
+                if (page is IActivablePage cleanup)
+                {
+                    cleanup.Activate(this);
+                }
+
+                // call navagable override (navigating)
+                var dataContext = ViewModelForPage(page);
+                if (dataContext != null)
+                {
+                    dataContext.NavigationService = this;
+                    dataContext.Dispatcher = Dispatcher;
+                    var pageState = FrameFacade.PageStateSettingsService(page.GetType(), parameter: CurrentPageParam).Values;
+                    await dataContext.NavigatedToAsync(CurrentPageParam, NavigationMode.New, pageState);
+                }
+            }
         }
 
         public void Suspend()
@@ -534,6 +595,12 @@ namespace Telegram.Navigation.Services
 
         public void ShowPopup(FormattedText message, string title = null, string primary = null, string secondary = null, string tertiary = null, bool destructive = false, ElementTheme requestedTheme = ElementTheme.Default)
         {
+            if (ContentPopup.IsAnyPopupOpen(XamlRoot))
+            {
+                _ = MessagePopup.ShowAsync(XamlRoot, target: null, message, title, primary, secondary ?? tertiary, destructive, requestedTheme);
+                return;
+            }
+
             _ = MessagePopup.ShowAsync(XamlRoot, message, title, primary, secondary, tertiary, destructive, requestedTheme);
         }
 
@@ -547,7 +614,7 @@ namespace Telegram.Navigation.Services
         //    return InputPopup.ShowAsync(target, type, message, title, placeholderText, primary, secondary, destructive, requestedTheme);
         //}
 
-        public void Hide(Type type)
+        public void HidePopup(Type type)
         {
             foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(XamlRoot))
             {
@@ -637,12 +704,52 @@ namespace Telegram.Navigation.Services
             }
             catch (Exception ex)
             {
-                Logger.Error(ex);
+                Logger.Exception(ex);
                 return false;
             }
             finally
             {
                 IsNavigating = false;
+            }
+        }
+
+        public void GoBack(NavigatingEventArgs args)
+        {
+            if (args == null || args.NavigationMode == NavigationMode.Back)
+            {
+                GoBack();
+            }
+            else if (args.NavigationMode == NavigationMode.Forward)
+            {
+                GoForward();
+            }
+            else if (args.NavigationMode == NavigationMode.New)
+            {
+                Navigate(args.SourcePageType, args.Parameter, infoOverride: args.NavigationTransitionInfo);
+            }
+            else
+            {
+                Logger.Info("Unhandled: " + args.NavigationMode);
+            }
+        }
+
+        public void GoBack(NavigatingCancelEventArgs args)
+        {
+            if (args == null || args.NavigationMode == NavigationMode.Back)
+            {
+                GoBack();
+            }
+            else if (args.NavigationMode == NavigationMode.Forward)
+            {
+                GoForward();
+            }
+            else if (args.NavigationMode == NavigationMode.New)
+            {
+                Navigate(args.SourcePageType, args.Parameter, infoOverride: args.NavigationTransitionInfo);
+            }
+            else
+            {
+                Logger.Info("Unhandled: " + args.NavigationMode);
             }
         }
 

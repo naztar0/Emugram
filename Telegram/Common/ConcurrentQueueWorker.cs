@@ -84,7 +84,7 @@ namespace Telegram.Common
                 return;
             }
 
-            _ = Task.Run(() =>
+            ThreadPool.UnsafeQueueUserWorkItem(state =>
             {
                 while (taskQueue.TryPop(out Action nextTaskAction))
                 {
@@ -93,7 +93,7 @@ namespace Telegram.Common
                 }
 
                 Interlocked.Exchange(ref _concurrentCount, 0);
-            });
+            }, null);
         }
     }
 
@@ -111,15 +111,33 @@ namespace Telegram.Common
                 return;
             }
 
-            _ = Task.Run(() =>
+            ThreadPool.UnsafeQueueUserWorkItem(static state =>
             {
-                while (taskQueue.TryDequeue(out Action nextTaskAction))
+                var self = (FifoActionWorker)state!;
+                try
                 {
-                    nextTaskAction();
-                }
+                    do
+                    {
+                        while (self.taskQueue.TryDequeue(out var next))
+                        {
+                            next();
+                        }
 
-                Interlocked.Exchange(ref _concurrentCount, 0);
-            });
+                        Interlocked.Exchange(ref self._concurrentCount, 0);
+
+                        if (self.taskQueue.IsEmpty)
+                        {
+                            return;
+                        }
+
+                    } while (0 == Interlocked.Exchange(ref self._concurrentCount, 1));
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex);
+                    Interlocked.Exchange(ref self._concurrentCount, 0);
+                }
+            }, this);
         }
     }
 }

@@ -39,11 +39,10 @@ namespace Telegram.Collections
     class ItemCacheManager<T>
     {
         // data structure to hold all the items that are in the ranges the cache manager is looking after
-        private List<CacheEntryBlock<T>> _cacheBlocks;
+        private List<CacheEntryBlock> _cacheBlocks;
 
         // List of ranges for items that are not present in the cache
         internal ItemIndexRangeList _requests;
-        internal ItemIndexRangeList _visibleRanges;
 
         private ItemIndexRange[] _trackedRanges;
 
@@ -67,7 +66,7 @@ namespace Telegram.Collections
 #endif
         public ItemCacheManager(fetchDataCallbackHandler callback, int batchsize = 50, string debugName = "ItemCacheManager")
         {
-            _cacheBlocks = new List<CacheEntryBlock<T>>();
+            _cacheBlocks = new List<CacheEntryBlock>();
             _requests = new ItemIndexRangeList();
             _cachedResults = new ItemIndexRangeList();
             _fetchDataCallback = callback;
@@ -93,7 +92,7 @@ namespace Telegram.Collections
         public void Stop()
         {
             _stopped = true;
-            _cancelTokenSource.Cancel();
+            _cancelTokenSource?.Cancel();
             _timer.Stop();
         }
 
@@ -107,7 +106,7 @@ namespace Telegram.Collections
             get
             {
                 // iterates through the cache blocks to find the item
-                foreach (CacheEntryBlock<T> block in _cacheBlocks)
+                foreach (CacheEntryBlock block in _cacheBlocks)
                 {
                     if (index >= block.FirstIndex && index <= block.LastIndex)
                     {
@@ -121,7 +120,7 @@ namespace Telegram.Collections
                 // iterates through the cache blocks to find the right block
                 for (int i = 0; i < _cacheBlocks.Count; i++)
                 {
-                    CacheEntryBlock<T> block = _cacheBlocks[i];
+                    CacheEntryBlock block = _cacheBlocks[i];
                     if (index >= block.FirstIndex && index <= block.LastIndex)
                     {
                         block.Items[index - block.FirstIndex] = value;
@@ -147,18 +146,18 @@ namespace Telegram.Collections
         {
             if (insertBeforeBlock > 0)
             {
-                CacheEntryBlock<T> block = _cacheBlocks[insertBeforeBlock - 1];
+                CacheEntryBlock block = _cacheBlocks[insertBeforeBlock - 1];
                 if (block.LastIndex == index - 1)
                 {
                     T[] newItems = new T[block.Length + 1];
                     Array.Copy(block.Items, newItems, (int)block.Length);
                     newItems[block.Length] = value;
-                    _cacheBlocks[insertBeforeBlock - 1] = new CacheEntryBlock<T>(block.FirstIndex, newItems);
+                    _cacheBlocks[insertBeforeBlock - 1] = new CacheEntryBlock(block.FirstIndex, newItems);
                     return;
                 }
             }
 
-            CacheEntryBlock<T> newBlock = new CacheEntryBlock<T>(index, new T[] { value });
+            CacheEntryBlock newBlock = new CacheEntryBlock(index, new T[] { value });
             _cacheBlocks.Insert(insertBeforeBlock, newBlock);
         }
 
@@ -175,13 +174,12 @@ namespace Telegram.Collections
             if (!HasRangesChanged(ranges)) { return; }
 
             //figure out what items need to be fetched because we don't have them in the cache
-            _visibleRanges = new ItemIndexRangeList(visibleRange);
             _requests = new ItemIndexRangeList(ranges);
             _trackedRanges = ranges;
 
-            foreach (CacheEntryBlock<T> cached in _cacheBlocks)
+            foreach (CacheEntryBlock cached in _cacheBlocks)
             {
-                _requests.Subtract(cached);
+                _requests.Subtract(new ItemIndexRange(cached.FirstIndex, cached.Length));
             }
 
             StartFetchData();
@@ -222,16 +220,7 @@ namespace Telegram.Collections
         {
             if (_requests.Count > 0)
             {
-                ItemIndexRange range;
-                if (_visibleRanges.Count > 0 /*&& _requests.Intersects(_visibleRanges[0])*/)
-                {
-                    range = _visibleRanges[0];
-                }
-                else
-                {
-                    range = _requests[0];
-                }
-
+                var range = _requests[0];
                 if (range.Length > maxsize)
                 {
                     range = new ItemIndexRange(range.FirstIndex, (uint)maxsize);
@@ -341,7 +330,6 @@ namespace Telegram.Collections
                             }
                         }
 
-                        _visibleRanges.Subtract(data.Range);
                         _requests.Subtract(data.Range);
                     }
                 }
@@ -393,7 +381,7 @@ namespace Telegram.Collections
         // Sees if the value is in our cache if so it returns the index
         public int IndexOf(T value)
         {
-            foreach (CacheEntryBlock<T> entry in _cacheBlocks)
+            foreach (CacheEntryBlock entry in _cacheBlocks)
             {
                 int index = Array.IndexOf<T>(entry.Items, value);
                 if (index != -1) return index + entry.FirstIndex;
@@ -402,14 +390,22 @@ namespace Telegram.Collections
         }
 
         // Type for the cache blocks
-        class CacheEntryBlock<ITEMTYPE> : ItemIndexRange
+        class CacheEntryBlock
         {
-            public ITEMTYPE[] Items { get; }
+            public T[] Items { get; }
 
-            public CacheEntryBlock(int firstIndex, ITEMTYPE[] items)
-                : base(firstIndex, (uint)items.Length)
+            public int FirstIndex { get; }
+
+            public int LastIndex { get; }
+
+            public uint Length { get; }
+
+            public CacheEntryBlock(int firstIndex, T[] items)
             {
                 Items = items;
+                FirstIndex = firstIndex;
+                LastIndex = firstIndex + items.Length - 1;
+                Length = (uint)items.Length;
             }
         }
     }

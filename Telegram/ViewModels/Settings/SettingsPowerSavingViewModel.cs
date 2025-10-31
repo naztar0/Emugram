@@ -11,6 +11,9 @@ using Telegram.Common;
 using Telegram.Navigation;
 using Telegram.Navigation.Services;
 using Telegram.Services;
+using Windows.Foundation.Metadata;
+using Windows.UI.Core;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Navigation;
 
 namespace Telegram.ViewModels.Settings
@@ -34,19 +37,54 @@ namespace Telegram.ViewModels.Settings
 
         protected override Task OnNavigatedToAsync(object parameter, NavigationMode mode, NavigationState state)
         {
-            PowerSavingPolicy.Changed += PowerSavingPolicy_Changed;
+            PowerSavingPolicy.Changed += OnPowerSavingPolicyChanged;
+
+            if (ApiInformation.IsEventPresent("Windows.UI.ViewManagement.UISettings", "AnimationsEnabledChanged"))
+            {
+                BootStrapper.Current.UISettings.AnimationsEnabledChanged += OnAnimationsEnabledChanged;
+            }
+            else
+            {
+                NavigationService.Window.Activated += OnWindowActivated;
+            }
+
             return Task.CompletedTask;
         }
 
         protected override void OnNavigatedFrom(NavigationState suspensionState, bool suspending)
         {
-            PowerSavingPolicy.Changed -= PowerSavingPolicy_Changed;
+            PowerSavingPolicy.Changed -= OnPowerSavingPolicyChanged;
+
+            if (ApiInformation.IsEventPresent("Windows.UI.ViewManagement.UISettings", "AnimationsEnabledChanged"))
+            {
+                BootStrapper.Current.UISettings.AnimationsEnabledChanged -= OnAnimationsEnabledChanged;
+            }
+            else
+            {
+                NavigationService.Window.Activated -= OnWindowActivated;
+            }
         }
 
-        private void PowerSavingPolicy_Changed(object sender, EventArgs e)
+        private void OnPowerSavingPolicyChanged(object sender, EventArgs e)
         {
-            RaisePropertyChanged(nameof(IsAutoDisabled));
-            RaisePropertyChanged(string.Empty);
+            BeginOnUIThread(() =>
+            {
+                RaisePropertyChanged(nameof(IsAutoDisabled));
+                RaisePropertyChanged(string.Empty);
+            });
+        }
+
+        private void OnAnimationsEnabledChanged(UISettings sender, UISettingsAnimationsEnabledChangedEventArgs args)
+        {
+            BeginOnUIThread(() =>
+            {
+                RaisePropertyChanged(nameof(AreAnimationsEnabled));
+            });
+        }
+
+        private void OnWindowActivated(object sender, WindowActivatedEventArgs e)
+        {
+            RaisePropertyChanged(nameof(AreAnimationsEnabled));
         }
 
         #region Stickers
@@ -243,6 +281,11 @@ namespace Telegram.ViewModels.Settings
                 PowerSavingPolicy.AreMaterialsEnabled = value;
                 RaisePropertyChanged();
             }
+        }
+
+        public bool AreAnimationsEnabled
+        {
+            get => BootStrapper.Current.UISettings.AnimationsEnabled;
         }
 
         public bool AreSmoothTransitionsEnabled

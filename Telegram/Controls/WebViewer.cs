@@ -243,7 +243,7 @@ namespace Telegram.Controls
         {
             _closed = true;
 
-            _presenter.Close();
+            _presenter?.Close();
             _presenter = null;
 
             Content = null;
@@ -492,7 +492,7 @@ postEvent: function(eventType, eventData) {
             (sender, args) =>
             {
                 var request = args.Request;
-                if (!string.IsNullOrEmpty(emulationPreset.SecChUa))
+                if (!string.IsNullOrEmpty(emulationPreset.XRequestedWith))
                     request.Headers.SetHeader("x-requested-with", emulationPreset.XRequestedWith);
 
                 // Sec-Ch-Ua
@@ -610,15 +610,23 @@ postEvent: function(eventType, eventData) {
             if (JsonArray.TryParse(TryGetWebMessageAsString(args), out JsonArray message) && message.Count == 2)
             {
                 var eventName = message.GetStringAt(0);
-                var eventData = message.GetStringAt(1);
 
-                if (JsonObject.TryParse(eventData, out JsonObject data))
+                if (message[1].ValueType == JsonValueType.Null)
                 {
-                    OnEventReceived(eventName, data);
+                    OnEventReceived(eventName, null);
                 }
                 else
                 {
-                    OnEventReceived(eventName, null);
+                    var eventData = message.GetStringAt(1);
+
+                    if (JsonObject.TryParse(eventData, out JsonObject data))
+                    {
+                        OnEventReceived(eventName, data);
+                    }
+                    else
+                    {
+                        OnEventReceived(eventName, null);
+                    }
                 }
             }
         }

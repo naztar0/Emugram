@@ -100,6 +100,10 @@ namespace Telegram.Services
                 if (!value)
                 {
                     ClientService.Options.Online = value;
+
+                    // TODO: consider restarting the instance to free some memory if:
+                    // No secondary windows are open, no calls are in progress, no audio is being played.
+                    //ClientService.Close(true);
                 }
             }
         }
@@ -231,7 +235,7 @@ namespace Telegram.Services
             {
                 ContinueOnLogOut();
             }
-            else if ((update.AuthorizationState is AuthorizationStateWaitPhoneNumber || update.AuthorizationState is AuthorizationStateWaitOtherDeviceConfirmation) && !_isActive && _lifetimeService.Items.Count > 1)
+            else if (update.AuthorizationState is AuthorizationStateWaitPhoneNumber or AuthorizationStateWaitOtherDeviceConfirmation && !_isActive && _lifetimeService.Items.Count > 1)
             {
                 ClientService.Send(new Destroy());
             }

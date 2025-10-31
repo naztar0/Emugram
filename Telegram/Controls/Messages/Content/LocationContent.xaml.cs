@@ -81,7 +81,7 @@ namespace Telegram.Controls.Messages.Content
 
             if (location.LivePeriod > 0)
             {
-                PinPhoto.SetMessageSender(message.ClientService, message.SenderId, 32);
+                PinPhoto.Source = ProfilePictureSource.MessageSender(message.ClientService, message.SenderId);
 
                 if (location.IsExpired(message.Date))
                 {
@@ -117,7 +117,7 @@ namespace Telegram.Controls.Messages.Content
                 LiveRing.Value = null;
 
                 PinDot.Visibility = Visibility.Visible;
-                PinPhoto.Clear();
+                PinPhoto.Source = null;
             }
         }
 

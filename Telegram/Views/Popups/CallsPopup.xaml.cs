@@ -73,7 +73,7 @@ namespace Telegram.Views.Popups
         private void NewCall_Click(object sender, RoutedEventArgs e)
         {
             var popup = new ChooseChatsPopup();
-            var button = new BadgeButton
+            var button = new SettingsButton
             {
                 Content = Strings.GroupCallCreateLink,
                 Glyph = Icons.LinkAdd,

@@ -27,6 +27,8 @@ namespace Telegram.ViewModels.Gallery
             {
                 Thumbnail = _animation.Thumbnail.File;
             }
+
+            Minithumbnail = _animation.Minithumbnail;
         }
 
         public override object Constraint => _animation;

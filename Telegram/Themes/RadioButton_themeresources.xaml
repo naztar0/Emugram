@@ -36,7 +36,7 @@
         <Setter Property="FocusVisualMargin"
                 Value="0" />
         <Setter Property="CornerRadius"
-                Value="{StaticResource ControlCornerRadius}" />
+                Value="0" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">

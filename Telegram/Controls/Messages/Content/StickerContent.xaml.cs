@@ -15,6 +15,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace Telegram.Controls.Messages.Content
 {
@@ -24,7 +25,6 @@ namespace Telegram.Controls.Messages.Content
         public MessageViewModel Message => _message;
 
         private long _fileToken;
-        private long _interactionToken;
 
         private bool _isEmoji;
 
@@ -139,15 +139,6 @@ namespace Telegram.Controls.Messages.Content
 
             if (sticker.StickerValue.Id != file.Id)
             {
-                if (message.Interaction?.StickerValue.Id == file.Id && file.Local.IsDownloadingCompleted)
-                {
-                    PlayInteraction(message, message.Interaction);
-                }
-                else if (sticker.FullType is StickerFullTypeRegular regular && regular.PremiumAnimation?.Id == file.Id && file.Local.IsDownloadingCompleted)
-                {
-                    PlayPremium(message, sticker);
-                }
-
                 return;
             }
 
@@ -192,8 +183,7 @@ namespace Telegram.Controls.Messages.Content
         {
             _message = null;
 
-            UpdateManager.Unsubscribe(this, ref _fileToken, true);
-            UpdateManager.Unsubscribe(this, ref _interactionToken, true);
+            UpdateManager.Unsubscribe(this, ref _fileToken);
 
             if (_templateApplied)
             {
@@ -271,6 +261,10 @@ namespace Telegram.Controls.Messages.Content
                 {
                     PlayInteraction(_message, interaction);
                 }
+                else if (response is Error)
+                {
+                    _message.Delegate.OpenSticker(sticker);
+                }
             }
             else if (_message.Content is MessageText)
             {
@@ -326,10 +320,7 @@ namespace Telegram.Controls.Messages.Content
                 Interactions = GetTemplateChild(nameof(Interactions)) as Grid;
             }
 
-            message.Interaction = null;
-
-            var file = interaction.StickerValue;
-            if (file.Local.IsDownloadingCompleted && Interactions.Children.Count < 4)
+            if (Interactions.Children.Count < 4)
             {
                 var dispatcher = DispatcherQueue.GetForCurrentThread();
 
@@ -337,12 +328,12 @@ namespace Telegram.Controls.Messages.Content
                 var player = new AnimatedImage();
                 player.Width = height * 3;
                 player.Height = height * 3;
-                //player.IsFlipped = !message.IsOutgoing;
                 player.LoopCount = 1;
                 player.IsHitTestVisible = false;
-                player.FrameSize = new Size(512, 512);
+                player.FrameSize = new Size(height * 3, height * 3);
+                player.DecodeFrameType = DecodePixelType.Logical;
                 player.AutoPlay = true;
-                player.Source = new LocalFileSource(file);
+                player.Source = new DelayedFileSource(_message.ClientService, interaction.StickerValue);
                 player.LoopCompleted += (s, args) =>
                 {
                     dispatcher.TryEnqueue(() =>
@@ -380,13 +371,6 @@ namespace Telegram.Controls.Messages.Content
                 Interactions.Children.Add(player);
                 InteractionsPopup.IsOpen = true;
             }
-            else if (file.Local.CanBeDownloaded && !file.Local.IsDownloadingActive)
-            {
-                message.Interaction = interaction;
-                message.Delegate.DownloadFile(message, file);
-
-                UpdateManager.Subscribe(this, message, file, ref _interactionToken, UpdateFile, true);
-            }
         }
 
         public void PlayPremium(MessageViewModel message, Sticker sticker)
@@ -402,20 +386,25 @@ namespace Telegram.Controls.Messages.Content
                 return;
             }
 
-            var file = regular.PremiumAnimation;
-            if (file.Local.IsDownloadingCompleted && Interactions.Children.Count < 1)
+            if (Interactions.Children.Count < 1)
             {
                 var dispatcher = DispatcherQueue.GetForCurrentThread();
 
+                var kPremiumMultiplier = 1024.0 / 683;
+                var kPremiumShift = 56.0 / 683;
+
+                var inner = 224.0;
+                var outer = inner * kPremiumMultiplier;
+
                 var player = new AnimatedImage();
-                player.Width = 270;
-                player.Height = 270;
-                //player.IsFlipped = !message.IsOutgoing;
+                player.Width = outer;
+                player.Height = outer;
                 player.LoopCount = 1;
                 player.IsHitTestVisible = false;
-                player.FrameSize = new Size(270 * 2, 270 * 2);
+                player.FrameSize = new Size(outer, outer);
+                player.DecodeFrameType = DecodePixelType.Logical;
                 player.AutoPlay = true;
-                player.Source = new LocalFileSource(file);
+                player.Source = new DelayedFileSource(_message.ClientService, regular.PremiumAnimation);
                 player.LoopCompleted += (s, args) =>
                 {
                     dispatcher.TryEnqueue(() =>
@@ -434,27 +423,21 @@ namespace Telegram.Controls.Messages.Content
                     };
                 }
 
-                var left = 75;
-                var right = 15;
-                var top = 45;
-                var bottom = 45;
+                var shift = inner * kPremiumShift;
+                var left = message.IsVisuallyOutgoing
+                    ? inner + shift - outer
+                    : -shift;
+                var top = (inner - outer) / 2;
+                var right = inner - left - outer;
 
-                if (message.IsOutgoing)
-                {
-                    player.Margin = new Thickness(-left, -top, -right, -bottom);
-                }
-                else
-                {
-                    player.Margin = new Thickness(-right, -top, -left, -bottom);
-                }
+                player.Margin = new Thickness(left, top, right, top);
 
                 Interactions.Children.Add(player);
                 InteractionsPopup.IsOpen = true;
             }
-            else if (file.Local.CanBeDownloaded && !file.Local.IsDownloadingActive)
+            else if (Interactions.Children[0] is AnimatedImage animated)
             {
-                message.Delegate.DownloadFile(message, file);
-                UpdateManager.Subscribe(this, message, file, ref _interactionToken, UpdateFile, true);
+                animated.Play();
             }
         }
 

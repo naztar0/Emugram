@@ -23,6 +23,7 @@ namespace Telegram.Controls
 
         protected override void OnApplyTemplate()
         {
+            // TODO: Name
             ScrollingHost = (ScrollViewer)GetTemplateChild("ScrollViewer");
 
             base.OnApplyTemplate();

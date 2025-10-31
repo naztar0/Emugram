@@ -15,9 +15,9 @@
             <Setter Property="BorderBrush"
                     Value="{ThemeResource SystemControlDisabledChromeDisabledLowBrush}" />
             <Setter Property="Foreground"
-                    Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                    Value="{ThemeResource TextFillColorPrimaryBrush}" />
             <Setter Property="PlaceholderBrush"
-                    Value="{ThemeResource SystemControlForegroundBaseHighBrush}" />
+                    Value="{ThemeResource TextFillColorPrimaryBrush}" />
             <Setter Property="VerticalAlignment"
                     Value="Top" />
             <Setter Property="HorizontalAlignment"

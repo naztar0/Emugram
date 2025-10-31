@@ -57,7 +57,7 @@ namespace Telegram.ViewModels
 
         private void SetTranslating()
         {
-            if (Settings.Chats.TryGet(Chat.Id, ThreadId, ChatSetting.IsTranslating, out bool value))
+            if (Settings.Chats.TryGet(Chat.Id, TopicId, ChatSetting.IsTranslating, out bool value))
             {
                 Set(ref _isTranslating, value, nameof(IsTranslating));
             }
@@ -67,7 +67,7 @@ namespace Telegram.ViewModels
         {
             if (Set(ref _isTranslating, value, nameof(IsTranslating)))
             {
-                Settings.Chats[Chat.Id, ThreadId, ChatSetting.IsTranslating] = value;
+                Settings.Chats[Chat.Id, TopicId, ChatSetting.IsTranslating] = value;
 
                 UpdateChatIsTranslatable();
                 return true;
@@ -147,7 +147,7 @@ namespace Telegram.ViewModels
             var translating = IsTranslating;
             var translateTo = Settings.Translate.To;
 
-            foreach (var message in Items)
+            void TranslateMessage(MessageViewModel message, bool reply)
             {
                 var changed = message.TranslatedText == null;
                 if (translating)
@@ -161,7 +161,24 @@ namespace Telegram.ViewModels
 
                 if (changed != (message.TranslatedText == null))
                 {
-                    Delegate?.UpdateBubbleWithMessageId(message.Id, bubble => bubble.UpdateMessageText(message));
+                    if (reply)
+                    {
+                        Delegate?.UpdateBubbleWithReplyToMessageId(message.Id, (bubble, reply) => bubble.UpdateMessageReply(reply));
+                    }
+                    else
+                    {
+                        Delegate?.UpdateBubbleWithMessageId(message.Id, bubble => bubble.UpdateMessageText(message));
+                    }
+                }
+            }
+
+            foreach (var message in Items)
+            {
+                TranslateMessage(message, false);
+
+                if (message.ReplyToItem is MessageViewModel reply)
+                {
+                    TranslateMessage(reply, true);
                 }
             }
         }

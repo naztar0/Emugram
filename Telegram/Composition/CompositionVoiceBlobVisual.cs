@@ -52,7 +52,7 @@ namespace Telegram.Composition
             var large = compositor.CreatePathGeometry();
 
             gradient.Size = size;
-            small.Radius = new Vector2(96 / 2);
+            small.Radius = new Vector2(48 / 2);
 
             var temp = compositor.CreateRadialGradientBrush();
             temp.EllipseCenter = new Vector2(0.5f);
@@ -84,8 +84,8 @@ namespace Telegram.Composition
             visual.Shapes.Add(smallShape);
 
             _smallBlob = new CompositionBlobShape(gradientShape, size, 8, 0.1f, 0.5f, 0.2f, 0.6f, 0.87f, 1.0f);
-            _mediumBlob = new CompositionBlobShape(mediumShape, new Vector2(192), 8, 1, 1, 0.9f, 4, 0.69f, 0.87f);
-            _largeBlob = new CompositionBlobShape(largeShape, new Vector2(192), 8, 1, 1, 0.9f, 4, 0.71f, 1.0f);
+            _mediumBlob = new CompositionBlobShape(mediumShape, new Vector2(96), 8, 1, 1, 0.9f, 4, 0.69f, 0.87f);
+            _largeBlob = new CompositionBlobShape(largeShape, new Vector2(96), 8, 1, 1, 0.9f, 4, 0.71f, 1.0f);
 
             _mediumBlob.FillColor = Color.FromArgb(0x44, 0xFF, 0xFF, 0xFF); // 0x4D 0.3 alpha
             _largeBlob.FillColor = Color.FromArgb(0x44, 0xFF, 0xFF, 0xFF); // 0x26 0.15 alpha
@@ -94,8 +94,8 @@ namespace Telegram.Composition
 
             _radial = compositor.CreateRadialGradientBrush();
             //radial.CenterPoint = new Vector2(0.5f, 0.0f);
-            _radial.EllipseCenter = new Vector2(300, 0);
-            _radial.EllipseRadius = new Vector2(MathF.Sqrt(200 * 200 + 200 * 200));
+            _radial.EllipseCenter = new Vector2(150, 0);
+            _radial.EllipseRadius = new Vector2(MathF.Sqrt(100 * 100 + 100 * 100));
             _radial.MappingMode = CompositionMappingMode.Absolute;
             _radial.ColorStops.Add(compositor.CreateColorGradientStop(0, Colors.Red));
             _radial.ColorStops.Add(compositor.CreateColorGradientStop(1, Colors.Blue));

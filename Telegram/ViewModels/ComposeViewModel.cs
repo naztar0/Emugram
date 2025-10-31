@@ -53,9 +53,11 @@ namespace Telegram.ViewModels
 
         public abstract Chat Chat { get; set; }
 
-        public abstract long ThreadId { get; }
+        public abstract MessageTopic TopicId { get; set; }
 
-        public virtual long OutgoingThreadId { get; }
+        public virtual MessageTopic OutgoingTopicId { get; }
+
+        public abstract long ThreadId { get; }
 
         private bool _isMediaNote;
         private ChatRecordMode _chatRecordMode;
@@ -502,10 +504,11 @@ namespace Telegram.ViewModels
                         {
                             StorageDocument => StorageAlbumType.Documents,
                             StorageAudio => StorageAlbumType.Audio,
+                            StoragePhoto photo => forceDocuments ? StorageAlbumType.Documents : photo.IsAnimated ? StorageAlbumType.NotSupported : StorageAlbumType.Media,
                             _ => forceDocuments ? StorageAlbumType.Documents : StorageAlbumType.Media
                         };
 
-                        if (album.Count > 9 || (type != albumType && albumType != StorageAlbumType.None))
+                        if (album.Count > 9 || type == StorageAlbumType.NotSupported || (type != albumType && albumType != StorageAlbumType.None))
                         {
                             AddAlbum();
                         }
@@ -760,7 +763,18 @@ namespace Telegram.ViewModels
             options ??= new MessageSendOptions();
             options.SendingId = Math.Max(options.SendingId, 1);
 
-            var response = await ClientService.SendAsync(CreateSendMessage(chat.Id, OutgoingThreadId, replyTo, options, inputMessageContent));
+            var function = CreateSendMessage(chat.Id, OutgoingTopicId, replyTo, options, inputMessageContent);
+            if (function == null)
+            {
+                return null;
+            }
+
+            return await SendMessageAsync(function);
+        }
+
+        protected async Task<Object> SendMessageAsync(Function function)
+        {
+            var response = await ClientService.SendAsync(function);
             if (response is Error error)
             {
                 if (error.MessageEquals(ErrorType.PEER_FLOOD))
@@ -776,31 +790,27 @@ namespace Telegram.ViewModels
                     await ShowPopupAsync(Strings.MessageScheduledLimitReached, Strings.AppName, Strings.OK);
                 }
             }
-            else
+            else if (function is SendMessage sendMessage)
             {
-                ContinueSendMessage(options);
+                ContinueSendMessage(sendMessage.Options);
+            }
+            else if (function is SendMessageAlbum sendMessageAlbum)
+            {
+                ContinueSendMessage(sendMessageAlbum.Options);
             }
 
             return response;
         }
 
-        protected virtual Function CreateSendMessage(long chatId, long messageThreadId, InputMessageReplyTo replyTo, MessageSendOptions messageSendOptions, InputMessageContent inputMessageContent)
+        protected virtual Function CreateSendMessage(long chatId, MessageTopic topicId, InputMessageReplyTo replyTo, MessageSendOptions messageSendOptions, InputMessageContent inputMessageContent)
         {
             if (replyTo is InputMessageReplyToTopicMessage replyToTopicMessage)
             {
-                if (replyToTopicMessage.TopicId is MessageTopicForum topicForum)
-                {
-                    messageThreadId = topicForum.ForumTopicId;
-                }
-                else if (replyToTopicMessage.TopicId is MessageTopicDirectMessages topicDirectMessagesChat && messageSendOptions != null)
-                {
-                    messageSendOptions.DirectMessagesChatTopicId = topicDirectMessagesChat.DirectMessagesChatTopicId;
-                }
-
-                replyTo = new InputMessageReplyToMessage(replyToTopicMessage.MessageId, replyToTopicMessage.Quote);
+                topicId = replyToTopicMessage.TopicId;
+                replyTo = new InputMessageReplyToMessage(replyToTopicMessage.MessageId, replyToTopicMessage.Quote, replyToTopicMessage.ChecklistTaskId);
             }
 
-            return new SendMessage(chatId, messageThreadId, replyTo, messageSendOptions, null, inputMessageContent);
+            return new SendMessage(chatId, topicId, replyTo, messageSendOptions, null, inputMessageContent);
         }
 
         protected virtual void ContinueSendMessage(MessageSendOptions options)
@@ -950,26 +960,24 @@ namespace Telegram.ViewModels
                 return await SendMessageAsync(reply, new InputMessagePaidMedia(starCount, paidOperations, caption, captionAboveMedia, string.Empty), options);
             }
 
-            return await ClientService.SendAsync(CreateSendMessageAlbum(chat.Id, OutgoingThreadId, reply, options, operations));
+            var function = CreateSendMessageAlbum(chat.Id, OutgoingTopicId, reply, options, operations);
+            if (function == null)
+            {
+                return null;
+            }
+
+            return await SendMessageAsync(function);
         }
 
-        protected virtual Function CreateSendMessageAlbum(long chatId, long messageThreadId, InputMessageReplyTo replyTo, MessageSendOptions messageSendOptions, IList<InputMessageContent> inputMessageContent)
+        protected virtual Function CreateSendMessageAlbum(long chatId, MessageTopic topicId, InputMessageReplyTo replyTo, MessageSendOptions messageSendOptions, IList<InputMessageContent> inputMessageContent)
         {
             if (replyTo is InputMessageReplyToTopicMessage replyToTopicMessage)
             {
-                if (replyToTopicMessage.TopicId is MessageTopicForum topicForum)
-                {
-                    messageThreadId = topicForum.ForumTopicId;
-                }
-                else if (replyToTopicMessage.TopicId is MessageTopicDirectMessages topicDirectMessagesChat && messageSendOptions != null)
-                {
-                    messageSendOptions.DirectMessagesChatTopicId = topicDirectMessagesChat.DirectMessagesChatTopicId;
-                }
-
-                replyTo = new InputMessageReplyToMessage(replyToTopicMessage.MessageId, replyToTopicMessage.Quote);
+                topicId = replyToTopicMessage.TopicId;
+                replyTo = new InputMessageReplyToMessage(replyToTopicMessage.MessageId, replyToTopicMessage.Quote, replyToTopicMessage.ChecklistTaskId);
             }
 
-            return new SendMessageAlbum(chatId, messageThreadId, replyTo, messageSendOptions, inputMessageContent);
+            return new SendMessageAlbum(chatId, topicId, replyTo, messageSendOptions, inputMessageContent);
         }
 
         public static FormattedText GetFormattedText(string text)
